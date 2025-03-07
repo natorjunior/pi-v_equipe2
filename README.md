@@ -41,11 +41,28 @@ release/versão (preparação para lançamento)
 | 🚑  | Hotfix | `🚑 hotfix: corrige erro crítico em produção` |
 | ⏪  | Reversão de commit | `⏪ revert: reverte commit X` |
 
----
-
+--- 
 ## ✅ 3. Sempre use branches para novas funcionalidades e correções
 - Nunca faça commits diretamente na branch `main` ou `develop`.
 - Crie branches específicas para cada tarefa:
   ```sh
   git checkout -b feature/nova-feature
   ```
+
+---
+## ✅ 4 PULL REQUEST
+
+O pull request vai ter as seguintes características:
+
+Título do PR: [nome Projeto- Número Issue]:#tipo de atividade - descrição do título da atividade. 
+Corpo do PR: descrição do PR em detalhes. 
+Exemplo do PR usando a padronização:
+ 
+Projeto: Aplicativo de lista de tarefas.
+Issue: 10.
+Tipo de atividade: pode ser feature, bugfix ou outra.
+
+Exemplo:
+
+Título do PR: 
+[ALT-10]:#bugfix-Corrigir correção da data das notas.
