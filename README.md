@@ -7,10 +7,6 @@ GymTas é um aplicativo que transforma o estudo e a leitura em uma experiência 
 Muitas pessoas têm dificuldade em manter uma rotina consistente de estudos e leitura. A falta de motivação e disciplina pode tornar o aprendizado desafiador e desorganizado. O * resolve esse problema ao oferecer um sistema de desafios, pontuação e ranking, incentivando o engajamento contínuo e promovendo uma comunidade de apoio ao aprendizado.
 
 
-
-
-
-## Anotações do professor abaixo
 # pi-v
 # 📌 Regras para Uso do Git e GitHub no Desenvolvimento
 
