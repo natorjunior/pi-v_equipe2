@@ -6,6 +6,8 @@ services:
       - 8080:8080
     env_file:
       - ./environments/.env
+    depends_on:
+      - database
 
   database:
     image: mysql/mysql-server:latest
@@ -17,9 +19,9 @@ services:
       - MYSQL_DATABASE=run2learn_app
       - MYSQL_ROOT_PASSWORD=ForaTemer0
     volumes:
-      - mysql_data:/var/lib/mysql # ✅ Fixed volume name
+      - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "my-mysql"]
       interval: 10s
       timeout: 5s
       retries: 5
