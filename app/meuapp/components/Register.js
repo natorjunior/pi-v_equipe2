@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   View,
   Text,
@@ -6,26 +7,56 @@ import {
   StyleSheet,
   ImageBackground,
 } from "react-native";
+import { createUser } from "../service/userService";
 
-const imagem = require("./assets/gatinhu2.jpg");
+const imagem = require("../assets/gatinhu2.jpg");
 
 export default function Register({ navigation }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [avatar, setAvatar] = useState("");
+
+  const handleRegisterButton = async () => {
+    try {
+      const newUser = { name, email, password, avatar };
+      const response = await createUser(newUser);
+      console.log(response);
+
+      navigation.navigate("Login");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <ImageBackground source={imagem} resizeMode="cover" style={styles.image}>
-        {/* Camada de opacidade */}
         <View style={styles.overlay}>
           <Text style={styles.titulo}>Tela de Cadastro</Text>
 
-          <TextInput placeholder="Nome" style={styles.input} />
+          <TextInput
+            placeholder="Nome"
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+          />
           <TextInput
             placeholder="E-mail"
             style={styles.input}
             keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
           />
-          <TextInput placeholder="Senha" style={styles.input} secureTextEntry />
+          <TextInput
+            placeholder="Senha"
+            style={styles.input}
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
 
-          <TouchableOpacity style={styles.botao}>
+          <TouchableOpacity style={styles.botao} onPress={handleRegisterButton}>
             <Text style={styles.textoBotao}>Cadastrar</Text>
           </TouchableOpacity>
 

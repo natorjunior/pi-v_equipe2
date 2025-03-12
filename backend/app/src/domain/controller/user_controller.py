@@ -7,7 +7,7 @@ from app.src.infra.database.database import get_session
 
 router = APIRouter(prefix="/user")
 
-@router.get("")
+@router.get("/")
 def get_all():
     pass
 
@@ -15,8 +15,8 @@ def get_all():
 def get_user_by_id(user_id):
     pass
 
-@router.post("")
-def create_user(new_user:NewUser, session:Session = Depends(get_session)):
+@router.post("/")
+def create_user(new_user: NewUser, session: Session = Depends(get_session)):
     return UserService(session).create_user(new_user)
 
 @router.put("/{user_id}")

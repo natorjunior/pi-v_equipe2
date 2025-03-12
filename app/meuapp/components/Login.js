@@ -1,4 +1,5 @@
-import { StatusBar } from "expo-status-bar";
+//import { StatusBar } from "expo-status-bar";
+import { useState } from "react";
 import {
   Button,
   ImageBackground,
@@ -8,10 +9,44 @@ import {
   View,
   TouchableOpacity,
 } from "react-native";
+import { loginUser } from "../service/loginService";
 
-const imagem = require("./assets/gatinhu.jpg");
+const imagem = require("../assets/gatinhu.jpg");
 
 export default function Login({ navigation }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleLoginButton = async () => {
+    if (!email || !password) {
+      Alert.alert("Erro", "Por favor, preencha todos os campos.");
+      return;
+    }
+
+    try {
+      const response = await loginUser({ email, password });
+
+      if (response) {
+        console.log("Login bem-sucedido:", response);
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "Home" }],
+        });
+      } else {
+        Alert.alert(
+          "Erro",
+          "Não foi possível fazer login. Verifique seus dados."
+        );
+      }
+    } catch (error) {
+      Alert.alert(
+        "Erro",
+        "Falha ao fazer login. Verifique sua conexão e tente novamente."
+      );
+      console.error(error);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <ImageBackground source={imagem} resizeMode="cover" style={styles.image}>
@@ -22,7 +57,12 @@ export default function Login({ navigation }) {
 
           <Text style={styles.subTitulo}>E-mail:</Text>
           <Text style={styles.espacamento}></Text>
-          <TextInput placeholder="Digite seu email" style={styles.input} />
+          <TextInput
+            placeholder="Digite seu email"
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+          />
 
           <Text style={styles.espacamento}></Text>
 
@@ -32,12 +72,17 @@ export default function Login({ navigation }) {
             placeholder="Digite sua senha"
             style={styles.input}
             secureTextEntry={true}
+            value={password}
+            onChangeText={setPassword}
           />
 
           <Text style={styles.espacamento}></Text>
 
           <View style={styles.botoesContainer}>
-            <TouchableOpacity style={styles.botaoLogin}>
+            <TouchableOpacity
+              style={styles.botaoLogin}
+              onPress={handleLoginButton}
+            >
               <Text style={styles.textoBotao}>Login</Text>
             </TouchableOpacity>
 
