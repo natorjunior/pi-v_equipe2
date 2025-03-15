@@ -1,6 +1,10 @@
 import datetime
+from typing import Annotated
 
 import jwt
+from fastapi import Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
 from app.src.domain.dto.jwt_payload import JwtPayload
 from environments import constants
 
@@ -8,6 +12,7 @@ from environments import constants
 class JwtService:
     def __init__(self):
         self.jwt_secret = constants.JWT_SECRET
+
 
     def generate_jwt(self, user_id):
         payload = JwtPayload(
@@ -20,7 +25,7 @@ class JwtService:
 
         return token
 
-    def verify_jwt(self, token: str) -> str | None:
+    def verify_jwt(self, token: str):
         try:
             payload = jwt.decode(token, self.jwt_secret, algorithms=["HS256"])
 
@@ -31,3 +36,8 @@ class JwtService:
 
         except jwt.InvalidTokenError as e:
             return e
+
+oauth2_scheme = HTTPBearer()
+
+def jwt_auth(token: Annotated[HTTPAuthorizationCredentials, Depends(oauth2_scheme)]):
+    return JwtService().verify_jwt(token=token.credentials)
