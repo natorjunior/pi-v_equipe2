@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from app.src.domain.dto.new_user import NewUser
+from app.src.domain.dto.user_changes import UserChanges
 from app.src.domain.dto.user_data import get_user_data_instance
 from app.src.domain.repository.user_repository import UserRepository
 from app.src.infra.security.encryption_service import EncryptionService
@@ -28,6 +29,12 @@ class UserService:
         return self.user_repository.get_user_by_email(user_email)
 
     def create_user(self, new_user:NewUser):
+        if self.get_user_by_email(new_user.email):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="There is already a user with this email"
+            )
+
         password_hash = self.encryption_service.generate_hash(new_user.password)
         return self.user_repository.create_user(
             name=new_user.name,
@@ -36,7 +43,7 @@ class UserService:
             avatar=new_user.avatar
         )
 
-    def update_user(self, user_id, user_changes):
+    def update_user(self, user_id, user_changes: UserChanges):
         user = self.user_repository.update_user(user_id, user_changes)
         if not user:
             raise HTTPException(

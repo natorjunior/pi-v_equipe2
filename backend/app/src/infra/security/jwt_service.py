@@ -2,8 +2,9 @@ import datetime
 from typing import Annotated
 
 import jwt
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from starlette import status
 
 from app.src.domain.dto.jwt_payload import JwtPayload
 from environments import constants
@@ -25,17 +26,23 @@ class JwtService:
 
         return token
 
-    def verify_jwt(self, token: str):
+    def verify_jwt(self, token: str) -> int:
         try:
             payload = jwt.decode(token, self.jwt_secret, algorithms=["HS256"])
-
-            return payload.get("sub")
+            user_id = int(payload.get("sub"))
+            return user_id
 
         except jwt.ExpiredSignatureError as e:
-            raise e
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Session expired"
+            )
 
         except jwt.InvalidTokenError as e:
-            return e
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Invalid credentials"
+            )
 
 oauth2_scheme = HTTPBearer()
 
