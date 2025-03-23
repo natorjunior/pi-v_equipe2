@@ -28,7 +28,9 @@ export default function Question4({ navigation, route }) {
         }
 
         try {
-            const newUser = { name, email, password, avatar: "" };
+            let avatar= "" 
+            let name= "" 
+            const newUser = { name, email, password, avatar};
             const response = await createUser(newUser);
             console.log(response);
 

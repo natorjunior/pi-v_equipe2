@@ -18,7 +18,7 @@ export default function App() {
   return (
     <ThemeProvider>
       <NavigationContainer>
-        <Stack.Navigator initialRouteName="Menu" screenOptions={{ headerShown: false }}>
+        <Stack.Navigator initialRouteName="Entrada" screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Menu" component={Menu} />
           <Stack.Screen name="Entrada" component={Entrace} />
           <Stack.Screen name="Question1" component={Question1} />
