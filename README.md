@@ -1,10 +1,10 @@
-# * - Aplicativo de Desafios de Estudos e Leitura
+# Stay and Learn - Aplicativo de Desafios de Estudos e Leitura
 
-## 📖 O que é o *?
-GymTas é um aplicativo que transforma o estudo e a leitura em uma experiência gamificada.,O * incentiva os usuários a criarem e participarem de desafios de aprendizado, acompanhando seu progresso e competindo de forma saudável com amigos e outros participantes.
+## 📖 O que é o SAL?
+Stay and Learn é um aplicativo que transforma o estudo e a leitura. O Stay and Learn incentiva os usuários a criarem e participarem de desafios de aprendizado, acompanhando seu progresso e competindo de forma saudável com amigos e outros participantes.
 
 ## 🎯 Qual problema ele resolve?
-Muitas pessoas têm dificuldade em manter uma rotina consistente de estudos e leitura. A falta de motivação e disciplina pode tornar o aprendizado desafiador e desorganizado. O * resolve esse problema ao oferecer um sistema de desafios, pontuação e ranking, incentivando o engajamento contínuo e promovendo uma comunidade de apoio ao aprendizado.
+Muitas pessoas têm dificuldade em manter uma rotina consistente de estudos e leitura. A falta de motivação e disciplina pode tornar o aprendizado desafiador e desorganizado. O Stay and Learn resolve esse problema ao oferecer um sistema de desafios, pontuação e ranking, incentivando o engajamento contínuo e promovendo uma comunidade de apoio ao aprendizado.
 
 
 # pi-v
