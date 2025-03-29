@@ -6,22 +6,14 @@ from environments import constants
 
 connection_string = constants.DATABASE_URL
 engine = create_engine(connection_string)
-session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-scoped_session = scoped_session(session_local)
+session_factory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+session = scoped_session(session_factory)
 Base.metadata.create_all(engine)
 
 def get_session():
-    session = None
-
+    db_session = session()
     try:
-        session = scoped_session
-        yield session
-
-    except:
-        session.rollback()
-        raise
-
+        yield db_session
     finally:
-        if session:
-            session.close()
-            session.remove()
+        db_session.close()
+        session.remove()

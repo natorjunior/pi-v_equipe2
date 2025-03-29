@@ -1,27 +1,38 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+from app.src.domain.dto.new_group import NewGroup
+from app.src.domain.service.group_service import GroupService
+from app.src.infra.database.database import get_session
+from app.src.infra.security.jwt_service import jwt_auth
 
 router = APIRouter(prefix="/group")
 
 @router.get("")
-def get_all():
-    pass
-
-@router.get("/{group_id}")
-def get_group_by_id(group_id):
-    pass
-
-@router.get("/user/{user_id}")
-def get_group_by_user_id(user_id):
-    pass
+def get_group_by_user_id(user_id = Depends(jwt_auth),
+                         session: Session = Depends(get_session)):
+    return GroupService(session).get_group_by_user_id(user_id)
 
 @router.post("")
-def create_group(new_group):
-    pass
-
-@router.put("/{group_id}")
-def update_group_by_id(group_id, user_changes):
-    pass
+def create_group(new_group: NewGroup,
+                user_id:int = Depends(jwt_auth),
+                session: Session = Depends(get_session)):
+    return GroupService(session).create_group(user_id, new_group)
 
 @router.delete("/{group_id}")
-def delete_group_by_id(group_id):
-    pass
+def delete_group_by_id(group_id:int,
+                       user_id:int = Depends(jwt_auth),
+                       session: Session = Depends(get_session)):
+    return GroupService(session).delete_group(user_id, group_id)
+
+@router.get("/join/{group_alias}")
+def get_group_by_user_id(group_alias:str,
+                         user_id = Depends(jwt_auth),
+                         session: Session = Depends(get_session)):
+    return GroupService(session).join_group(user_id, group_alias)
+
+@router.get("/leave/{group_alias}")
+def get_group_by_user_id(group_alias:str,
+                         user_id = Depends(jwt_auth),
+                         session: Session = Depends(get_session)):
+    return GroupService(session).leave_group(user_id, group_alias)
