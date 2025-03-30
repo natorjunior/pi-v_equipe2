@@ -36,16 +36,16 @@ class UserRepository:
             self.session.rollback()
             raise e
 
-    def update_user(self, user_id, name=None, email=None, avatar=None):
+    def update_user(self, user_id, user_changes):
         user = self.session.query(User).filter(User.id == user_id).first()
         if not user:
             return None
-        if name:
-            user.name = name
-        if email:
-            user.email = email
-        if avatar:
-            user.avatar = avatar
+        if user_changes.name:
+            user.name = user_changes.name
+        if user_changes.email:
+            user.email = user_changes.email
+        if user_changes.avatar:
+            user.avatar = user_changes.avatar
 
         self.session.commit()
         self.session.refresh(user)

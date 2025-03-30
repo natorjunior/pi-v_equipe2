@@ -16,6 +16,11 @@ services:
     restart: always
     ports:
       - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_DATABASE: run2learn_app
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: ForaTemer0
     volumes:
       - mysql_data:/var/lib/mysql
       - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
