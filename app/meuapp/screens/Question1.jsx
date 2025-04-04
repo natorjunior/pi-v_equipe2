@@ -1,16 +1,15 @@
 import React, { useState } from "react";
-import { Text, TextInput, StyleSheet, TouchableOpacity } from "react-native";
-import Background from "../components/Background";
-import { useTheme } from "../service/ThemeContext";
+import { Text, TextInput, StyleSheet, TouchableOpacity, View } from "react-native";
+import { useTheme } from "../service/themeService";
 
 export default function Question1({ navigation }) {
-    const theme = useTheme();
+    const { theme } = useTheme();
     const [name, setName] = useState("");
 
     const isButtonDisabled = name.trim().length === 0;
 
     return (
-        <Background style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
             <Text style={[styles.text, { color: theme.text }]}>
                 Como podemos te chamar?
             </Text>
@@ -52,7 +51,7 @@ export default function Question1({ navigation }) {
                     Continuar
                 </Text>
             </TouchableOpacity>
-        </Background>
+        </View>
     );
 }
 
@@ -61,7 +60,6 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: "center",
         justifyContent: "center",
-        width: "90%",
     },
     text: {
         fontSize: 22,

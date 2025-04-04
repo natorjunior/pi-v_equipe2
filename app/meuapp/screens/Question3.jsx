@@ -1,11 +1,10 @@
 import React, { useState } from "react";
-import Background from "../components/Background";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
-import { useTheme } from "../service/ThemeContext";
+import { useTheme } from "../service/themeService";
 import { Checkbox } from "expo-checkbox";
 
-export default function Question2({ navigation }) {
-    const theme = useTheme();
+export default function Question2({ navigation, route }) {
+    const { theme } = useTheme();
     const [selectedGenres, setSelectedGenres] = useState({});
 
     const toggleGenre = (genre) => {
@@ -39,7 +38,7 @@ export default function Question2({ navigation }) {
     ];
 
     return (
-        <Background>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
             <ScrollView contentContainerStyle={styles.scrollContainer}>
             <Text style={[styles.text, { color: theme.text }]}>Selecione seus gêneros favoritos:</Text>
                 {genres.map((genre, index) => (
@@ -68,19 +67,21 @@ export default function Question2({ navigation }) {
             { }
             <TouchableOpacity
                 style={[styles.nextButton, { backgroundColor: theme.mode === "dark" ? "#fff" : "#0D0058" }]}
-                onPress={() => navigation.navigate("Question4")}
+                onPress={() => navigation.navigate("Question4", { name: route.params?.name })}
             >
                 <Text style={[styles.nextButtonText, { color: theme.mode === "dark" ? "#000" : "#fff" }]}>
                     Continuar
                 </Text>
             </TouchableOpacity>
-        </Background>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
     },
     text: {
         marginTop: 50,

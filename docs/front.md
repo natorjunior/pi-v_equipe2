@@ -18,7 +18,9 @@ npm install
 
 3. **Instale dependências adicionais do Expo:**
 
-expo install expo-image expo-checkbox expo-av expo-video
+expo install expo-image expo-checkbox expo-av expo-video jwt-decode
+
+npm install @react-native-async-storage/async-storage
 
 4. **Execute o projeto:**
 

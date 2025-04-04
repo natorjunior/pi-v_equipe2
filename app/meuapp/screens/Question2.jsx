@@ -1,18 +1,17 @@
 import React from "react";
-import Background from "../components/Background";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { useTheme } from "../service/ThemeContext";
+import { useTheme } from "../service/themeService";
 import { Image } from "expo-image";
 
-export default function Question2({ navigation }) {
-    const theme = useTheme();
+export default function Question2({ navigation, route }) {
+    const { theme } = useTheme();
 
     return (
-        <Background>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
             <Text style={[styles.text, { color: theme.text }]}>O que buscas?</Text>
             <TouchableOpacity
                 style={[styles.button, { backgroundColor: theme.mode === "dark" ? "#0D0058" : "#fff" }]}
-                onPress={() => navigation.navigate("Question3")}
+                onPress={() => navigation.navigate("Question3", { name: route.params?.name })}
             >
                 <View style={styles.buttonContent}>
                     <Image
@@ -28,7 +27,7 @@ export default function Question2({ navigation }) {
 
             <TouchableOpacity
                 style={[styles.button, { backgroundColor: theme.mode === "dark" ? "#0D0058" : "#fff" }]}
-                onPress={() => navigation.navigate("Question3")}
+                onPress={() => navigation.navigate("Question3", { name: route.params?.name })}
             >
                 <View style={styles.buttonContent}>
                     <Image
@@ -44,7 +43,7 @@ export default function Question2({ navigation }) {
 
             <TouchableOpacity
                 style={[styles.button, { backgroundColor: theme.mode === "dark" ? "#0D0058" : "#fff" }]}
-                onPress={() => navigation.navigate("Question3")}
+                onPress={() => navigation.navigate("Question3", { name: route.params?.name })}
             >
                 <View style={styles.buttonContent}>
                     <Image
@@ -59,7 +58,7 @@ export default function Question2({ navigation }) {
             </TouchableOpacity>
             <TouchableOpacity
                 style={[styles.button, { backgroundColor: theme.mode === "dark" ? "#0D0058" : "#fff" }]}
-                onPress={() => navigation.navigate("Question3")}
+                onPress={() => navigation.navigate("Question3", { name: route.params?.name })}
             >
                 <View style={styles.buttonContent}>
                     <Image
@@ -72,13 +71,15 @@ export default function Question2({ navigation }) {
                     </Text>
                 </View>
             </TouchableOpacity>
-        </Background>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
     },
     text: {
         fontSize: 20,
