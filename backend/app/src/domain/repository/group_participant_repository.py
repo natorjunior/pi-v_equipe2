@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.src.domain.model.group_member import GroupParticipant
+from app.src.domain.model.group_participant import GroupParticipant
 
 
 class GroupParticipantRepository:

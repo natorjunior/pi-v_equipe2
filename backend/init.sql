@@ -9,7 +9,9 @@ CREATE TABLE user (
     email VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(100) NOT NULL,
     avatar TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    motivation TEXT,
+    genres TEXT
 );
 
 CREATE TABLE `group` (

@@ -13,3 +13,5 @@ class User(Base):
     password_hash = Column(String(100), nullable = False)
     avatar = Column(Text)
     created_at = Column(TIMESTAMP, server_default = func.now())
+    motivation = Column(Text)
+    genres = Column(Text, nullable=True)

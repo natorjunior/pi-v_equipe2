@@ -7,3 +7,4 @@ class GroupWrapper:
         self.created_by = kwargs["created_by"]
         self.created_at = kwargs["created_at"]
         self.entry_date = kwargs["entry_date"]
+        self.members = kwargs["members"]

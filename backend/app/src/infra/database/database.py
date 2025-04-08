@@ -1,19 +1,16 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.orm import sessionmaker
 
-from app.src.infra.database.base import Base
 from environments import constants
 
 connection_string = constants.DATABASE_URL
 engine = create_engine(connection_string)
-session_factory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-session = scoped_session(session_factory)
-Base.metadata.create_all(engine)
+
+SessionLocal = sessionmaker(autocommit=False,autoflush=False,bind=engine)
 
 def get_session():
-    db_session = session()
+    session = SessionLocal()
     try:
-        yield db_session
+        yield session
     finally:
-        db_session.close()
-        session.remove()
+        session.close()
