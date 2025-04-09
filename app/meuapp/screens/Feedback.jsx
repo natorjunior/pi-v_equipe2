@@ -24,7 +24,7 @@ export default function Feedback() {
     }
 
     Alert.alert("Obrigado!", "Seu feedback foi enviado com sucesso!");
-    setFeedback(""); // HAHA FOI INUTIL, NINGUUEM VAI VER
+    setFeedback("");
   };
 
   return (
