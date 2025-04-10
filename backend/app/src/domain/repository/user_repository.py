@@ -17,20 +17,21 @@ class UserRepository:
     def get_all_users(self):
         return self.session.query(User).all()
 
-    def create_user(self, name, email, password_hash, avatar=None):
+    def create_user(self, name, email, password_hash, motivation, genres, avatar="default_avatar.jpeg"):
         try:
             stmt = insert(User).values(
                 name=name,
                 email=email,
                 password_hash=password_hash,
-                avatar=avatar
+                avatar=avatar,
+                motivation=motivation,
+                genres=genres
             )
 
-            result = self.session.execute(stmt)
+            self.session.execute(stmt)
             self.session.commit()
 
-            user_id = result.lastrowid
-            return self.get_user_by_id(user_id)
+            return True
 
         except Exception as e:
             self.session.rollback()

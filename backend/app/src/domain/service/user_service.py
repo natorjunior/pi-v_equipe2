@@ -1,3 +1,5 @@
+import json
+
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from starlette import status
@@ -36,21 +38,23 @@ class UserService:
             )
 
         password_hash = self.encryption_service.generate_hash(new_user.password)
-        return self.user_repository.create_user(
+        self.user_repository.create_user(
             name=new_user.name,
             email=new_user.email,
             password_hash=password_hash,
-            avatar=new_user.avatar
+            motivation=new_user.motivation,
+            genres=json.dumps(new_user.genres)
         )
 
     def update_user(self, user_id, user_changes: UserChanges):
-        user = self.user_repository.update_user(user_id, user_changes)
+        user = self.user_repository.get_user_by_id(user_id)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
-        return get_user_data_instance(user)
+        updated_user = self.user_repository.update_user(user_id, user_changes)
+        return get_user_data_instance(updated_user)
 
     def delete_user(self, user_id):
         user = self.user_repository.get_user_by_id(user_id)
