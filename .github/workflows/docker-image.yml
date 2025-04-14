@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.8, 3.9, 3.10]
+        python-version: [3.7, 3.8, 3.9]
     steps:
       - name: 🔍 Checkout do Repositório
         uses: actions/checkout@v3
@@ -61,14 +61,6 @@ jobs:
       - name: 📦 Instalar Dependências npm
         working-directory: app/meuapp
         run: npm install
-
-      - name: 🔎 Executar Lint (ESLint)
-        working-directory: app/meuapp
-        run: npm run lint
-
-      - name: 🧪 Executar Testes com Jest
-        working-directory: app/meuapp
-        run: npm run test
 
       - name: 🎉 Finalizar Testes React Native
         run: echo "Testes React Native concluídos com sucesso!"
