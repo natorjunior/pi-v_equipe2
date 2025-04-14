@@ -1,16 +1,15 @@
 import React, { useState } from "react";
-import { Text, TextInput, StyleSheet, TouchableOpacity, Alert } from "react-native";
-import Background from "../components/Background";
-import { useTheme } from "../service/ThemeContext";
+import { Text, TextInput, StyleSheet, TouchableOpacity, Alert, View } from "react-native";
+import { useTheme } from "../service/themeService";
 import { createUser } from "../service/userService";
 
 export default function Question4({ navigation, route }) {
-    const theme = useTheme();
+    const { theme } = useTheme();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
 
-    const { name } = route.params || {};
+    const username = route.params?.name || "Usuário";
 
     const isButtonDisabled = () => {
         return (
@@ -22,27 +21,26 @@ export default function Question4({ navigation, route }) {
     };
 
     const handleRegister = async () => {
-        if (password !== confirmPassword) {
-            Alert.alert("Erro", "As senhas não coincidem. Por favor, verifique.");
-            return;
-        }
-
         try {
-            let avatar= "" 
-            let name= "" 
-            const newUser = { name, email, password, avatar};
+            let avatar = "";
+            let name = String(username || "Usuário"); 
+            let userEmail = String(email).trim();
+            let userPassword = String(password).trim();
+    
+            const newUser = {name: name, email: userEmail, password: userPassword, avatar };
             const response = await createUser(newUser);
             console.log(response);
-
+    
             navigation.navigate("Login");
         } catch (error) {
             console.log(error);
             Alert.alert("Erro", "Não foi possível realizar o cadastro. Tente novamente.");
         }
     };
+    
 
     return (
-        <Background style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
             <Text style={[styles.text, { color: theme.text }]}>
                 Para salvar suas{"\n"} informações precisamos{"\n"} do seu email e uma senha{"\n"} para sua segurança
             </Text>
@@ -61,8 +59,6 @@ export default function Question4({ navigation, route }) {
                 placeholderTextColor={theme.placeholder}
                 value={email}
                 onChangeText={setEmail}
-                selectionColor={theme.text}
-                keyboardAppearance={theme.mode}
                 keyboardType="email-address"
                 autoCapitalize="none"
             />
@@ -81,8 +77,6 @@ export default function Question4({ navigation, route }) {
                 placeholderTextColor={theme.placeholder}
                 value={password}
                 onChangeText={setPassword}
-                selectionColor={theme.text}
-                keyboardAppearance={theme.mode}
                 secureTextEntry
             />
 
@@ -100,8 +94,6 @@ export default function Question4({ navigation, route }) {
                 placeholderTextColor={theme.placeholder}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
-                selectionColor={theme.text}
-                keyboardAppearance={theme.mode}
                 secureTextEntry
             />
 
@@ -126,7 +118,7 @@ export default function Question4({ navigation, route }) {
                     Concluir
                 </Text>
             </TouchableOpacity>
-        </Background>
+        </View>
     );
 }
 
@@ -135,7 +127,6 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: "center",
         justifyContent: "center",
-        width: "90%",
     },
     text: {
         textAlign: "center",

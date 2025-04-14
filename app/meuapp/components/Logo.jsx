@@ -1,13 +1,13 @@
 import React from "react";
 import { View } from "react-native";
 import { Image } from "expo-image";
-import { useTheme } from "../service/ThemeContext";
+import { useTheme } from "../service/themeService";
 
 const logolight = require("../assets/logolight.png");
 const logodark = require("../assets/logodark.png");
 
 export default function Logo() {
-  const theme = useTheme();
+  const { theme } = useTheme();
 
   return (
     <View style={{ alignItems: "center", justifyContent: "center" }}>

@@ -1,7 +1,7 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 
-const API_URL = "http://10.18.0.186:8080/authentication/login";
+const API_URL = "http://192.168.88.56:8080/authentication/login";
 
 export const loginUser = async (loginData) => {
   try {

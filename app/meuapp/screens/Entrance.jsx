@@ -1,23 +1,18 @@
 import React from "react";
-import {
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
-} from "react-native";
-import Background from "../components/Background";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Logo from "../components/Logo";
 import { Video } from "expo-av";
-import { useTheme } from "../service/ThemeContext";
+import { useTheme } from "../service/themeService";
 
 const vid = require("../assets/group.mp4");
 
 export default function Entrece({ navigation }) {
-    const theme = useTheme();
+    const { theme } = useTheme();
 
     return (
-        <Background>
-            <Logo />
+        <View style={[styles.container,( { backgroundColor: theme.background } )]}>
+            <Logo/>
+            
             <Video
                 source={vid}
                 isMuted={true}
@@ -37,10 +32,16 @@ export default function Entrece({ navigation }) {
             </Text>
             
             <TouchableOpacity
-                style={[styles.button, { backgroundColor: theme.mode === "dark" ? "#fff" : "#003366" }]}
+                style={[
+                    styles.button,
+                    { backgroundColor: theme.mode === "dark" ? "#fff" : "#003366" }
+                ]}
                 onPress={() => navigation.navigate("Question1")}
             >
-                <Text style={[styles.buttonText, { color: theme.mode === "dark" ? "#000" : "#fff" }]}>
+                <Text style={[
+                    styles.buttonText,
+                    { color: theme.mode === "dark" ? "#000" : "#fff" }
+                ]}>
                     Primeiro acesso
                 </Text>
             </TouchableOpacity>
@@ -48,19 +49,27 @@ export default function Entrece({ navigation }) {
             <TouchableOpacity
                 style={[
                     styles.button,
-                    { padding: 10 },
+                    { padding: 10 }
                 ]}
                 onPress={() => navigation.navigate("Login")}
             >
-                <Text style={[styles.buttonText, { color: theme.mode === "dark" ? "#fff" : "#003366" }]}>
+                <Text style={[
+                    styles.buttonText,
+                    { color: theme.mode === "dark" ? "#fff" : "#003366" }
+                ]}>
                     Eu já tenho uma conta
                 </Text>
             </TouchableOpacity>
-        </Background>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+    },
     video: {
         width: 356,
         height: 200,
@@ -90,5 +99,5 @@ const styles = StyleSheet.create({
     buttonText: {
         fontSize: 18,
         fontWeight: "bold",
-    },
+    }
 });
