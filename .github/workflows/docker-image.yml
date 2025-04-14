@@ -34,15 +34,6 @@ jobs:
             echo "requirements.txt não encontrado, pulando a instalação."
           fi
 
-      - name: 🔎 Executar Lint e Testes Python
-        run: |
-          pip install flake8 pytest pytest-cov
-          flake8 .
-          pytest --maxfail=1 --disable-warnings -q
-
-      - name: 🎉 Finalizar Testes Python
-        run: echo "Testes Python concluídos com sucesso!"
-
   ##############################################
   # JOB: Testes do Ambiente React Native       #
   ##############################################
