@@ -1,6 +1,5 @@
 name: Test Pipeline - Python & React Native
 
-# Evento de disparo: Push e Pull Request nas branches main e develop.
 on:
   push:
     branches: [ main, develop ]
@@ -8,71 +7,60 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  #########################################
-  # JOB: Testes do Ambiente Python        #
-  #########################################
   python-tests:
     name: Python Tests (Multi Versões)
     runs-on: ubuntu-latest
-
-    # Teste em múltiplas versões de Python (ex.: 3.8, 3.9 e 3.10)
     strategy:
       matrix:
         python-version: [3.8, 3.9, 3.10]
-
     steps:
       - name: 🔍 Checkout do Repositório
         uses: actions/checkout@v3
-
       - name: 🐍 Configurar Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-
       - name: 📦 Instalar Dependências Python
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
       - name: 🔎 Linting com Flake8
         run: |
           pip install flake8
           flake8 .
-
       - name: 🧪 Executar Testes com Pytest
         run: |
           pip install pytest pytest-cov
           pytest --maxfail=1 --disable-warnings -q
-
       - name: 📊 Gerar Relatório de Cobertura
         run: pytest --cov=.
-
       - name: 🎉 Finalizar Testes Python
         run: echo "Testes Python concluídos com sucesso!"
 
-  ##############################################
-  # JOB: Testes do Ambiente React Native       #
-  ##############################################
   react-native-tests:
     name: React Native Tests
     runs-on: ubuntu-latest
-
     steps:
       - name: 🔍 Checkout do Repositório
         uses: actions/checkout@v3
 
+      # Se o package.json estiver em um subdiretório, por exemplo "frontend",
+      # defina o working-directory para esse subdiretório.
       - name: ⚙️ Configurar Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '14'
 
       - name: 📦 Instalar Dependências npm
+        working-directory: ./frontend
         run: npm install
 
       - name: 🔎 Checagem de Código com ESLint
+        working-directory: ./frontend
         run: npm run lint
 
       - name: 🧪 Executar Testes com Jest
+        working-directory: ./frontend
         run: npm run test
 
       - name: 🎉 Finalizar Testes React Native
