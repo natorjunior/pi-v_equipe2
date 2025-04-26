@@ -14,4 +14,4 @@ class Checkin(Base):
     description = Column(Text)
     photo = Column(Text)
     created_at = Column(TIMESTAMP, server_default = func.now())
-    updated_at = Column(TIMESTAMP, server_default = func.now())
+    updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp())
