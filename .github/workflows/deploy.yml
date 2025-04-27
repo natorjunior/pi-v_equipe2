@@ -34,7 +34,7 @@ jobs:
             docker-compose -f docker-compose-homolog.yml down --remove-orphans || true
 
             # Limpa imagens não usadas
-            docker image prune -f || true
+            #docker image prune -f || true
 
             # Puxa as novas imagens
             docker-compose -f docker-compose-homolog.yml pull
