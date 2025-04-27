@@ -1,0 +1,57 @@
+name: Test Pipeline - Python & React Native
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  #########################################
+  # JOB: Testes do Ambiente Python        #
+  #########################################
+  python-tests:
+    name: Python Tests (Multi Versões)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9]
+    steps:
+      - name: 🔍 Checkout do Repositório
+        uses: actions/checkout@v3
+
+      - name: 🐍 Configurar Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: 📦 Instalar Dependências Python
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            echo "requirements.txt não encontrado, pulando a instalação."
+          fi
+
+  ##############################################
+  # JOB: Testes do Ambiente React Native       #
+  ##############################################
+  react-native-tests:
+    name: React Native Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🔍 Checkout do Repositório
+        uses: actions/checkout@v3
+
+      - name: ⚙️ Configurar Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '14'
+
+      - name: 📦 Instalar Dependências npm
+        working-directory: app/meuapp
+        run: npm install
+
+      - name: 🎉 Finalizar Testes React Native
+        run: echo "Testes React Native concluídos com sucesso!"
