@@ -17,7 +17,7 @@ class UserRepository:
     def get_all_users(self):
         return self.session.query(User).all()
 
-    def create_user(self, name, email, password_hash, motivation, genres, avatar="default_avatar.jpeg"):
+    def create_user(self, name, email, password_hash, motivation, genres, avatar):
         try:
             stmt = insert(User).values(
                 name=name,
@@ -45,9 +45,14 @@ class UserRepository:
             user.name = user_changes.name
         if user_changes.email:
             user.email = user_changes.email
-        if user_changes.avatar:
-            user.avatar = user_changes.avatar
 
+        self.session.commit()
+        self.session.refresh(user)
+        return user
+
+    def set_user_avatar(self, user_id, avatar):
+        user = self.session.query(User).filter(User.id == user_id).first()
+        user.avatar = avatar
         self.session.commit()
         self.session.refresh(user)
         return user

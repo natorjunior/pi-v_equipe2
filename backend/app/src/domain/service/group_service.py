@@ -2,8 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from starlette import status
 
-from app.src.domain.dto.group_wrapper import GroupWrapper
-from app.src.domain.dto.new_group import NewGroup
+from app.src.domain.dto.group_dto import GroupWrapper, NewGroup
 from app.src.domain.repository.group_participant_repository import GroupParticipantRepository
 from app.src.domain.repository.group_repository import GroupRepository
 from app.src.domain.service.user_service import UserService
@@ -17,8 +16,13 @@ class GroupService:
         self.user_service = UserService(session)
 
 
-    def get_group_by_user_id(self, user_id):
+    def get_group_by_id(self, group_id):
+        return self.group_repository.get_group_by_id(group_id)
 
+    def get_group_participant_by_user_id_and_group_id(self, user_id, group_id):
+        return self.group_participant_repository.get_by_user_id_and_group_by_id(user_id, group_id)
+
+    def get_group_by_user_id(self, user_id):
         group_ids = []
         group_wrapper_list =[]
         group_participant_map = {}
