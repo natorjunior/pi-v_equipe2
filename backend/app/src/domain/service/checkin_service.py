@@ -23,6 +23,7 @@ class CheckinService:
         for checkin in raw_checkins:
             user = self.user_service.get_user_by_id(checkin.user_id)
             checkins.append(get_checkin_data_instance(checkin, user))
+        return checkins
 
     def get_checkins_by_user_id(self, user_id: int):
         checkins = self.checkin_repository.get_checkin_by_user_id(user_id)
@@ -50,7 +51,7 @@ class CheckinService:
         return self.__return_checkin_instances(checkins)
 
     def create_checkin(self, user_id, checkin_data: CheckinCreate, checkin_photo: UploadFile = None):
-        checkin_photo_url = None
+        checkin_photo_url = "DEFAULT_CHECKIN_PHOTO.jpeg"
 
         if checkin_photo:
             checkin_photo_url = upload_file_to_minio(checkin_photo, bucket_name="checkin-photos")

@@ -10,7 +10,7 @@ class CheckinRepository:
 
     
     def get_checkin_by_id(self, checkin_id):
-        return self.session.query(Checkin).filter(Checkin.id == checkin_id).all()
+        return self.session.query(Checkin).filter(Checkin.id == checkin_id).first()
 
     def get_checkin_by_group_id(self, group_id):
         return self.session.query(Checkin).filter(Checkin.group_id == group_id).all()

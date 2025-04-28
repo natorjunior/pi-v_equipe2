@@ -30,5 +30,26 @@ services:
       timeout: 5s
       retries: 5
 
+  minio:
+    image: minio/minio:latest
+    container_name: my-minio
+    restart: always
+    ports:
+      - "7042:9000"
+    environment:
+      MINIO_ACCESS_KEY: chavedeacesso
+      MINIO_SECRET_KEY: supersecretchave
+    command: server /data
+    volumes:
+      - minio_data:/data
+    networks:
+      - pi-network
+
 volumes:
   mysql_data:
+  minio_data:
+    driver: local
+
+networks:
+  pi-network:
+    driver: bridge
