@@ -58,7 +58,7 @@ class UserService:
         return get_user_data_instance(updated_user)
 
     def update_user_avatar(self, user_id, avatar: UploadFile):
-        avatar_url = "DEFAULT_AVATAR_URL"
+        avatar_url = "DEFAULT_AVATAR.jpeg"
         if avatar:
             avatar_url = upload_file_to_minio(avatar, "user-avatars")
         updated_user = self.user_repository.set_user_avatar(user_id, avatar_url)

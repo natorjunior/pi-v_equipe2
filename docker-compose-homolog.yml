@@ -9,6 +9,8 @@ services:
       - ./backend/environments/.env
     depends_on:
       - database
+    networks:
+      - pi-network
 
   database:
     image: mysql/mysql-server:latest
@@ -29,6 +31,29 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - pi-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: my-minio
+    restart: always
+    ports:
+      - "7041:9000"
+    environment:
+      MINIO_ACCESS_KEY: chavedeacesso
+      MINIO_SECRET_KEY: supersecretchave
+    command: server /data
+    volumes:
+      - minio_data:/data
+    networks:
+      - pi-network
 
 volumes:
   mysql_data:
+  minio_data:
+    driver: local
+
+networks:
+  pi-network:
+    driver: bridge
