@@ -36,7 +36,12 @@ jobs:
 
             # Desce qualquer instância atual, ignora erros
             docker-compose -f docker-compose-homolog.yml down --remove-orphans || true
+            
+            # Garante que está na branch develop
+            git fetch
+            git checkout develop
             git pull
+            
             # Limpa imagens não usadas
             docker image prune -f || true
 
