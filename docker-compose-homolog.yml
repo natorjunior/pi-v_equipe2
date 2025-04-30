@@ -43,6 +43,7 @@ services:
     environment:
       MINIO_ACCESS_KEY: chavedeacesso
       MINIO_SECRET_KEY: supersecretchave
+      MINIO_DOMAIN: minio.meudominio.com  # Define o domínio padrão
     command: server /data
     volumes:
       - minio_data:/data
