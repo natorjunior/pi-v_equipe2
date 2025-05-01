@@ -40,11 +40,15 @@ services:
     restart: always
     ports:
       - "7041:9000"
+      - "7042:9001"   # Console (UI)
     environment:
       MINIO_ACCESS_KEY: chavedeacesso
       MINIO_SECRET_KEY: supersecretchave
       MINIO_DOMAIN: minio.meudominio.com  # Define o domínio padrão
-    command: server /data --address ":9000"
+    command: >
+      server /data
+      --address ":9000"
+      --console-address ":9001"
     volumes:
       - minio_data:/data
     networks:
