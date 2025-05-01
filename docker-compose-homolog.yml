@@ -44,7 +44,7 @@ services:
       MINIO_ACCESS_KEY: chavedeacesso
       MINIO_SECRET_KEY: supersecretchave
       MINIO_DOMAIN: minio.meudominio.com  # Define o domínio padrão
-    command: server /data
+    command: server /data --address ":9000"
     volumes:
       - minio_data:/data
     networks:
