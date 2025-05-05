@@ -7,7 +7,7 @@ from app.src.domain.dto.checkin_dto import CheckinCreate, CheckinUpdate
 from app.src.infra.database.database import get_session
 from app.src.infra.security.jwt_service import jwt_auth
 
-router = APIRouter(prefix="/check-in", tags=["Check-ins"])
+router = APIRouter(prefix="/check-in")
 
 
 @router.get("/user")
