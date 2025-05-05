@@ -44,7 +44,7 @@ class UserService:
             password_hash=password_hash,
             motivation=new_user.motivation,
             genres=json.dumps(new_user.genres),
-            avatar="DEFAULT_AVATAR_URL"
+            avatar="default_avatar.jpeg"
         )
 
     def update_user(self, user_id, user_changes: UserUpdate):
@@ -58,7 +58,7 @@ class UserService:
         return get_user_data_instance(updated_user)
 
     def update_user_avatar(self, user_id, avatar: UploadFile):
-        avatar_url = "DEFAULT_AVATAR.jpeg"
+        avatar_url = "default_avatar.jpeg"
         if avatar:
             avatar_url = upload_file_to_minio(avatar, "user-avatars")
         updated_user = self.user_repository.set_user_avatar(user_id, avatar_url)

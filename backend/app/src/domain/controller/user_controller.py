@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import APIRouter, Depends, UploadFile
 from fastapi.params import File, Form
 from sqlalchemy.orm import Session
@@ -28,7 +30,7 @@ def update_user_by_id(user_changes: UserUpdate,
 @router.put("/avatar")
 def update_user_avatar(user_id = Depends(jwt_auth),
                        session: Session = Depends(get_session),
-                       avatar: UploadFile = File(None)):
+                       avatar: Optional[UploadFile] = File(None)):
     return UserService(session).update_user_avatar(user_id, avatar)
 
 @router.delete("")
