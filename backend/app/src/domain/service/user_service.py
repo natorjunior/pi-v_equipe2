@@ -17,7 +17,6 @@ class UserService:
         self.user_repository = UserRepository(session)
         self.encryption_service = EncryptionService()
 
-
     def get_user_by_id(self, user_id):
         user = self.user_repository.get_user_by_id(user_id)
         if not user:
