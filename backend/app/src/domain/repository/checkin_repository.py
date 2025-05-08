@@ -2,6 +2,8 @@ from sqlalchemy.orm import Session
 
 from app.src.domain.dto.checkin_dto import CheckinUpdate
 from app.src.domain.model.checkin import Checkin
+from app.src.domain.model.user import User
+from sqlalchemy import func
 
 
 class CheckinRepository:
@@ -56,3 +58,17 @@ class CheckinRepository:
         self.session.delete(checkin)
         self.session.commit()
         return True
+    
+    def get_ranking_by_group_id(self, group_id: int):
+        return (
+            self.session.query(
+                Checkin.user_id,
+                func.count(Checkin.id).label("checkin_count"),
+                User.name
+            )
+            .join(User, User.id == Checkin.user_id)
+            .filter(Checkin.group_id == group_id)
+            .group_by(Checkin.user_id, User.name)
+            .order_by(func.count(Checkin.id).desc())
+            .all()
+        )

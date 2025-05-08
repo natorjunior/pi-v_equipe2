@@ -41,3 +41,9 @@ def delete_checkin_by_id(checkin_id: int,
                          user_id:int = Depends(jwt_auth),
                          session: Session = Depends(get_session)):
     return CheckinService(session).delete_checkin_by_id(user_id, checkin_id)
+
+@router.get("/group/{group_id}/ranking")
+def get_group_ranking(group_id: int,
+                      user_id: int = Depends(jwt_auth),
+                      session: Session = Depends(get_session)):
+    return CheckinService(session).get_group_ranking(user_id, group_id)

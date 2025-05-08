@@ -103,3 +103,35 @@ class CheckinService:
             )
 
         return self.checkin_repository.delete_checkin(checkin_id)
+    
+    def get_group_ranking(self, user_id: int, group_id: int):
+        group = self.checkin_repository.get_ranking_by_group_id(group_id)
+        
+        if not group:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                details="Group not found"
+            )
+            
+        group_participant = self.group_service.get_group_participant_by_user_id_and_group_id(user_id, group_id)
+        
+        if not group_participant:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User is not part of this group"
+            )
+            
+        ranking = self.checkin_repository.get_ranking_by_group_id(group_id)
+        
+        ranking_with_positions = []
+        
+        for index, row in enumerate(ranking, start=1):
+            user = self.user_service.get_user_by_id(row.user_id)
+             
+            ranking_with_positions.append({
+                "position": index,
+                "user": user,
+                "checkin_count": row.checkin_count
+            })
+            
+        return ranking_with_positions
