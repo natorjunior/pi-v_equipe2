@@ -45,3 +45,16 @@ CREATE TABLE group_participant (
     FOREIGN KEY (group_id) REFERENCES `group`(id),
     FOREIGN KEY (user_id) REFERENCES user(id)
 );
+
+CREATE TABLE checkin (
+    id SERIAL PRIMARY KEY,
+    group_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    photo TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_group FOREIGN KEY (group_id) REFERENCES "group"(id),
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES "user"(id)
+);

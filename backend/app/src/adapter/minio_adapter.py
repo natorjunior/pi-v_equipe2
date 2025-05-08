@@ -24,10 +24,9 @@ def get_file_from_minio(bucket_name: str, file_name: str):
         url = minio_client.presigned_get_object(bucket_name, file_name, expires=timedelta(hours=24))
         return url
     except minio.error.S3Error as e:
-        print(e)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User image not found"
+            detail="Image not found"
         )
 
 

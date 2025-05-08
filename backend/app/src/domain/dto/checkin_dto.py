@@ -1,3 +1,5 @@
+from fastapi import Form
+
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
@@ -8,7 +10,7 @@ from app.src.domain.model.checkin import Checkin
 
 
 def get_checkin_data_instance(checkin:Checkin, user:UserData):
-    photo = get_file_from_minio(bucket_name="checkin-photo", file_name=checkin.photo)
+    photo = get_file_from_minio(bucket_name="checkin-photos", file_name=checkin.photo)
     return CheckinData(
         id = checkin.id,
         group_id=checkin.group_id,
@@ -24,6 +26,19 @@ class CheckinCreate(BaseModel):
     group_id: int
     title: str
     description: Optional[str] = None
+
+    @classmethod
+    def as_form(
+        cls,
+        group_id: int = Form(...),
+        title: str = Form(...),
+        description: Optional[str] = Form(None),
+    ):
+        return cls(
+            group_id=group_id,
+            title=title,
+            description=description,
+        )
 
 
 class CheckinUpdate(BaseModel):

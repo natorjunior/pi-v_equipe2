@@ -22,11 +22,11 @@ def get_checkins_by_group(group_id: int,
     return CheckinService(session).get_checkins_by_group_id(user_id, group_id)
 
 @router.post("")
-def create_checkin(checkin_data: CheckinCreate,
+def create_checkin(checkin_data: CheckinCreate = Depends(CheckinCreate.as_form),
                    photo: Optional[UploadFile] = File(None),
                    user_id: int = Depends(jwt_auth),
                    session: Session = Depends(get_session)):
-    return CheckinService(session).create_checkin(user_id, checkin_data=checkin_data, photo=photo)
+    return CheckinService(session).create_checkin(user_id, checkin_data=checkin_data, checkin_photo=photo)
 
 @router.put("/{checkin_id}")
 def update_checkin_by_id(checkin_changes: CheckinUpdate,

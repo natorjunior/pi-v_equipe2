@@ -64,7 +64,7 @@ class GroupService:
     def create_group(self,user_id:int, new_group:NewGroup):
         if self.group_repository.get_group_by_alias(new_group.group_alias):
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail="There is already a group with this alias"
             )
 

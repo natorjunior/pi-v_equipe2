@@ -5,10 +5,9 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from app.src.adapter.minio_adapter import upload_file_to_minio
-from app.src.domain.dto.user_dto import get_user_data_instance, NewUser, UserUpdate
+from app.src.domain.dto.user_dto import get_user_data_instance, NewUser, UserUpdate, UserUpdatePassword
 from app.src.domain.repository.user_repository import UserRepository
 from app.src.infra.security.encryption_service import EncryptionService
-from environments.constants import MINIO_ENDPOINT
 
 
 class UserService:
@@ -33,7 +32,7 @@ class UserService:
     def create_user(self, new_user:NewUser):
         if self.get_user_by_email(new_user.email):
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail="There is already a user with this email"
             )
 
@@ -54,8 +53,30 @@ class UserService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
+        user_changes = json.dumps(user_changes.genres)
         updated_user = self.user_repository.update_user(user_id, user_changes)
         return get_user_data_instance(updated_user)
+
+    def update_user_password(self, user_id, user_changes: UserUpdatePassword):
+        user = self.user_repository.get_user_by_id(user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        if not self.encryption_service.verify_password:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Wrong password"
+            )
+        if user_changes.new_password != user_changes.new_password_confirmation:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="The passwords are not the same"
+            )
+
+        password_hash = self.encryption_service.generate_hash(user_changes.new_password)
+        self.user_repository.update_user_password(user_id, password_hash)
 
     def update_user_avatar(self, user_id, avatar: UploadFile):
         avatar_url = "default_avatar.jpeg"

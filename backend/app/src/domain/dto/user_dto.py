@@ -27,6 +27,13 @@ class NewUser(BaseModel):
 class UserUpdate(BaseModel):
     name: str = None
     email: str = None
+    motivation:str = None
+    genres: List[str] = None
+
+class UserUpdatePassword(BaseModel):
+    old_password: str
+    new_password: str
+    new_password_confirmation: str
 
 class UserData(BaseModel):
     name: str

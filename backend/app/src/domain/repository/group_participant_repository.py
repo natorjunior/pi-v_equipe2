@@ -16,8 +16,8 @@ class GroupParticipantRepository:
 
     def get_by_user_id_and_group_by_id(self, user_id:int, group_id:int):
         return (self.session.query(GroupParticipant)
-                .filter(user_id=user_id,
-                        group_id=group_id)
+                .filter(GroupParticipant.user_id==user_id,
+                        GroupParticipant.group_id==group_id)
                 .all())
 
     def add_participant(self, user_id: int, group_id: int):
