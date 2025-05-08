@@ -62,7 +62,12 @@ jobs:
               -p ${{ secrets.SSH_PORT }} \
               ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
             cd /root/SAL_APP/pi-v_equipe2
-
+            
+            # Garante que está na branch develop
+            git fetch
+            git checkout main
+            git pull
+            
             # Para containers orfãos e stack atual
             docker-compose -f docker-compose-prod.yml down --remove-orphans || true
 
