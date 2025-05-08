@@ -2,21 +2,27 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from starlette import status
 
-from app.src.domain.dto.group_wrapper import GroupWrapper
-from app.src.domain.dto.new_group import NewGroup
+from app.src.domain.dto.group_dto import GroupWrapper, NewGroup
 from app.src.domain.repository.group_participant_repository import GroupParticipantRepository
 from app.src.domain.repository.group_repository import GroupRepository
+from app.src.domain.service.user_service import UserService
 
 
 class GroupService:
 
     def __init__(self, session:Session):
-        self.group_repository = GroupRepository(session)
         self.group_participant_repository = GroupParticipantRepository(session)
+        self.group_repository = GroupRepository(session)
+        self.user_service = UserService(session)
 
+
+    def get_group_by_id(self, group_id):
+        return self.group_repository.get_group_by_id(group_id)
+
+    def get_group_participant_by_user_id_and_group_id(self, user_id, group_id):
+        return self.group_participant_repository.get_by_user_id_and_group_by_id(user_id, group_id)
 
     def get_group_by_user_id(self, user_id):
-
         group_ids = []
         group_wrapper_list =[]
         group_participant_map = {}
@@ -30,16 +36,27 @@ class GroupService:
         groups = self.group_repository.get_by_multiple_id(group_ids)
 
         for group in groups:
+            member_list = []
+
+            created_by = self.user_service.get_user_by_id(group.created_by)
+
             participant = group_participant_map.get(group.id)
+
+            group_participants = self.group_participant_repository.get_all_by_group_id(group.id)
+
+            for participant in group_participants:
+                user = self.user_service.get_user_by_id(participant.user_id)
+                member_list.append(user)
 
             group_wrapper_list.append(
                 GroupWrapper(
                     id=group.id,
                     group_name=group.group_name,
                     description=group.description,
-                    created_by=group.created_by,
+                    created_by=created_by.name,
                     created_at=group.created_at,
-                    entry_date=participant.entry_date
+                    entry_date=participant.entry_date,
+                    members=member_list
                 )
             )
         return group_wrapper_list

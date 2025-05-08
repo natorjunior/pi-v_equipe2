@@ -1,0 +1,64 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - 7040:8080
+    env_file:
+      - ./backend/environments/.env
+    depends_on:
+      - database
+    networks:
+      - pi-network
+
+  database:
+    image: mysql/mysql-server:latest
+    container_name: mysql-sal-homolog
+    restart: always
+    ports:
+      - "3407:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_DATABASE: run2learn_app
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: ForaTemer0
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pi-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: my-minio
+    restart: always
+    ports:
+      - "7041:9000"
+      - "7042:9001"   # Console (UI)
+    environment:
+      MINIO_ACCESS_KEY: chavedeacesso
+      MINIO_SECRET_KEY: supersecretchave
+      MINIO_DOMAIN: minio.meudominio.com  # Define o domínio padrão
+    command: >
+      server /data
+      --address ":9000"
+      --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - pi-network
+
+volumes:
+  mysql_data:
+  minio_data:
+    driver: local
+
+networks:
+  pi-network:
+    driver: bridge

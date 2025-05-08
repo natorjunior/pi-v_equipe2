@@ -26,22 +26,33 @@ jobs:
         if: github.ref == 'refs/heads/develop'
         run: |
           ssh -o StrictHostKeyChecking=no \
+              -o BatchMode=yes \
+              -tt \
               -p ${{ secrets.SSH_PORT }} \
               ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            set -e
+
             cd /root/SAL_APP/pi-v_equipe2
 
-            # Para containers orfãos e stack atual
+            # Desce qualquer instância atual, ignora erros
             docker-compose -f docker-compose-homolog.yml down --remove-orphans || true
-
+            
+            # Garante que está na branch develop
+            git fetch
+            git checkout develop
+            git pull
+            
             # Limpa imagens não usadas
             #docker image prune -f || true
 
-            # Puxa as novas imagens
+            # Puxa e sobe o stack
             docker-compose -f docker-compose-homolog.yml pull
+            docker-compose -f docker-compose-homolog.yml up -d --build
 
-            # Sobe o stack em background
-            docker-compose -f docker-compose-homolog.yml up -d
+            # garante retorno zero
+            exit 0
           EOF
+
 
       # 4) Deploy em produção (main)
       - name: Deploy Prod (main)

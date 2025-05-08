@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.src.domain.model.group_member import GroupParticipant
+from app.src.domain.model.group_participant import GroupParticipant
 
 
 class GroupParticipantRepository:
@@ -14,6 +14,11 @@ class GroupParticipantRepository:
     def get_all_by_group_id(self, group_id):
         return self.session.query(GroupParticipant).filter_by(group_id=group_id).all()
 
+    def get_by_user_id_and_group_by_id(self, user_id:int, group_id:int):
+        return (self.session.query(GroupParticipant)
+                .filter(user_id=user_id,
+                        group_id=group_id)
+                .all())
 
     def add_participant(self, user_id: int, group_id: int):
         try:
