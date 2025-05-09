@@ -56,13 +56,13 @@ class CheckinService:
         if checkin_photo:
             checkin_photo_url = upload_file_to_minio(checkin_photo, bucket_name="checkin-photos")
 
-        checkin = self.checkin_repository.create_checkin(
+        checkin = [self.checkin_repository.create_checkin(
             group_id=checkin_data.group_id,
             user_id=user_id,
             title=checkin_data.title,
             description=checkin_data.description,
             photo=checkin_photo_url
-        )
+        )]
 
         return self.__return_checkin_instances(checkin)
 

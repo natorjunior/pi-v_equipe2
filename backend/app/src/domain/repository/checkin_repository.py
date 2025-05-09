@@ -35,8 +35,6 @@ class CheckinRepository:
 
     def update_checkin(self, checkin_changes: CheckinUpdate, photo):
         checkin = self.session.query(Checkin).filter(Checkin.id == checkin_changes.checkin_id).first()
-        if not checkin:
-            return None
 
         if photo:
             checkin.photo = photo
@@ -53,8 +51,6 @@ class CheckinRepository:
 
     def delete_checkin(self, checkin_id):
         checkin = self.session.query(Checkin).filter(Checkin.id == checkin_id).first()
-        if not checkin:
-            return False
         self.session.delete(checkin)
         self.session.commit()
         return True

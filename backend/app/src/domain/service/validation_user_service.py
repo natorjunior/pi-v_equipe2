@@ -26,7 +26,7 @@ class ValidationUser:
     def __init__(self, user_repository: UserRepository):
         self.user_repository = user_repository
 
-    def email_validator(self, user_email: str) -> str:
+    def email_validator(self, user_email: str):
         try:
             email_info = validate_email(user_email)
             normalized_email = email_info.email
@@ -34,18 +34,15 @@ class ValidationUser:
             if self.user_repository.get_user_by_email(normalized_email):
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="There is already a user with this email")
 
-            return normalized_email
-
         except EmailNotValidError:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email")
 
     def password_validator(self, user_password_hash: str) -> dict:
         pwd = user_password_hash
+        pwd_len = len(pwd)
 
         if pwd in commom_patterns or pwd.lower in commom_patterns:
-            return {"Message": "Password to basic"}
-
-        pwd_len = len(pwd)
+            return {"Success":False, "Message": "Password to basic"}
 
         if pwd_len < 5 or pwd_len > 30:
             return {"Success":False, "Message": "Password must be between 5 and 30 characters"}
