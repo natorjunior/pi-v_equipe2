@@ -64,7 +64,7 @@ class GroupService:
     def create_group(self,user_id:int, new_group:NewGroup):
         if self.group_repository.get_group_by_alias(new_group.group_alias):
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail="There is already a group with this alias"
             )
 
@@ -97,8 +97,25 @@ class GroupService:
 
     def join_group(self, user_id, group_alias):
         group = self.group_repository.get_group_by_alias(group_alias)
+        if not group:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Group not found"
+            )
         self.group_participant_repository.add_participant(user_id, group.id)
 
     def leave_group(self, user_id, group_alias):
         group = self.group_repository.get_group_by_alias(group_alias)
+        if not group:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Group not found"
+            )
+
+        group_participant = self.group_participant_repository.get_by_user_id_and_group_by_id(user_id, group.id)
+        if not group_participant:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User is not part of this group"
+            )
         self.group_participant_repository.remove_participant(user_id, group.id)

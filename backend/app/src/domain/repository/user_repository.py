@@ -42,16 +42,26 @@ class UserRepository:
 
     def update_user(self, user_id, user_changes):
         user = self.session.query(User).filter(User.id == user_id).first()
-        if not user:
-            return None
+
         if user_changes.name:
             user.name = user_changes.name
         if user_changes.email:
             user.email = user_changes.email
+        if user_changes.motivation:
+            user.motivation = user_changes.motivation
+        if user_changes.genres:
+            user.genres = user_changes.genres
 
         self.session.commit()
         self.session.refresh(user)
         return user
+
+    def update_user_password(self, user_id, new_password_hash):
+        user = self.session.query(User).filter(User.id == user_id).first()
+        user.password_hash = new_password_hash
+        self.session.commit()
+
+        return True
 
     def set_user_avatar(self, user_id, avatar):
         user = self.session.query(User).filter(User.id == user_id).first()
@@ -62,8 +72,6 @@ class UserRepository:
 
     def delete_user(self, user_id):
         user = self.session.query(User).filter(User.id == user_id).first()
-        if not user:
-            return False
         self.session.delete(user)
         self.session.commit()
         return True
