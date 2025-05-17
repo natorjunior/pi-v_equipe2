@@ -20,13 +20,13 @@ class AuthenticationService:
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Invalid credentials"
+                detail="Credenciais inválidas"
             )
 
         if not self.encryption_service.verify_password(login_data.password, user.password_hash):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Invalid credentials"
+                detail="Credenciais inválidas"
             )
         return self.jwt_service.generate_jwt(user_id=user.id)
 
@@ -35,12 +35,12 @@ class AuthenticationService:
         if not user_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid or expired token"
+                detail="Token expirado ou inválido"
             )
         user = self.user_service.get_user_by_id(user_id)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
+                detail="Usuário não encontrado"
             )
         return user

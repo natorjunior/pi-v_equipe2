@@ -32,10 +32,16 @@ class ValidationUser:
             normalized_email = email_info.email
 
             if self.user_repository.get_user_by_email(normalized_email):
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="There is already a user with this email")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Já existe um usuário com esse email"
+                )
 
         except EmailNotValidError:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email inválido"
+            )
 
     def password_validator(self, user_password_hash: str) -> dict:
         pwd = user_password_hash
@@ -45,15 +51,15 @@ class ValidationUser:
             return {"Success":False, "Message": "Password to basic"}
 
         if pwd_len < 5 or pwd_len > 30:
-            return {"Success":False, "Message": "Password must be between 5 and 30 characters"}
+            return {"Success":False, "Message": "A senha deve ter entre 5 e 30 caracteres"}
 
         if not re.search(r"[A-Z]", pwd):
-            return {"Success":False, "Message": "Password must contain at least one capital letter"}
+            return {"Success":False, "Message": "A senha deve conter ao menos uma letra maiúscula"}
 
         if not re.search(r"[a-z]", pwd):
-            return {"Success":False, "Message": "Password must contain at least one lowercase letter"}
+            return {"Success":False, "Message": "A senha deve conter ao menos uma letra minúscula"}
 
         if not re.search(r"[0-9]", pwd):
-            return {"Success":False, "Message": "Password must contain at least one number"}
+            return {"Success":False, "Message": "A senha deve conter ao menos um número"}
 
-        return {"Success": True, "Message": "Valid password"}
+        return {"Success": True, "Message": "Senha válida"}
