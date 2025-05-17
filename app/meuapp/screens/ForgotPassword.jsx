@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+//Esperando o backend
+import { recoverPassword } from "../service/authService";
+
+import { useState } from "react";
 import {
   Alert,
   StyleSheet,
@@ -12,6 +15,7 @@ import { Feather } from "@expo/vector-icons";
 import { useTheme } from "../service/themeService";
 import Logo from "../components/Logo";
 import InputField from "../components/InputField";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ForgotPassword({ navigation }) {
   const { theme } = useTheme();
@@ -41,6 +45,7 @@ export default function ForgotPassword({ navigation }) {
   };
 
   return (
+    <SafeAreaView style={{ flex: 1 }}>
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <KeyboardAvoidingView
         style={styles.container}
@@ -78,6 +83,7 @@ export default function ForgotPassword({ navigation }) {
         </View>
       </KeyboardAvoidingView>
     </View>
+    </SafeAreaView>
   );
 }
 

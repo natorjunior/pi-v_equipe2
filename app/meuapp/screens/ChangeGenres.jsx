@@ -1,12 +1,14 @@
-import { useState } from "react";
+//Inoperante ainda
+
+import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView } from "react-native";
 import { useTheme } from "../service/themeService";
 import { Checkbox } from "expo-checkbox";
 
-export default function Question3({ navigation, route }) {
+
+export default function ChangeGenres({ navigation, route }) {
     const { theme } = useTheme();
     const [selectedGenres, setSelectedGenres] = useState({});
-    const { motivation } = route.params;
 
     const toggleGenre = (genre) => {
         setSelectedGenres((prev) => ({
@@ -15,7 +17,7 @@ export default function Question3({ navigation, route }) {
         }));
     };
 
-    const literaryGenres = [
+    const genres = [
         "Fantasia",
         "Ficção científica",
         "Romance",
@@ -30,10 +32,7 @@ export default function Question3({ navigation, route }) {
         "Poesia",
         "Teatro",
         "Ensaio",
-        "Autobiografia"
-    ];
-
-    const academicGenres = [
+        "Autobiografia",
         "Matematica",
         "História",
         "Geografia",
@@ -50,49 +49,42 @@ export default function Question3({ navigation, route }) {
         "Computação",
         "Tecnologia",
         "Direito",
-        "Política"
+        "Política",
     ];
-
-    let genresToShow = [];
-    if (motivation === "Procurar livros") {
-        genresToShow = literaryGenres;
-    } else if (motivation === "Focar nos estudos") {
-        genresToShow = academicGenres;
-    } else {
-        genresToShow = [...literaryGenres, ...academicGenres];
-    }
 
     return (
         <SafeAreaView style={{ flex: 1 }}>
             <View style={[styles.container, { backgroundColor: theme.background }]}>
                 <ScrollView contentContainerStyle={styles.scrollContainer}>
                     <Text style={[styles.text, { color: theme.text }]}>Selecione seus gêneros favoritos:</Text>
-                    {genresToShow.map((genre, index) => (
-                        <TouchableOpacity
-                            key={index}
-                            style={[
-                                styles.button,
-                                { backgroundColor: theme.mode === "dark" ? "#0D0058" : "#fff" },
-                            ]}
-                            onPress={() => toggleGenre(genre)}
-                        >
-                            <View style={styles.buttonContent}>
-                                <Checkbox
-                                    value={selectedGenres[genre] || false}
-                                    onValueChange={() => toggleGenre(genre)}
-                                    color={theme === "dark" ? "#fff" : "#0D0058"}
-                                />
-                                <Text style={[styles.buttonText, { color: theme.mode === "dark" ? "#fff" : "#000" }]}>
-                                    {genre}
-                                </Text>
-                            </View>
-                        </TouchableOpacity>
-                    ))}
+                    <View style={styles.genresContainer}>
+                        {genres.map((genre, index) => (
+                            <TouchableOpacity
+                                key={index}
+                                style={[
+                                    styles.button,
+                                    { backgroundColor: theme.mode === "dark" ? "#0D0058" : "#fff" },
+                                ]}
+                                onPress={() => toggleGenre(genre)}
+                            >
+                                <View style={styles.buttonContent}>
+                                    <Checkbox
+                                        value={selectedGenres[genre] || false}
+                                        onValueChange={() => toggleGenre(genre)}
+                                        color={theme === "dark" ? "#fff" : "#0D0058"}
+                                    />
+                                    <Text style={[styles.buttonText, { color: theme.mode === "dark" ? "#fff" : "#000" }]}>
+                                        {genre}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
                 </ScrollView>
 
                 <TouchableOpacity
                     style={[styles.nextButton, { backgroundColor: theme.mode === "dark" ? "#fff" : "#0D0058" }]}
-                    onPress={() => navigation.navigate("Question4", { ...route.params, selectedGenres: selectedGenres })}
+                    onPress={() => navigation.navigate("EditProfile", { genres: selectedGenres })}
                 >
                     <Text style={[styles.nextButtonText, { color: theme.mode === "dark" ? "#000" : "#fff" }]}>
                         Continuar
@@ -120,8 +112,13 @@ const styles = StyleSheet.create({
         paddingTop: 1,
         paddingBottom: 1,
     },
+    genresContainer: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        justifyContent: "center",
+    },
     button: {
-        width: 360,
+        width: 160,
         height: 110,
         borderRadius: 10,
         alignItems: "center",
