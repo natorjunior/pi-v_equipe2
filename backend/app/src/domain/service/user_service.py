@@ -24,7 +24,7 @@ class UserService:
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
+                detail="Usuário não encontado"
             )
         return get_user_data_instance(user)
 
@@ -55,7 +55,8 @@ class UserService:
         user = self.user_repository.get_user_by_id(user_id)
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuário não encontado"
             )
         user_changes = json.dumps(user_changes.genres)
         updated_user = self.user_repository.update_user(user_id, user_changes)
@@ -66,24 +67,18 @@ class UserService:
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
+                detail="Email ou senha incorretos"
             )
         if not self.encryption_service.verify_password:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Wrong password"
+                detail="Email ou senha incorretos"
             )
         valid_password = self.validation.password_validator(user_changes.new_password)
         if not valid_password["Success"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=valid_password["Message"],
-            )
-
-        if user_changes.new_password != user_changes.new_password_confirmation:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="The passwords are not the same"
             )
 
         password_hash = self.encryption_service.generate_hash(user_changes.new_password)
@@ -100,6 +95,7 @@ class UserService:
         user = self.user_repository.get_user_by_id(user_id)
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuário não encontado"
             )
         return self.user_repository.delete_user(user_id)

@@ -21,6 +21,12 @@ def get_checkins_by_group(group_id: int,
                           session: Session = Depends(get_session)):
     return CheckinService(session).get_checkins_by_group_id(user_id, group_id)
 
+@router.get("/feed/{page}")
+def get_feed_checkins_by_user_id(page:int,
+                                 user_id:int = Depends(jwt_auth),
+                                 session: Session = Depends(get_session)):
+    return CheckinService(session).get_feed_checkins_by_user_id(user_id, page)
+
 @router.post("")
 def create_checkin(checkin_data: CheckinCreate = Depends(CheckinCreate.as_form),
                    photo: Optional[UploadFile] = File(None),
