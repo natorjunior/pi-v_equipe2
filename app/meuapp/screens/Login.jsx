@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Alert,
   StyleSheet,
@@ -15,6 +15,7 @@ import { getUser } from "../service/userService";
 import { useTheme } from "../service/themeService";
 import InputField from "../components/InputField";
 import Logo from "../components/Logo";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Login({ navigation }) {
   const { theme } = useTheme();
@@ -58,6 +59,7 @@ export default function Login({ navigation }) {
   };
 
   return (
+    <SafeAreaView style={{ flex: 1 }}>
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <KeyboardAvoidingView
         style={styles.container}
@@ -123,6 +125,7 @@ export default function Login({ navigation }) {
         </View>
       </KeyboardAvoidingView>
     </View>
+    </SafeAreaView>
   );
 }
 

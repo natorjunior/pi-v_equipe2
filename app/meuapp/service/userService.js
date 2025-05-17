@@ -1,6 +1,7 @@
 import axios from "axios";
+import * as SecureStore from "expo-secure-store";
 
-const API_URL = "http://192.168.88.56:8080/user";
+const API_URL = "https://api.homolog.sal.acilab.com.br/user";
 
 export const createUser = async (newUser) => {
   try {
@@ -13,8 +14,9 @@ export const createUser = async (newUser) => {
   }
 };
 
-export const getUser = async (token) => {
+export const getUser = async () => {
   try {
+    const token = await SecureStore.getItemAsync("token");
     if (!token) throw new Error("Token de autenticação não fornecido.");
 
     const response = await axios.get(`${API_URL}`, {
@@ -24,7 +26,6 @@ export const getUser = async (token) => {
       },
     });
 
-    console.log("Dados do usuário recebidos:", response.data);
     return response.data;
   } catch (error) {
     console.error("Erro ao obter dados do usuário:", error.response?.data || error.message);
@@ -32,9 +33,9 @@ export const getUser = async (token) => {
   }
 };
 
-
-export const updateUser = async (userData, token) => {
+export const updateUser = async (userData) => {
   try {
+    const token = await SecureStore.getItemAsync("token");
     const response = await axios.put(API_URL, userData, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -49,8 +50,9 @@ export const updateUser = async (userData, token) => {
   }
 };
 
-export const deleteUser = async (token) => {
+export const deleteUser = async () => {
   try {
+    const token = await SecureStore.getItemAsync("token");
     if (!token) throw new Error("Token de autenticação não fornecido.");
 
     const response = await axios.delete(API_URL, {
@@ -67,3 +69,32 @@ export const deleteUser = async (token) => {
     throw error;
   }
 };
+
+export const uploadAvatar = async (imageUri) => {
+  try {
+    const token = await SecureStore.getItemAsync("token");
+    const filename = imageUri.split('/').pop();
+    const type = `image/${filename.split('.').pop()}`;
+
+    const formData = new FormData();
+    formData.append('avatar', {
+      uri: imageUri,
+      name: filename,
+      type: type
+    });
+
+    const response = await axios.put(`${API_URL}/avatar`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${token}`
+      },
+      transformRequest: () => formData,
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error("Erro no upload:", error.response?.data || error.message);
+    throw new Error(error.response?.data?.detail || "Falha no upload do avatar");
+  }
+};
+
