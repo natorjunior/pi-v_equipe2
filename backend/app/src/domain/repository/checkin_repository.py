@@ -2,6 +2,9 @@ from sqlalchemy.orm import Session
 
 from app.src.domain.dto.checkin_dto import CheckinUpdate
 from app.src.domain.model.checkin import Checkin
+from app.src.domain.model.group_participant import GroupParticipant
+from app.src.domain.model.user import User
+from sqlalchemy import func, select
 
 
 class CheckinRepository:
@@ -14,7 +17,25 @@ class CheckinRepository:
 
     def get_checkin_by_group_id(self, group_id):
         return self.session.query(Checkin).filter(Checkin.group_id == group_id).all()
-    
+
+    def get_feed_checkins_by_user_id(self, user_id: int, page: int = 1, page_size: int = 20):
+        subquery = (
+            select(GroupParticipant.group_id)
+            .where(GroupParticipant.user_id == user_id)
+            .subquery()
+        )
+
+        checkins = (
+            self.session.query(Checkin)
+            .filter(Checkin.group_id.in_(subquery))
+            .order_by(Checkin.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
+
+        return checkins
+
     def get_checkin_by_user_id(self, user_id):
         return self.session.query(Checkin).filter(Checkin.user_id == user_id).all()
 
@@ -33,8 +54,6 @@ class CheckinRepository:
 
     def update_checkin(self, checkin_changes: CheckinUpdate, photo):
         checkin = self.session.query(Checkin).filter(Checkin.id == checkin_changes.checkin_id).first()
-        if not checkin:
-            return None
 
         if photo:
             checkin.photo = photo
@@ -51,8 +70,20 @@ class CheckinRepository:
 
     def delete_checkin(self, checkin_id):
         checkin = self.session.query(Checkin).filter(Checkin.id == checkin_id).first()
-        if not checkin:
-            return False
         self.session.delete(checkin)
         self.session.commit()
         return True
+    
+    def get_ranking_by_group_id(self, group_id: int):
+        return (
+            self.session.query(
+                Checkin.user_id,
+                func.count(Checkin.id).label("checkin_count"),
+                User.name
+            )
+            .join(User, User.id == Checkin.user_id)
+            .filter(Checkin.group_id == group_id)
+            .group_by(Checkin.user_id, User.name)
+            .order_by(func.count(Checkin.id).desc())
+            .all()
+        )

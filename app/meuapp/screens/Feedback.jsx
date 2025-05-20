@@ -1,3 +1,5 @@
+//Esperando o backend
+
 import { useState } from "react";
 import {
   View,
@@ -7,15 +9,19 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Platform,
 } from "react-native";
 import { useTheme } from "../service/themeService";
 import { useNavigation } from "@react-navigation/native";
-import Top from "../components/Top";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Feedback() {
   const { theme } = useTheme();
   const navigation = useNavigation();
   const [feedback, setFeedback] = useState("");
+  const [sending, setSending] = useState(false);
+  const [feedbacks, setFeedbacks] = useState([]);
 
   const handleSendFeedback = () => {
     if (!feedback.trim()) {
@@ -23,13 +29,21 @@ export default function Feedback() {
       return;
     }
 
-    Alert.alert("Obrigado!", "Seu feedback foi enviado com sucesso!");
+    setSending(true);
+    setFeedbacks([...feedbacks, feedback]);
     setFeedback("");
+    setSending(false);
   };
 
   return (
+    <SafeAreaView style={{ flex: 1 }}>
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Top navigation={navigation} />
+        <View style={[styles.header, { backgroundColor: theme.background }]}>
+            <TouchableOpacity onPress={() => navigation.navigate("Home")} style={styles.backButton}>
+                <Ionicons name="arrow-back" size={24} color={theme.mode === "dark" ? "#fff" : "#000"} />
+            </TouchableOpacity>
+            <Text style={[styles.headerText, { color: theme.text }]}>Feedback</Text>
+        </View>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Text style={[styles.headerText, { color: theme.text }]}>Deixe seu feedback</Text>
         <TextInput
@@ -38,16 +52,19 @@ export default function Feedback() {
           placeholderTextColor={theme.placeholder}
           value={feedback}
           onChangeText={setFeedback}
-          multiline
         />
         <TouchableOpacity
           style={[styles.button, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366" }]}
           onPress={handleSendFeedback}
+          disabled={sending}
         >
-          <Text style={[styles.buttonText, { color: theme.mode === "dark" ? "#000" : "#fff" }]}>Enviar</Text>
+          <Text style={[styles.buttonText, { color: theme.mode === "dark" ? "#000" : "#fff" }]}>
+            {sending ? "Enviando..." : "Enviar"}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
+    </SafeAreaView>
   );
 }
 
@@ -86,4 +103,21 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
+      header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: 15,
+  },
+  backButton: {
+      padding: 10,
+  },
+  headerText: {
+      fontSize: 20,
+      fontWeight: "bold",
+      flex: 1,
+      textAlign: "center",
+      right: 21,
+  },
 });
+

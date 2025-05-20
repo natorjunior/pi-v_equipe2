@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
     View,
     TouchableOpacity,
@@ -6,71 +6,111 @@ import {
     StyleSheet,
     Modal,
     Pressable,
+    SafeAreaView,
+    BackHandler,
 } from "react-native";
 import { useTheme } from "../service/themeService";
-import Bell from "./BellIcon";
+import { Ionicons } from "@expo/vector-icons";
+import { logoutUser } from "../service/authService";
+import { useFocusEffect } from "@react-navigation/native";
 
-const Hamburger = ({ navigation }) => {
+const Hamburger = ({ navigation, inGroup }) => {
     const [menuOpen, setMenuOpen] = useState(false);
     const { theme } = useTheme();
+
+    useFocusEffect(
+        useCallback(() => {
+            const onBackPress = () => {
+                if (menuOpen) {
+                    setMenuOpen(false);
+                    return true;
+                }
+                return false;
+            };
+
+            const subscription = BackHandler.addEventListener(
+                'hardwareBackPress',
+                onBackPress
+            );
+
+            return () => subscription.remove();
+        }, [menuOpen])
+    );
+
+    const handleLogout = async () => {
+        setMenuOpen(false);
+        await logoutUser();
+        navigation.reset({
+            index: 0,
+            routes: [{ name: 'Entrada' }],
+        });
+    };
 
     const handleNavigate = (screen) => {
         if (navigation) {
             setMenuOpen(false);
             navigation.navigate(screen);
-        } else {
-            console.error("Erro: navigation está indefinido!");
-    }
+        }
+    };
+
+    const handleGroupConfigNavigation = () => {
+        if (inGroup) {
+            handleNavigate("GroupConfig");
+        }
     };
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.mode === "dark" ? "#050024" : "#fff"}]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.mode === "dark" ? "#050024" : "#fff" }]}>
             <TouchableOpacity
-            style={styles.hamburgerButton}
-            onPress={() => setMenuOpen(true)}
+                style={styles.hamburgerButton}
+                onPress={() => setMenuOpen(true)}
             >
                 <Text style={[styles.hamburgerIcon, { color: theme.mode === "dark" ? "#fff" : "#000" }]}>☰</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.notifications} onPress={() => handleNavigate("Notifications")}>
-                <Bell style={styles.bell} />
+            <TouchableOpacity
+                style={[
+                    styles.GroupDetails,
+                    !inGroup && { opacity: 0.5 }
+                ]}
+                onPress={handleGroupConfigNavigation}
+                disabled={!inGroup}
+            >
+                <Ionicons name="settings-outline" size={24} color={theme.text} />
             </TouchableOpacity>
 
-        <Modal transparent visible={menuOpen} animationType="fade" onRequestClose={() => setMenuOpen(false)}>
-            <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
-            <View style={[styles.menu, { backgroundColor: theme.mode === "dark" ? "#0D0058" : "#f0f0f0" }]}>
-                <View style={styles.groupSelection}>
-                <Text style={[styles.groupText, { color: theme.text }]}>Seleção de Grupo</Text>
-                </View>
-                <View style={styles.menuButtons}>
-                <TouchableOpacity onPress={() => handleNavigate("CreateGroup")}>
-                    <Text style={[styles.menuItem, { color: theme.text }]}>Criar Grupo</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleNavigate("JoinGroup")}>
-                    <Text style={[styles.menuItem, { color: theme.text }]}>Entrar em um grupo</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleNavigate("Config")}>
-                    <Text style={[styles.menuItem, { color: theme.text }]}>Configurações</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleNavigate("Feedback")}>
-                    <Text style={[styles.menuItem, { color: theme.text }]}>Ajuda e Feedback</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleNavigate("AboutUs")}>
-                    <Text style={[styles.menuItem, { color: theme.text }]}>Sobre nós</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleNavigate("Entrada")}>
-                    {/* loggout */}
-                    <Text style={[styles.menuItem, { color: theme.text }]}>Sair</Text>
-                </TouchableOpacity>
-                </View>
-            </View>
-            </Pressable>
-        </Modal>
-    </View>
+            <Modal transparent visible={menuOpen} animationType="fade" onRequestClose={() => setMenuOpen(false)}>
+                <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
+                    <View style={[styles.menu, { backgroundColor: theme.mode === "dark" ? "#0D0058" : "#f0f0f0" }]}>
+                        <View style={styles.groupSelection}>
+                            <Text style={[styles.groupText, { color: theme.text }]}>Seleção de Grupo</Text>
+                        </View>
+                        <View style={styles.menuButtons}>
+                            <TouchableOpacity onPress={() => handleNavigate("CreateGroup")}>
+                                <Text style={[styles.menuItem, { color: theme.text }]}>Criar Grupo</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => handleNavigate("JoinGroup")}>
+                                <Text style={[styles.menuItem, { color: theme.text }]}>Entrar em um grupo</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => handleNavigate("Config")}>
+                                <Text style={[styles.menuItem, { color: theme.text }]}>Configurações</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => handleNavigate("Feedback")}>
+                                <Text style={[styles.menuItem, { color: theme.text }]}>Ajuda e Feedback</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => handleNavigate("AboutUs")}>
+                                <Text style={[styles.menuItem, { color: theme.text }]}>Sobre nós</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={handleLogout}>
+                                <Text style={[styles.menuItem, { color: theme.text }]}>Sair</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Pressable>
+            </Modal>
+        </SafeAreaView>
     );
 };
-
-
 
 const styles = StyleSheet.create({
     container: {
@@ -94,16 +134,8 @@ const styles = StyleSheet.create({
         fontSize: 24,
         textAlign: "center",
     },
-    notifications: {
+    GroupDetails: {
         padding: 10,
-        left: 10,
-        top: 0,
-    },
-    image: {
-        
-        width: 25,
-        height: 25,
-        resizeMode: "contain",
     },
     overlay: {
         flex: 1,

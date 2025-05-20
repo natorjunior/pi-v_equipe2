@@ -7,7 +7,7 @@ from app.src.domain.dto.checkin_dto import CheckinCreate, CheckinUpdate
 from app.src.infra.database.database import get_session
 from app.src.infra.security.jwt_service import jwt_auth
 
-router = APIRouter(prefix="/check-in", tags=["Check-ins"])
+router = APIRouter(prefix="/check-in")
 
 
 @router.get("/user")
@@ -21,15 +21,21 @@ def get_checkins_by_group(group_id: int,
                           session: Session = Depends(get_session)):
     return CheckinService(session).get_checkins_by_group_id(user_id, group_id)
 
+@router.get("/feed/{page}")
+def get_feed_checkins_by_user_id(page:int,
+                                 user_id:int = Depends(jwt_auth),
+                                 session: Session = Depends(get_session)):
+    return CheckinService(session).get_feed_checkins_by_user_id(user_id, page)
+
 @router.post("")
-def create_checkin(checkin_data: CheckinCreate,
+def create_checkin(checkin_data: CheckinCreate = Depends(CheckinCreate.as_form),
                    photo: Optional[UploadFile] = File(None),
                    user_id: int = Depends(jwt_auth),
                    session: Session = Depends(get_session)):
-    return CheckinService(session).create_checkin(user_id, checkin_data=checkin_data, photo=photo)
+    return CheckinService(session).create_checkin(user_id, checkin_data=checkin_data, checkin_photo=photo)
 
-@router.put("/{checkin_id}")
-def update_checkin_by_id(checkin_changes: CheckinUpdate,
+@router.put("")
+def update_checkin_by_id(checkin_changes: CheckinUpdate = Depends(CheckinUpdate.as_form),
                          checkin_photo: Optional[UploadFile] = File(None),
                          user_id: int = Depends(jwt_auth),
                          session: Session = Depends(get_session)):
@@ -41,3 +47,9 @@ def delete_checkin_by_id(checkin_id: int,
                          user_id:int = Depends(jwt_auth),
                          session: Session = Depends(get_session)):
     return CheckinService(session).delete_checkin_by_id(user_id, checkin_id)
+
+@router.get("/group/{group_id}/ranking")
+def get_group_ranking(group_id: int,
+                      user_id: int = Depends(jwt_auth),
+                      session: Session = Depends(get_session)):
+    return CheckinService(session).get_group_ranking(user_id, group_id)

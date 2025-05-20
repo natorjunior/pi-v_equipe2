@@ -16,8 +16,8 @@ class GroupParticipantRepository:
 
     def get_by_user_id_and_group_by_id(self, user_id:int, group_id:int):
         return (self.session.query(GroupParticipant)
-                .filter(user_id=user_id,
-                        group_id=group_id)
+                .filter(GroupParticipant.user_id==user_id,
+                        GroupParticipant.group_id==group_id)
                 .all())
 
     def add_participant(self, user_id: int, group_id: int):
@@ -36,18 +36,12 @@ class GroupParticipantRepository:
                                 GroupParticipant.group_id == group_id)
                         .first())
 
-        if not participant:
-            return False
-
         self.session.delete(participant)
         self.session.commit()
         return True
 
     def remove_all_participants(self, group_id):
         participants = self.get_all_by_group_id(group_id)
-        if not participants:
-            return False
-
         for participant in participants:
             self.session.delete(participant)
 

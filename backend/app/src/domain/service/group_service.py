@@ -64,8 +64,8 @@ class GroupService:
     def create_group(self,user_id:int, new_group:NewGroup):
         if self.group_repository.get_group_by_alias(new_group.group_alias):
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="There is already a group with this alias"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Já existe um grupo com esse apelido"
             )
 
         group = self.group_repository.create_group(
@@ -84,21 +84,44 @@ class GroupService:
         if not group:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Group not found"
+                detail="Grupo não encontrado"
             )
 
         if group.created_by != user_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Only owners can delete groups"
+                detail="Apenas o dono pode deletar o grupo"
             )
         self.group_participant_repository.remove_all_participants(group_id)
         return self.group_repository.delete_group(group_id)
 
     def join_group(self, user_id, group_alias):
         group = self.group_repository.get_group_by_alias(group_alias)
+        if not group:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Grupo não encontrado"
+            )
+        group_participant = self.group_participant_repository.get_by_user_id_and_group_by_id(user_id, group.id)
+        if not group_participant:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Você já faz parte deste grupo"
+            )
         self.group_participant_repository.add_participant(user_id, group.id)
 
     def leave_group(self, user_id, group_alias):
         group = self.group_repository.get_group_by_alias(group_alias)
+        if not group:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Grupo não encontrado"
+            )
+
+        group_participant = self.group_participant_repository.get_by_user_id_and_group_by_id(user_id, group.id)
+        if not group_participant:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Você não faz parte deste grupo"
+            )
         self.group_participant_repository.remove_participant(user_id, group.id)

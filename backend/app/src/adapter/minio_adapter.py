@@ -2,7 +2,6 @@ import string
 import time
 import random
 from datetime import timedelta
-
 import minio
 from fastapi import UploadFile, HTTPException
 from minio import Minio
@@ -27,7 +26,7 @@ def get_file_from_minio(bucket_name: str, file_name: str):
         print(e)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User image not found"
+            detail="Image not found"
         )
 
 

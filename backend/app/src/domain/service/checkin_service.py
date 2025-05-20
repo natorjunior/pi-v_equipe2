@@ -35,7 +35,7 @@ class CheckinService:
         if not group:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Group not found"
+                detail="Grupo não encontrado"
             )
 
         group_participant = self.group_service.get_group_participant_by_user_id_and_group_id(user_id, group_id)
@@ -43,26 +43,30 @@ class CheckinService:
         if not group_participant:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User is not part of this group"
+                detail="Você não faz parte deste grupo"
             )
 
         checkins = self.checkin_repository.get_checkin_by_group_id(group_id)
 
         return self.__return_checkin_instances(checkins)
 
+    def get_feed_checkins_by_user_id(self, user_id: int, page: int):
+        checkins = self.checkin_repository.get_feed_checkins_by_user_id(user_id, page)
+        return self.__return_checkin_instances(checkins)
+
     def create_checkin(self, user_id, checkin_data: CheckinCreate, checkin_photo: UploadFile = None):
-        checkin_photo_url = "DEFAULT_CHECKIN_PHOTO.jpeg"
+        checkin_photo_url = None
 
         if checkin_photo:
             checkin_photo_url = upload_file_to_minio(checkin_photo, bucket_name="checkin-photos")
 
-        checkin = self.checkin_repository.create_checkin(
+        checkin = [self.checkin_repository.create_checkin(
             group_id=checkin_data.group_id,
             user_id=user_id,
             title=checkin_data.title,
             description=checkin_data.description,
             photo=checkin_photo_url
-        )
+        )]
 
         return self.__return_checkin_instances(checkin)
 
@@ -72,13 +76,13 @@ class CheckinService:
         if not checkin:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Check-in not found"
+                detail="Publicação não encntrada"
             )
 
         if checkin.user_id != user_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Only owners can update check-ins"
+                detail="Apenas o dono pode atualizar a publicação"
             )
 
         checkin_photo_url = None
@@ -93,13 +97,45 @@ class CheckinService:
         if not checkin:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Check-in not found"
+                detail="Publicação não encontrada"
             )
 
         if checkin.user_id != user_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Only owners can delete check-ins"
+                detail="Apenas o dono pode deletar a publicação"
             )
 
         return self.checkin_repository.delete_checkin(checkin_id)
+    
+    def get_group_ranking(self, user_id: int, group_id: int):
+        group = self.checkin_repository.get_ranking_by_group_id(group_id)
+        
+        if not group:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                details="Grupo não encontrado"
+            )
+            
+        group_participant = self.group_service.get_group_participant_by_user_id_and_group_id(user_id, group_id)
+        
+        if not group_participant:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Você não faz parte deste grupo"
+            )
+            
+        ranking = self.checkin_repository.get_ranking_by_group_id(group_id)
+        
+        ranking_with_positions = []
+        
+        for index, row in enumerate(ranking, start=1):
+            user = self.user_service.get_user_by_id(row.user_id)
+             
+            ranking_with_positions.append({
+                "position": index,
+                "user": user,
+                "checkin_count": row.checkin_count
+            })
+            
+        return ranking_with_positions

@@ -34,6 +34,9 @@
       "expo-video",
       "expo-barcode-scanner"
     ],
+    "updates": {
+      "enabled": false
+    },
     "extra": {
       "eas": {
         "projectId": "c54cf135-ecaf-4e95-a237-7ecddf7c7549"

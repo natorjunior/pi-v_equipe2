@@ -40,8 +40,6 @@ class GroupRepository:
 
     def delete_group(self, group_id):
         group = self.session.query(Group).filter(Group.id == group_id).first()
-        if not group:
-            return False
         self.session.delete(group)
         self.session.commit()
         return True

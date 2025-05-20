@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,74 +7,220 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Image,
+  ActivityIndicator
 } from "react-native";
 import { useTheme } from "../service/themeService";
 import { useNavigation } from "@react-navigation/native";
-import Top from "../components/Top";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import * as ImagePicker from "expo-image-picker";
+import { createCheckin } from "../service/checkinService";
+import * as SecureStore from "expo-secure-store";
 
 export default function Publish() {
   const { theme } = useTheme();
   const navigation = useNavigation();
-  const [postText, setPostText] = useState("");
-  const [file, setFile] = useState(null);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [image, setImage] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState(null);
 
-  const handlePublish = () => {
-    if (!postText.trim()) {
-      Alert.alert("Aviso", "Por favor, escreva algo antes de publicar.");
+  const fetchGroupId = useCallback(async () => {
+    const groupId = await SecureStore.getItemAsync("selectedGroupId");
+    if (groupId) {
+      setSelectedGroupId(groupId);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchGroupId();
+  }, [fetchGroupId]);
+
+  const handlePublish = async () => {
+    if (!selectedGroupId) {
+      Alert.alert("Aviso", "Selecione um grupo para publicar", [
+        { 
+          text: "OK", 
+          onPress: () => navigation.navigate("Groups", { 
+            isSelectingGroup: true,
+            onSelectGroup: (groupId) => setSelectedGroupId(groupId) 
+          }) 
+        }
+      ]);
       return;
     }
 
-    Alert.alert("Publicado!", "Sua publicação foi enviada com sucesso!");
-    setPostText("");
-    setFile(null);
+    if (!title.trim()) {
+      Alert.alert("Aviso", "Por favor, informe um título antes de publicar.");
+      return;
+    }
+
+    if (!image) {
+      Alert.alert("Aviso", "Por favor, selecione uma imagem antes de publicar.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      await createCheckin(selectedGroupId, title, description, image.uri);
+      
+      Alert.alert("Sucesso!", "publicado com sucesso!", [
+        { 
+          text: "OK", 
+          onPress: () => navigation.navigate("Home", { 
+            refresh: true,
+            selectedGroupId: selectedGroupId 
+          }) 
+        }
+      ]);
+      
+      setTitle("");
+      setDescription("");
+      setImage(null);
+    } catch (error) {
+      console.error("Erro ao publicar:", error);
+      Alert.alert("Erro", error.message || "Não foi possível publicar o check-in.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleFilePick = async () => {
+  const handleImage = async (type) => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: "*/*",
-      });
+      const { status } = type === "camera" ?
+        await ImagePicker.requestCameraPermissionsAsync() :
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-      if (result.canceled) return;
+      if (status !== 'granted') {
+        Alert.alert("Permissão necessária", "Precisamos acessar sua câmera para tirar uma foto.");
+        return;
+      }
 
-      setFile(result.assets[0]);
+      const result = type === "camera" ?
+        await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 0.8,
+        }) :
+        await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 0.8,
+        });
+
+      if (!result.canceled) {
+        setImage({
+          uri: result.assets[0].uri,
+          name: result.assets[0].uri.split('/').pop(),
+          type: 'image/jpeg'
+        });
+      }
     } catch (error) {
-      Alert.alert("Erro", "Não foi possível anexar o arquivo.");
-      console.error("Erro ao selecionar arquivo:", error);
+      console.error("Erro ao selecionar/tirar foto:", error);
+      Alert.alert("Erro", "Não foi possível selecionar/tirar uma foto.");
     }
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Top navigation={navigation} />
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Text style={[styles.headerText, { color: theme.text }]}>Nova Publicação</Text>
-        <TextInput
-          style={[styles.input, { backgroundColor: theme.inputBackground, color: theme.inputText, borderColor: theme.border }]}
-          placeholder="Escreva algo..."
-          placeholderTextColor={theme.placeholder}
-          value={postText}
-          onChangeText={(text) => text.length <= 500 && setPostText(text)}
-          multiline
-        />
-        <Text style={[styles.charCount, { color: theme.text }]}>
-          {postText.length} / 500
-        </Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={[styles.header, { backgroundColor: theme.background }]}>
+          <TouchableOpacity 
+            onPress={() => navigation.goBack()} 
+            style={styles.backButton}
+            disabled={loading}
+          >
+            <Ionicons name="arrow-back" size={24} color={theme.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerText, { color: theme.text }]}>Nova Publicação</Text>
+        </View>
 
-        <TouchableOpacity style={styles.fileButton} onPress={handleFilePick}>
-          <Text style={[styles.fileButtonText,{ color: theme.mode === "dark" ? "#fff" : "#000"}]}>
-            {file ? `📎 ${file.name}` : "📎 Anexar Arquivo"}
-          </Text>
-        </TouchableOpacity>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
 
-        <TouchableOpacity
-          style={[styles.button, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366" }]}
-          onPress={handlePublish}
-        >
-          <Text style={[styles.buttonText, { color: theme.mode === "dark" ? "#000" : "#fff" }]}>Publicar</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
+          <View style={[styles.imageButtons, { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}>
+            <TouchableOpacity 
+              style={[styles.imageButton, { borderColor: theme.mode === "dark" ? "#000" : "#fff" }]}
+              onPress={() => handleImage("camera")}
+              disabled={loading}
+            >
+              <Ionicons name="camera" size={24} color={theme.text} />
+              <Text style={[styles.imageButtonText, { color: theme.text }]}>
+                Tirar Foto com a Câmera
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.imageButton, { borderColor: theme.primary }]}
+              onPress={() => handleImage("library")}
+              disabled={loading}
+            >
+              <Ionicons name="image" size={24} color={theme.text} />
+              <Text style={[styles.imageButtonText, { color: theme.text }]}>
+                Selecionar Imagem da Biblioteca
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {image && (
+            <Image 
+              source={{ uri: image.uri }} 
+              style={styles.image} 
+              resizeMode="cover"
+            />
+          )}
+
+          <TextInput
+            style={[styles.input, { 
+              backgroundColor: theme.inputBackground, 
+              color: theme.mode === "dark" ? "#000" : "#fff",
+              borderColor: theme.border 
+            }]}
+            placeholder="Título (obrigatório)"
+            placeholderTextColor={theme.placeholder}
+            value={title}
+            onChangeText={setTitle}
+            maxLength={100}
+            editable={!loading}
+          />
+
+          <TextInput
+            style={[styles.input, styles.descriptionInput, { 
+              backgroundColor: theme.inputBackground, 
+              color: theme.mode === "dark" ? "#000" : "#fff",
+              borderColor: theme.border 
+            }]}
+            placeholder="Descrição (opcional)"
+            placeholderTextColor={theme.placeholder}
+            value={description}
+            onChangeText={setDescription}
+            multiline
+            numberOfLines={4}
+            editable={!loading}
+          />
+          {/* se o usuario não estiver em um grupo, a publicação vai para o ultimo grupo da lista */}
+          <TouchableOpacity
+            style={[styles.publishButton, { 
+              backgroundColor: "#DFBA69", // douradinho
+              opacity: loading ? 0.6 : 1
+            }]}
+            onPress={handlePublish}
+            disabled={loading || !selectedGroupId}
+          >
+            {loading ? (
+              <ActivityIndicator color={theme.buttonText} />
+            ) : (
+              <Text style={[styles.publishButtonText, { color: theme.text }]}>
+                Publicar no Grupo
+              </Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -82,50 +228,69 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollContainer: {
-    marginTop: 60,
-    padding: 20,
+  header: {
+    flexDirection: "row",
     alignItems: "center",
+    padding: 15,
+    borderBottomWidth: 1,
+  },
+  backButton: {
+    padding: 5,
   },
   headerText: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 20,
+    marginLeft: 10,
+  },
+  scrollContainer: {
+    padding: 20,
   },
   input: {
     width: "100%",
-    height: 150,
+    height: 50,
     borderWidth: 1,
     borderRadius: 8,
-    padding: 15,
+    paddingHorizontal: 15,
+    marginBottom: 15,
     fontSize: 16,
+  },
+  descriptionInput: {
+    height: 120,
+    paddingTop: 15,
     textAlignVertical: "top",
   },
-  charCount: {
-    alignSelf: "flex-end",
-    marginTop: 5,
-    fontSize: 14,
-  },
-  fileButton: {
+  image: {
     width: "100%",
-    padding: 10,
-    marginTop: 10,
-    alignItems: "center",
-    borderWidth: 1,
-  },
-  fileButtonText: {
-    fontSize: 16,
-  },
-  button: {
-    marginTop: 20,
-    paddingVertical: 14,
+    height: 200,
     borderRadius: 8,
-    width: "100%",
+    marginBottom: 15,
+  },
+  imageButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  imageButton: {
+    padding: 15,
+    borderRadius: 8,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-  buttonText: {
-    fontSize: 18,
+  imageButtonText: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  publishButton: {
+    width: "100%",
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  publishButtonText: {
+    fontSize: 16,
     fontWeight: "bold",
   },
 });
+

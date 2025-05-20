@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import { useColorScheme, StatusBar } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 
 // Definição dos temas
 const lightTheme = {
@@ -13,6 +13,8 @@ const lightTheme = {
     placeholder: "#888",
     checkbox: "#fff",
     statusBar: "#f0f0f0",
+    error: "#ff0000",
+    
 };
 
 const darkTheme = {
@@ -25,6 +27,7 @@ const darkTheme = {
     placeholder: "#bbb",
     checkbox: "#fff",
     statusBar: "#050024",
+    error: "#ff0000",
 };
 
 const ThemeContext = createContext(lightTheme);
@@ -34,14 +37,14 @@ export function ThemeProvider({ children }) {
     const [themeMode, setThemeMode] = useState("system");
 
     useEffect(() => {
-        AsyncStorage.getItem("themeMode").then((storedMode) => {
+        SecureStore.getItemAsync("themeMode").then((storedMode) => {
             if (storedMode) setThemeMode(storedMode);
         });
     }, []);
 
     const updateThemeMode = async (mode) => {
         setThemeMode(mode);
-        await AsyncStorage.setItem("themeMode", mode);
+        await SecureStore.setItemAsync("themeMode", mode);
     };
 
     const theme =
@@ -67,3 +70,4 @@ export function ThemeProvider({ children }) {
 export function useTheme() {
     return useContext(ThemeContext);
 }
+
