@@ -6,14 +6,13 @@ import {
   StyleSheet,
   ActivityIndicator,
   Image,
-  Animated,
   ScrollView,
-  FlatList,
   SafeAreaView,
+  Modal,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../service/themeService";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useNavigation, useFocusEffect, DrawerActions } from "@react-navigation/native";
 import * as SecureStore from "expo-secure-store";
 import { getUser } from "../service/userService";
 import { getCheckinsByUser } from "../service/checkinService";
@@ -35,8 +34,8 @@ export default function Profile() {
   const [avatarLoading, setAvatarLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("posts");
   const [checkins, setUserCheckins] = useState([]);
+  const [modalVisible, setModalVisible] = useState(false);
   const scrollViewRef = useRef(null);
-  const translateY = useRef(new Animated.Value(1000)).current;
 
   useFocusEffect(
     useCallback(() => {
@@ -59,32 +58,13 @@ export default function Profile() {
           setLoading(false);
         }
       };
-
       fetchUser();
-
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
     }, [])
   );
 
   const formatDate = (dateString) => {
     return dayjs(dateString).tz("America/Fortaleza").format("D [de] MMMM [de] YYYY");
   };
-
-  const renderItem = ({ item }) => (
-    <View
-      style={[
-        styles.postCard,
-        { backgroundColor: theme.mode === "dark" ? "#1a1a2e" : "#fff" },
-      ]}
-    >
-      <Text style={[styles.postTitle, { color: theme.text }]}>{item.title}</Text>
-      <Text style={[styles.postContent, { color: theme.text }]}>{item.content}</Text>
-    </View>
-  );
 
   const renderMotivationIcon = () => {
     switch (user?.motivation) {
@@ -103,184 +83,203 @@ export default function Profile() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.mode === "dark" ? "#050024" : "#f0f0f0" }}>
-      <Animated.View style={[styles.container, { transform: [{ translateY }] }]}>
-        <LinearGradient
-          colors={[
-            theme.mode === "dark" ? "#0D0058" : "#f0f0f0",
-            theme.mode === "dark" ? "#000000" : "#d0d0d0",
-          ]}
-          style={styles.gradient}
-        >
-          <View style={[styles.header, { backgroundColor: "transparent" }]}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color={theme.text} />
-            </TouchableOpacity>
-            <Text style={[styles.headerText, { color: theme.text }]}>Perfil</Text>
-            <TouchableOpacity onPress={() => navigation.navigate("EditProfile")} style={styles.editButton}>
-              <Ionicons name="pencil" size={24} color={theme.text} />
-            </TouchableOpacity>
-          </View>
+      <LinearGradient
+        colors={[
+          theme.mode === "dark" ? "#0D0058" : "#f0f0f0",
+          theme.mode === "dark" ? "#000000" : "#d0d0d0",
+        ]}
+        style={styles.gradient}
+      >
+        <View style={[styles.header, { backgroundColor: "transparent" }]}>
+          <TouchableOpacity
+            onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+            style={[styles.hamburgerButton, { padding: 5, borderRadius: 100 }]}
+          >
+            <Ionicons name="menu" size={30} color={theme.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerText, { color: theme.text }]}>Perfil</Text>
+          <TouchableOpacity onPress={() => navigation.navigate("EditProfile")} style={styles.editButton}>
+            <Ionicons name="pencil" size={24} color={theme.text} />
+          </TouchableOpacity>
+        </View>
 
-          {loading ? (
-            <ActivityIndicator size="large" color={theme.mode === "dark" ? "#fff" : "#000"} style={styles.loader} />
-          ) : (
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-              <View style={styles.profileHeader}>
-                <View>
-                  {avatarLoading && (
-                    <ActivityIndicator size="large" color={theme.mode === "dark" ? "#fff" : "#000"} style={styles.avatarLoader} />
-                  )}
-                  {user?.avatar ? (
-                    <Image
-                      source={{ uri: user.avatar }}
-                      style={styles.avatar}
-                      onLoadStart={() => setAvatarLoading(true)}
-                      onLoadEnd={() => setAvatarLoading(false)}
-                    />
-                  ) : (
-                    <View style={[styles.defaultAvatar, { backgroundColor: theme.mode === "dark" ? "#1a1a2e" : "#ccc" }]}>
-                      <Ionicons name="person" size={60} color={theme.mode === "dark" ? "#fff" : "#000"} />
-                    </View>
-                  )}
-                </View>
-                <Text style={[styles.name, { color: theme.text }]}>{user?.name || "Usuário"}</Text>
-
-                <View style={styles.motivationContainer}>
-                  <View style={styles.motivationIconContainer}>{renderMotivationIcon()}</View>
-                  <Text style={[styles.motivation, { color: theme.text }]}>{user?.motivation}</Text>
-                </View>
-
-                {user?.created_at && (
-                  <Text style={[styles.createdAt, { color: theme.text }]}>
-                    Com a gente desde: {formatDate(user.created_at)}
-                  </Text>
-                )}
-              </View>
-
-              <View style={styles.tabContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.tabButton,
-                    activeTab === "posts" && {
-                      borderBottomColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
-                    },
-                  ]}
-                  onPress={() => setActiveTab("posts")}
-                >
-                  <Text
-                    style={[
-                      styles.tabText,
-                      {
-                        color: activeTab === "posts" ? (theme.mode === "dark" ? "#DFBA69" : "#003366") : theme.text,
-                      },
-                    ]}
-                  >
-                    Publicações
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.tabButton,
-                    activeTab === "genres" && {
-                      borderBottomColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
-                    },
-                  ]}
-                  onPress={() => setActiveTab("genres")}
-                >
-                  <Text
-                    style={[
-                      styles.tabText,
-                      {
-                        color: activeTab === "genres" ? (theme.mode === "dark" ? "#DFBA69" : "#003366") : theme.text,
-                      },
-                    ]}
-                  >
-                    Gêneros Favoritos
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {activeTab === "posts" ? (
-        <ScrollView
-            contentContainerStyle={styles.postsContainer}
-            onContentSizeChange={() => {
-            scrollViewRef.current?.scrollToEnd({ animated: false });
-            }}
-        >
-            {[...checkins].reverse().map((checkin) => (
-            <View
-                key={checkin.id}
-                style={[styles.post, { backgroundColor: theme.cardBackground }]}
+        {loading ? (
+          <ActivityIndicator size="large" color={theme.mode === "dark" ? "#fff" : "#000"} style={styles.loader} />
+        ) : (
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            <Modal
+              animationType="fade"
+              transparent={true}
+              visible={modalVisible}
+              onRequestClose={() => setModalVisible(false)}
             >
-                <View style={styles.postHeader}>
-                {checkin.user.avatar && (
-                    <Image
-                    source={{ uri: checkin.user.avatar }}
-                    style={styles.avatarpost}
-                    />
-                )}
-                <Text style={[styles.postTitle, { color: theme.text }]}>
-                    @{checkin.user.name}
-                </Text>
-                </View>
+              <View style={styles.modalBackground}>
+                <TouchableOpacity style={styles.modalCloseArea} onPress={() => setModalVisible(false)}>
+                  <Ionicons name="close" size={30} color="#fff" />
+                </TouchableOpacity>
+                <Image
+                  source={{ uri: user?.avatar }}
+                  style={styles.fullscreenImage}
+                  resizeMode="contain"
+                />
+              </View>
+            </Modal>
 
-                {checkin.photo && (
-                <View style={styles.postImageContainer}>
-                    {loading ? (
-                    <ActivityIndicator
-                        size="large"
-                        color={theme.text}
-                        style={styles.postImageLoading}
-                    />
-                    ) : (
-                    <Image
-                        source={{ uri: checkin.photo }}
-                        style={styles.postImage}
-                        resizeMode="cover"
-                    />
-                    )}
-                </View>
+            <View style={styles.profileHeader}>
+              <TouchableOpacity onPress={() => setModalVisible(true)}>
+                {avatarLoading && (
+                  <ActivityIndicator size="large" color={theme.mode === "dark" ? "#fff" : "#000"} style={styles.avatarLoader} />
                 )}
+                {user?.avatar ? (
+                  <Image
+                    source={{ uri: user.avatar }}
+                    style={styles.avatar}
+                    onLoadStart={() => setAvatarLoading(true)}
+                    onLoadEnd={() => setAvatarLoading(false)}
+                  />
+                ) : (
+                  <View style={[styles.defaultAvatar, { backgroundColor: theme.mode === "dark" ? "#1a1a2e" : "#ccc" }]}>
+                    <Ionicons name="person" size={60} color={theme.mode === "dark" ? "#fff" : "#000"} />
+                  </View>
+                )}
+              </TouchableOpacity>
 
-                <Text style={[styles.postText, { color: theme.text }]}>
-                {checkin.title}
+              <Text style={[styles.name, { color: theme.text }]}>{user?.name || "Usuário"}</Text>
+
+              <View style={styles.motivationContainer}>
+                <View style={styles.motivationIconContainer}>{renderMotivationIcon()}</View>
+                <Text style={[styles.motivation, { color: theme.text }]}>{user?.motivation}</Text>
+              </View>
+
+              {user?.created_at && (
+                <Text style={[styles.createdAt, { color: theme.text }]}>
+                  Com a gente desde: {formatDate(user.created_at)}
                 </Text>
-                <Text style={[styles.postText, { color: theme.text }]}>
-                {checkin.description}
-                </Text>
-                <Text style={[styles.postDate, { color: theme.text }]}>
-                {dayjs(checkin.created_at)
-                    .tz("America/Fortaleza")
-                    .format("DD [de] MMMM [de] YYYY")}
-                </Text>
-            </View>
-            ))}
-        </ScrollView>
-              ) : (
-                <View style={styles.genresContainer}>
-                  {user?.genres?.length > 0 ? (
-                    user.genres.map((genre, index) => (
-                      <View
-                        key={index}
-                        style={[
-                          styles.genreTag,
-                          {
-                            backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
-                          },
-                        ]}
-                      >
-                        <Text style={[styles.genreText, { color: "#fff" }]}>{genre}</Text>
-                      </View>
-                    ))
-                  ) : (
-                    <Text style={[styles.noContent, { color: theme.text }]}>Nenhum gênero selecionado</Text>
-                  )}
-                </View>
               )}
-            </ScrollView>
-          )}
-        </LinearGradient>
-      </Animated.View>
+            </View>
+
+            <View style={styles.tabContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.tabButton,
+                  activeTab === "posts" && {
+                    borderBottomColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
+                  },
+                ]}
+                onPress={() => setActiveTab("posts")}
+              >
+                <Text
+                  style={[
+                    styles.tabText,
+                    {
+                      color: activeTab === "posts" ? (theme.mode === "dark" ? "#DFBA69" : "#003366") : theme.text,
+                    },
+                  ]}
+                >
+                  Publicações
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.tabButton,
+                  activeTab === "genres" && {
+                    borderBottomColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
+                  },
+                ]}
+                onPress={() => setActiveTab("genres")}
+              >
+                <Text
+                  style={[
+                    styles.tabText,
+                    {
+                      color: activeTab === "genres" ? (theme.mode === "dark" ? "#DFBA69" : "#003366") : theme.text,
+                    },
+                  ]}
+                >
+                  Gêneros Favoritos
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {activeTab === "posts" ? (
+              <ScrollView
+                contentContainerStyle={styles.postsContainer}
+                onContentSizeChange={() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: false });
+                }}
+              >
+                {[...checkins].reverse().map((checkin) => (
+                  <TouchableOpacity
+                    key={checkin.id}
+                    style={[styles.post, { backgroundColor: theme.cardBackground }]}
+                    onPress={() => navigation.navigate("PostDetails", { checkin })}
+                  >
+                    <View style={styles.postHeader}>
+                      {checkin.user.avatar && (
+                        <Image
+                          source={{ uri: checkin.user.avatar }}
+                          style={styles.avatarpost}
+                        />
+                      )}
+                      <Text style={[styles.postTitle, { color: theme.text }]}>
+                        @{checkin.user.name}
+                      </Text>
+                    </View>
+
+                    {checkin.photo && (
+                      <View style={styles.postImageContainer}>
+                        {loading ? (
+                          <ActivityIndicator
+                            size="large"
+                            color={theme.text}
+                            style={styles.postImageLoading}
+                          />
+                        ) : (
+                          <Image
+                            source={{ uri: checkin.photo }}
+                            style={styles.postImage}
+                            resizeMode="cover"
+                          />
+                        )}
+                      </View>
+                    )}
+
+                    <Text style={[styles.postText, { color: theme.text }]}>
+                      {checkin.title}
+                    </Text>
+                    <Text style={[styles.postText, { color: theme.text }]}>
+                      {checkin.description}
+                    </Text>
+                    <Text style={[styles.postDate, { color: theme.text }]}>
+                      {dayjs(checkin.created_at).tz("America/Fortaleza").format("DD [de] MMMM [de] YYYY")}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={styles.genresContainer}>
+                {user?.genres?.length > 0 ? (
+                  user.genres.map((genre, index) => (
+                    <View
+                      key={index}
+                      style={[
+                        styles.genreTag,
+                        {
+                          backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.genreText, { color: "#fff" }]}>{genre}</Text>
+                    </View>
+                  ))
+                ) : (
+                  <Text style={[styles.noContent, { color: theme.text }]}>Nenhum gênero selecionado</Text>
+                )}
+              </View>
+            )}
+          </ScrollView>
+        )}
+      </LinearGradient>
     </SafeAreaView>
   );
 }
@@ -292,18 +291,28 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
     padding: 15,
-    marginTop: 10,
+    position: "relative",
   },
-  backButton: { padding: 10 },
   headerText: {
     fontSize: 20,
     fontWeight: "bold",
-    flex: 1,
-    textAlign: "center",
   },
-  editButton: { padding: 10 },
+  hamburgerButton: {
+    position: "absolute",
+    top: 10,
+    left: 15,
+    zIndex: 10,
+  },
+  editButton: {
+    flexDirection: "row",
+    position: "absolute",
+    alignItems: "flex-end",
+    top: 15,
+    right: 15,
+    zIndex: 10,
+  },
   loader: {
     flex: 1,
     justifyContent: "center",
@@ -380,60 +389,60 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-    postsContainer: {
-        paddingBottom: 100,
-        paddingHorizontal: 15,
-    },
-    post: {
-        borderRadius: 10,
-        padding: 15,
-        height: "auto",
-        marginBottom: 15,
-        borderColor: "#ccc",
-        borderWidth: 1,
-    },
-    postHeader: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 8,
-    },
-    avatarpost: {
-        width: 30,
-        height: 30,
-        borderRadius: 20,
-        backgroundColor: "#ccc",
-        marginRight: 10,
-    },
-    postTitle: {
-        fontSize: 16,
-        fontWeight: "bold",
-    },
-    postText: {
-        fontSize: 14,
-        marginBottom: 8,
-    },
-    postDate: {
-        fontSize: 12,
-        fontStyle: "italic",
-    },
-    postImageContainer: {
-        height: 200,
-        borderRadius: 10,
-        overflow: "hidden",
-        marginBottom: 10,
-        marginTop: 5,
-    },
-    postImage: {
-        width: "100%",
-        height: "100%",
-    },
-    postImageLoading: {
-        position: "absolute",
-        top: 0,
-        bottom: 0,
-        left: 0,
-        right: 0,
-    },
+  postsContainer: {
+    paddingBottom: 100,
+    paddingHorizontal: 15,
+  },
+  post: {
+    borderRadius: 10,
+    padding: 15,
+    height: "auto",
+    marginBottom: 15,
+    borderColor: "#ccc",
+    borderWidth: 1,
+  },
+  postHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  avatarpost: {
+    width: 30,
+    height: 30,
+    borderRadius: 20,
+    backgroundColor: "#ccc",
+    marginRight: 10,
+  },
+  postTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  postText: {
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  postDate: {
+    fontSize: 12,
+    fontStyle: "italic",
+  },
+  postImageContainer: {
+    height: "auto",
+    borderRadius: 10,
+    overflow: "hidden",
+    marginBottom: 10,
+    marginTop: 5,
+  },
+  postImage: {
+    width: "100%",
+    height: 320,
+  },
+  postImageLoading: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
   genresContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -455,5 +464,21 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     width: "100%",
   },
+  modalBackground: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fullscreenImage: {
+    width: "90%",
+    height: "70%",
+  },
+  modalCloseArea: {
+    position: "absolute",
+    top: 50,
+    right: 30,
+    zIndex: 2,
+    padding: 10,
+  },
 });
-

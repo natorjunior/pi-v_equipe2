@@ -14,7 +14,7 @@ export const loginUser = async (loginData) => {
       throw new Error("Login falhou, sem token recebido.");
     }
   } catch (error) {
-    console.error("Erro ao fazer login:", error);
+    console.log("Erro ao fazer login:", error);
     throw error;
   }
 };

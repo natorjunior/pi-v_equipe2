@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Text, TextInput, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Text, TextInput, StyleSheet, TouchableOpacity, View, SafeAreaView } from "react-native";
 import { useTheme } from "../service/themeService";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Question1({ navigation }) {
     const { theme } = useTheme();
@@ -63,6 +62,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: "center",
         justifyContent: "center",
+        paddingHorizontal: 20,
     },
     text: {
         fontSize: 22,

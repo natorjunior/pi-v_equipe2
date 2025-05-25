@@ -7,7 +7,6 @@ const api = axios.create({
   baseURL: BASE_URL,
 });
 
-// Interceptor para inserir token JWT nas requisições
 api.interceptors.request.use(async (config) => {
   try {
     const token = await SecureStore.getItemAsync("token");
@@ -23,35 +22,24 @@ api.interceptors.request.use(async (config) => {
   }
 });
 
-// Obter check-ins do usuário autenticado
 export const getCheckinsByUser = async () => {
   try {
     const response = await api.get("/check-in/user");
     return response.data;
   } catch (error) {
-    const message =
-      error?.response?.data?.message ||
-      error.message ||
-      "Erro ao buscar check-ins do usuário";
-    throw new Error(message);
+    throw error;
   }
 };
 
-// Obter check-ins por grupo
 export const getCheckinsByGroup = async (groupId) => {
   try {
     const response = await api.get(`/check-in/group/${groupId}`);
     return response.data;
   } catch (error) {
-    const message =
-      error?.response?.data?.message ||
-      error.message ||
-      "Erro ao buscar check-ins do grupo";
-    throw new Error(message);
+    throw error;
   }
 };
 
-// Criar novo check-in
 export const createCheckin = async (groupId, title, description, photo) => {
   try {
     const formData = new FormData();
@@ -75,15 +63,10 @@ export const createCheckin = async (groupId, title, description, photo) => {
 
     return response.data;
   } catch (error) {
-    const message =
-      error?.response?.data?.message ||
-      error.message ||
-      "Erro ao criar check-in";
-    throw new Error(message);
+    throw error;
   }
 };
 
-// Atualizar check-in existente
 export const updateCheckin = async (checkinId, title, description, photo) => {
   try {
     const formData = new FormData();
@@ -107,38 +90,25 @@ export const updateCheckin = async (checkinId, title, description, photo) => {
 
     return response.data;
   } catch (error) {
-    const message =
-      error?.response?.data?.message ||
-      error.message ||
-      "Erro ao atualizar check-in";
-    throw new Error(message);
+    throw error;
   }
 };
 
-// Excluir check-in
 export const deleteCheckin = async (checkinId) => {
   try {
     const response = await api.delete(`/check-in/${checkinId}`);
     return response.data;
   } catch (error) {
-    const message =
-      error?.response?.data?.message ||
-      error.message ||
-      "Erro ao excluir check-in";
-    throw new Error(message);
+    throw error;
   }
 };
 
-// Obter ranking do grupo
 export const getGroupRanking = async (groupId) => {
   try {
     const response = await api.get(`/check-in/group/${groupId}/ranking`);
     return response.data;
   } catch (error) {
-    const message =
-      error?.response?.data?.message ||
-      error.message ||
-      "Erro ao buscar ranking do grupo";
-    throw new Error(message);
+    throw error;
   }
 };
+

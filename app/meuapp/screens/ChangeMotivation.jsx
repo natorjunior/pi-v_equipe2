@@ -16,7 +16,7 @@ const theme = useTheme();
                     <TouchableOpacity
                         style={[styles.button, { backgroundColor: theme.mode === "dark" ? "#0D0058" : "#fff" }]}
                         value={route.params?.motivation}
-                        onPress={() => navigation.navigate("EditProfile", { motivation: "Encontrar sua turma" })}
+                        onPress={() => navigation.navigate("ChangeGenres", { motivation: "Encontrar sua turma" })}
                     >
                         <View style={styles.buttonContent}>
                             <Image
@@ -33,7 +33,7 @@ const theme = useTheme();
                     <TouchableOpacity
                         style={[styles.button, { backgroundColor: theme.mode === "dark" ? "#0D0058" : "#fff" }]}
                         value={route.params?.motivation}
-                        onPress={() => navigation.navigate("EditProfile", { motivation: "Procurar livros" })}
+                        onPress={() => navigation.navigate("ChangeGenres", { motivation: "Procurar livros" })}
                     >
                         <View style={styles.buttonContent}>
                             <Image
@@ -50,7 +50,7 @@ const theme = useTheme();
                     <TouchableOpacity
                         style={[styles.button, { backgroundColor: theme.mode === "dark" ? "#0D0058" : "#fff" }]}
                         value={route.params?.motivation}
-                        onPress={() => navigation.navigate("EditProfile", { motivation: "Focar nos estudos" })}
+                        onPress={() => navigation.navigate("ChangeGenres", { motivation: "Focar nos estudos" })}
                     >
                         <View style={styles.buttonContent}>
                             <Image
@@ -66,7 +66,7 @@ const theme = useTheme();
                     <TouchableOpacity
                         style={[styles.button, { backgroundColor: theme.mode === "dark" ? "#0D0058" : "#fff" }]}
                         value={route.params?.motivation}
-                        onPress={() => navigation.navigate("EditProfile", { motivation: "Usufruir do aplicativo" })}
+                        onPress={() => navigation.navigate("ChangeGenres", { motivation: "Usufruir do aplicativo" })}
                     >
                         <View style={styles.buttonContent}>
                             <Image

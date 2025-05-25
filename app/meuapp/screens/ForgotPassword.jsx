@@ -1,6 +1,5 @@
 //Esperando o backend
-import { recoverPassword } from "../service/authService";
-
+//import { recoverPassword } from "../service/authService";
 import { useState } from "react";
 import {
   Alert,
@@ -9,14 +8,13 @@ import {
   View,
   TouchableOpacity,
   KeyboardAvoidingView,
+  SafeAreaView,
   Platform,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTheme } from "../service/themeService";
 import Logo from "../components/Logo";
 import InputField from "../components/InputField";
-import { SafeAreaView } from "react-native-safe-area-context";
-
 export default function ForgotPassword({ navigation }) {
   const { theme } = useTheme();
   const [email, setEmail] = useState("");
@@ -77,7 +75,7 @@ export default function ForgotPassword({ navigation }) {
 
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text style={[styles.textLink, { color: theme.text }]}>
-              Voltar para o login
+              Voltar
             </Text>
           </TouchableOpacity>
         </View>
