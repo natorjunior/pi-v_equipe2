@@ -14,7 +14,6 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../service/themeService";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import InputField from "../components/InputField";
 import { getGroup, deleteGroup, leaveGroup } from "../service/groupService";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
@@ -152,24 +151,6 @@ export default function GroupConfig() {
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.inner}
         >
-          <InputField
-            label="Nome do Grupo"
-            value={groupName}
-            onChangeText={setGroupName}
-            placeholder="Digite o nome do grupo"
-          />
-          <InputField
-            label="Alias do Grupo"
-            value={groupAlias}
-            onChangeText={setGroupAlias}
-            placeholder="Digite o alias do grupo"
-          />
-          <InputField
-            label="Descrição"
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Digite uma descrição (opcional)"
-          />
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 

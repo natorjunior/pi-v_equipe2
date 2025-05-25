@@ -12,7 +12,7 @@ import { useTheme } from "../service/themeService";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import InputField from "../components/InputField";
-import { createGroup, joinGroup, getGroup } from "../service/groupService";
+import { createGroup } from "../service/groupService";
 
 export default function CreateGroup() {
   const { theme } = useTheme();
@@ -40,14 +40,16 @@ const handleCreateGroup = async () => {
     };
 
     const response = await createGroup(newGroup);
-
     if (response) {
-      navigation.navigate("Groups");
+      navigation.navigate("Tabs", { 
+        screen: "Groups",
+        params: { selectedGroupId: response.id }
+      });
     } else {
       throw new Error("ID do grupo não encontrado na resposta.");
     }
   } catch (error) {
-    console.error("Erro ao criar ou entrar no grupo", error);
+    console.log("Erro ao criar ou entrar no grupo", error);
     setError("Erro ao criar ou entrar no grupo. Tente novamente.");
   } finally {
     setLoading(false);
@@ -60,7 +62,7 @@ const handleCreateGroup = async () => {
     <SafeAreaView style={{ flex: 1 }}>
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={[styles.header, { backgroundColor: theme.background }]}>
-          <TouchableOpacity onPress={() => navigation.navigate("Home")} style={styles.backButton}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={theme.mode === "dark" ? "#fff" : "#000"} />
           </TouchableOpacity>
           <Text style={[styles.headerText, { color: theme.text }]}>Criar um Grupo</Text>
@@ -77,10 +79,10 @@ const handleCreateGroup = async () => {
             placeholder="Digite o nome do grupo"
           />
           <InputField
-            label="Alias do Grupo"
+            label="Tag do Grupo"
             value={groupAlias}
             onChangeText={setGroupAlias}
-            placeholder="Digite o alias do grupo"
+            placeholder="Digite a tag do grupo"
           />
           <InputField
             label="Descrição"
@@ -127,7 +129,7 @@ const styles = StyleSheet.create({
   },
   inner: {
     width: "100%",
-    top: 80,
+    top: "20%",
     alignItems: "center",
     marginTop: 50,
   },
@@ -137,7 +139,6 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 16,
   },
   buttonText: {
     fontSize: 18,
@@ -146,7 +147,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     padding: 15,
   },
   backButton: {

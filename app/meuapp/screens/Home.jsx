@@ -1,190 +1,213 @@
-import { useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
     View,
     Text,
     StyleSheet,
-    ScrollView,
+    FlatList,
     ActivityIndicator,
     SafeAreaView,
     Image,
+    TouchableOpacity,
 } from "react-native";
-import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
+import { DrawerActions, useFocusEffect, useNavigation } from "@react-navigation/native";
 import * as SecureStore from "expo-secure-store";
 import { Ionicons } from "@expo/vector-icons";
-import Top from "../components/Top";
-import NavBar from "../components/Navbar";
 import { useTheme } from "../service/themeService";
 import { getUser } from "../service/userService";
 import { getCheckinsByGroup } from "../service/checkinService";
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
-import "dayjs/locale/pt-br";
+import { LinearGradient } from "expo-linear-gradient";
 
-dayjs.extend(utc);
-dayjs.extend(timezone);
-dayjs.locale("pt-br");
-
-export default function Home() {
+export default function Home({ route }) {
     const { theme } = useTheme();
     const navigation = useNavigation();
-    const route = useRoute();
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [checkins, setCheckins] = useState([]);
     const [selectedGroupId, setSelectedGroupId] = useState(null);
     const [error, setError] = useState(null);
-    const scrollViewRef = useRef(null);
 
-    useFocusEffect(
-        useCallback(() => {
-        const fetchData = async () => {
-            try {
+    const fetchData = async () => {
+        try {
             setLoading(true);
             const token = await SecureStore.getItemAsync("token");
-
             if (!token) {
                 navigation.navigate("Login");
                 return;
             }
 
-            const groupId = route.params?.selectedGroupId;
-            setSelectedGroupId(groupId);
+            let storedGroupId = await SecureStore.getItemAsync("selectedGroupId");
+            if (!storedGroupId && route?.params?.groupId) {
+                storedGroupId = route.params.groupId.toString();
+                await SecureStore.setItemAsync("selectedGroupId", storedGroupId);
+            }
 
-            if (groupId) {
-                const checkinsData = await getCheckinsByGroup(groupId);
-                setCheckins(checkinsData);
+            setSelectedGroupId(storedGroupId);
+
+            if (storedGroupId) {
+                const checkinsData = await getCheckinsByGroup(storedGroupId);
+                const sortedCheckins = checkinsData.sort(
+                    (a, b) => new Date(b.created_at) - new Date(a.created_at)
+                );
+                setCheckins(sortedCheckins);
             } else {
                 setCheckins([]);
             }
 
             await getUser(token);
-            } catch (error) {
+        } catch (error) {
             setError(error.message);
-            } finally {
+        } finally {
             setLoading(false);
-            }
-        };
+        }
+    };
 
-        fetchData();
-        }, [route.params?.selectedGroupId])
+    useFocusEffect(
+        useCallback(() => {
+            fetchData();
+        }, [route?.params?.groupId])
     );
 
-    const renderContent = () => {
+    const renderEmptyComponent = () => {
         if (!selectedGroupId) {
-        return (
-            <View style={styles.messageContainer}>
-            <Text style={[styles.text, { color: theme.text }]}>
-                Selecione um grupo para ver as publicações
-            </Text>
-            <Ionicons
-                name="arrow-down-outline"
-                size={50}
-                color={theme.text}
-                style={styles.icon}
-            />
-            </View>
-        );
+            return (
+                <View style={styles.messageContainer}>
+                    <Text style={[styles.text, { color: theme.text }]}>
+                        Selecione um grupo para ver as publicações
+                    </Text>
+                    <Ionicons
+                        name="arrow-down-outline"
+                        size={50}
+                        color={theme.text}
+                        style={styles.icon}
+                    />
+                </View>
+            );
         }
 
         if (loading) {
-        return (
-            <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.text} />
-            </View>
-        );
+            return (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={theme.text} />
+                </View>
+            );
         }
 
         if (error) {
-        return (
-            <View style={styles.messageContainer}>
-            <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
-            </View>
-        );
-        }
-
-        if (checkins.length === 0) {
-        return (
-            <View style={styles.messageContainer}>
-            <Text style={[styles.text, { color: theme.text }]}>
-                Nenhuma publicação encontrada neste grupo
-            </Text>
-            </View>
-        );
+            return (
+                <View style={styles.messageContainer}>
+                    <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
+                </View>
+            );
         }
 
         return (
-        <ScrollView
-            contentContainerStyle={styles.postsContainer}
-            ref={scrollViewRef}
-            onContentSizeChange={() => {
-            scrollViewRef.current?.scrollToEnd({ animated: false });
-            }}
-        >
-            {checkins.map((checkin) => (
-            <View
-                key={checkin.id}
-                style={[styles.post, { backgroundColor: theme.cardBackground }]}
-            >
-                <View style={styles.postHeader}>
-                {checkin.user.avatar && (
-                    <Image
-                    source={{ uri: checkin.user.avatar }}
-                    style={styles.avatar}
-                    />
-                )}
-                <Text style={[styles.postTitle, { color: theme.text }]}>
-                    @{checkin.user.name}
-                </Text>
-                </View>
-
-                {checkin.photo && (
-                <View style={styles.postImageContainer}>
-                    {loading ? (
-                    <ActivityIndicator
-                        size="large"
-                        color={theme.text}
-                        style={styles.postImageLoading}
-                    />
-                    ) : (
-                    <Image
-                        source={{ uri: checkin.photo }}
-                        style={styles.postImage}
-                        resizeMode="cover"
-                    />
-                    )}
-                </View>
-                )}
-
-                <Text style={[styles.postText, { color: theme.text }]}>
-                {checkin.title}
-                </Text>
-                <Text style={[styles.postText, { color: theme.text }]}>
-                {checkin.description}
-                </Text>
-                <Text style={[styles.postDate, { color: theme.text }]}>
-                {dayjs(checkin.created_at)
-                    .tz("America/Fortaleza")
-                    .format("DD [de] MMMM [de] YYYY")}
+            <View style={styles.messageContainer}>
+                <Text style={[styles.text, { color: theme.text }]}>
+                    Nenhuma publicação encontrada neste grupo
                 </Text>
             </View>
-            ))}
-        </ScrollView>
         );
     };
 
     return (
         <SafeAreaView style={{ flex: 1 }}>
-        <View style={[styles.container, { backgroundColor: theme.background }]}>
-            <View style={styles.header}>
-            <Top navigation={navigation} />
-            </View>
-            {renderContent()}
-            <NavBar
-            navigation={navigation}
-            inGroup={!!selectedGroupId}
-            selectedGroupId={selectedGroupId}
-            />
-        </View>
+            <LinearGradient
+                colors={[
+                    theme.mode === "dark" ? "#0D0058" : "#f0f0f0",
+                    theme.mode === "dark" ? "#000000" : "#d0d0d0",
+                ]}
+                style={{ flex: 1 }}
+            >
+                <View style={styles.header}>
+                    <TouchableOpacity
+                        onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+                        style={[styles.hamburgerButton, { padding: 5, borderRadius: 100 }]}
+                    >
+                        <Ionicons name="menu" size={30} color={theme.text} />
+                    </TouchableOpacity>
+
+                    {selectedGroupId && (
+                        <TouchableOpacity
+                            onPress={async () => {
+                                await SecureStore.deleteItemAsync("selectedGroupId");
+                                setSelectedGroupId(null);
+                                navigation.navigate("Home");
+                            }}
+                            style={[styles.leaveButton, { padding: 5, borderRadius: 100 }]}
+                        >
+                            <Ionicons name="exit-outline" size={30} color={theme.text} />
+                        </TouchableOpacity>
+                    )}
+                </View>
+
+                <FlatList
+                    style={styles.list}
+                    data={checkins}
+                    inverted={true}
+                    keyExtractor={(item) => item.id.toString()}
+                    contentContainerStyle={{ padding: 20 }}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            onPress={() =>
+                                navigation.navigate("PostDetails", { checkin: item })
+                            }
+                        >
+                            <View
+                                style={[styles.post, { backgroundColor: theme.cardBackground }]}
+                            >
+                                <View style={styles.postHeader}>
+                                    {item.user.avatar && (
+                                        <Image
+                                            source={{ uri: item.user.avatar }}
+                                            style={styles.avatar}
+                                        />
+                                    )}
+                                    <Text
+                                        style={[styles.postTitle, { color: theme.text }]}
+                                    >
+                                        @{item.user.name}
+                                    </Text>
+                                </View>
+
+                                {item.photo && (
+                                    <Image
+                                        source={{ uri: item.photo }}
+                                        style={styles.postImage}
+                                    />
+                                )}
+
+                                <Text style={[styles.postText, { color: theme.text }]}>
+                                    {item.title}
+                                </Text>
+                                <Text style={[styles.postText, { color: theme.text }]}>
+                                    {item.description}
+                                </Text>
+                                <Text style={[styles.postDate, { color: theme.text }]}>
+                                    {new Date(item.created_at).toLocaleDateString("pt-BR", {
+                                        day: "numeric",
+                                        month: "long",
+                                        year: "numeric",
+                                    })}
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
+                    )}
+                    ListEmptyComponent={renderEmptyComponent()}
+                />
+                {selectedGroupId && (
+                    <TouchableOpacity
+                        style={[
+                            styles.fab,
+                            {
+                                backgroundColor:
+                                    theme.mode === "dark" ? "#DFBA69" : "#003366",
+                            },
+                        ]}
+                        onPress={() => navigation.navigate("Publish")}
+                    >
+                        <Ionicons name="add" size={28} color="#fff" />
+                    </TouchableOpacity>
+                )}
+            </LinearGradient>
         </SafeAreaView>
     );
 }
@@ -193,33 +216,37 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
+    list: {
+        marginTop: 50,
+    },
     header: {
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 10,
-        paddingTop: 20,
-        paddingHorizontal: 15,
         flexDirection: "row",
-        justifyContent: "space-between",
         alignItems: "center",
+        justifyContent: "center",
+        position: "relative",
+    },
+    hamburgerButton: {
+        position: "absolute",
+        top: 10,
+        left: 15,
+        zIndex: 10,
+    },
+    leaveButton: {
+        position: "absolute",
+        top: 10,
+        right: 15,
+        zIndex: 10,
     },
     messageContainer: {
         flex: 1,
+        marginTop: 300,
         justifyContent: "center",
         alignItems: "center",
         padding: 20,
     },
-    postsContainer: {
-        paddingTop: 80,
-        paddingBottom: 100,
-        paddingHorizontal: 15,
-    },
     post: {
         borderRadius: 10,
         padding: 15,
-        height: "auto",
         marginBottom: 15,
         borderColor: "#ccc",
         borderWidth: 1,
@@ -248,23 +275,12 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontStyle: "italic",
     },
-    postImageContainer: {
-        height: 200,
-        borderRadius: 10,
-        overflow: "hidden",
-        marginBottom: 10,
-        marginTop: 5,
-    },
     postImage: {
         width: "100%",
-        height: "100%",
-    },
-    postImageLoading: {
-        position: "absolute",
-        top: 0,
-        bottom: 0,
-        left: 0,
-        right: 0,
+        height: 320,
+        resizeMode: "cover",
+        borderRadius: 10,
+        marginBottom: 10,
     },
     text: {
         fontSize: 16,
@@ -281,7 +297,19 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     icon: {
-        marginTop: 20,
+        right: 138,
+        top: 325,
+        
+    },
+    fab: {
+        position: "absolute",
+        bottom: 25,
+        right: 25,
+        width: 55,
+        height: 55,
+        borderRadius: 30,
+        justifyContent: "center",
+        alignItems: "center",
+        elevation: 5,
     },
 });
-

@@ -1,27 +1,28 @@
 import { useState } from "react";
 import {
-  Alert,
-  StyleSheet,
   Text,
   View,
   TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 import { Feather } from "@expo/vector-icons";
 import { loginUser } from "../service/loginService";
 import { getUser } from "../service/userService";
 import { useTheme } from "../service/themeService";
 import InputField from "../components/InputField";
 import Logo from "../components/Logo";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Login({ navigation }) {
   const { theme } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [selectedGroupId, setSelectedGroupId] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleLoginButton = async () => {
@@ -29,24 +30,25 @@ export default function Login({ navigation }) {
       setError("Preencha todos os campos!");
       return;
     }
-  
+
     try {
       const response = await loginUser({ email, password });
-  
+
       if (typeof response === "string") {
-        await AsyncStorage.setItem("authToken", response);
-  
+        await AsyncStorage.setItem("token", response);
+
         const user = await fetchUser(response);
-        await AsyncStorage.setItem("user", JSON.stringify(user));
-        navigation.replace("Home");
+        await SecureStore.setItemAsync("user", JSON.stringify(user));
+        await SecureStore.deleteItemAsync("selectedGroupId");
+        navigation.navigate("AppDrawer", { selectedGroupId: null });
       } else {
         setError("E-mail ou senha inválidos!");
       }
     } catch (error) {
-      Alert.alert("Erro", "Falha ao fazer login. Verifique sua conexão.",error);
+      console.log("Erro:", error);
+      setError("Falha ao fazer login. Verifique sua conexão.");
     }
   };
-  
 
   const fetchUser = async (token) => {
     try {
@@ -60,13 +62,12 @@ export default function Login({ navigation }) {
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <KeyboardAvoidingView
-        style={styles.container}
+        style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <Logo />
-        <View style={styles.formContainer}>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
+          <Logo />
           <InputField
             label="E-mail"
             value={email}
@@ -99,12 +100,18 @@ export default function Login({ navigation }) {
             ]}
             onPress={handleLoginButton}
           >
-            <Text style={[styles.buttonText,{ color: theme.mode === "dark" ? "#000" : "#fff"}]}>Entrar</Text>
+            <Text
+              style={[
+                styles.buttonText,
+                { color: theme.mode === "dark" ? "#000" : "#fff" },
+              ]}
+            >
+              Entrar
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => navigation.navigate("ForgotPassword")}
-            style={styles.forgotPassword}
           >
             <Text style={[styles.textLink, { color: theme.text }]}>
               Esqueci minha senha
@@ -124,7 +131,6 @@ export default function Login({ navigation }) {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </View>
     </SafeAreaView>
   );
 }
@@ -136,10 +142,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 20,
   },
-  formContainer: {
-    width: "100%",
-    alignItems: "center",
-    marginTop: 100,
+  title: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 20,
   },
   errorText: {
     color: "red",
@@ -149,28 +155,26 @@ const styles = StyleSheet.create({
   button: {
     paddingVertical: 14,
     borderRadius: 8,
-    width: 310,
+    width: "100%",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 16,
+    marginVertical: 12,
   },
   buttonText: {
-    color: "#fff",
     fontSize: 18,
     fontWeight: "bold",
   },
-  forgotPassword: {
-    marginBottom: 20,
-  },
-  registerContainer: {
-    alignItems: "center",
-  },
   textLink: {
-    marginTop: 15,
     fontSize: 16,
+    marginTop: 15,
   },
   textHighlight: {
     fontSize: 20,
     fontWeight: "bold",
   },
+  registerContainer: {
+    alignItems: "center",
+    marginTop: 10,
+  },
 });
+

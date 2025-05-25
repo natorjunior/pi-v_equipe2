@@ -1,4 +1,4 @@
-//Inoperante ainda
+//Buga
 
 import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView } from "react-native";
@@ -84,7 +84,13 @@ export default function ChangeGenres({ navigation, route }) {
 
                 <TouchableOpacity
                     style={[styles.nextButton, { backgroundColor: theme.mode === "dark" ? "#fff" : "#0D0058" }]}
-                    onPress={() => navigation.navigate("EditProfile", { genres: selectedGenres })}
+                    onPress={() => {
+                    const selectedGenresArray = Object.keys(selectedGenres).filter(genre => selectedGenres[genre]);
+                    navigation.navigate("EditProfile", { 
+                        genres: selectedGenresArray,
+                        motivation: route.params.motivation 
+                    });
+                    }}
                 >
                     <Text style={[styles.nextButtonText, { color: theme.mode === "dark" ? "#000" : "#fff" }]}>
                         Continuar

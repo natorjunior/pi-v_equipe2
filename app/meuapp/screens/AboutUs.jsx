@@ -36,7 +36,7 @@ export default function AboutUs({ navigation }) {
         <SafeAreaView style={{ flex: 1 }}>
         <View style={[styles.container, { backgroundColor: theme.background }]}> 
             <View style={[styles.header, { backgroundColor: theme.background }]}>
-                <TouchableOpacity onPress={() => navigation.navigate("Home")} style={styles.backButton}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={theme.mode === "dark" ? "#fff" : "#000"} />
                 </TouchableOpacity>
                 <Text style={[styles.headerText, { color: theme.text }]}>Desenvolvedores</Text>

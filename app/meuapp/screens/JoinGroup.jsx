@@ -5,6 +5,8 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useTheme } from "../service/themeService";
 import { useNavigation } from "@react-navigation/native";
@@ -26,18 +28,15 @@ export default function JoinGroup() {
       setError("Por favor, informe o apelido do grupo.");
       return;
     }
-
-    const groupAlias = alias.replace("@", "").trim();
-
     try {
       setLoading(true);
-      const response = await joinGroup(groupAlias);
+      const response = await joinGroup(alias);
 
       if (response == null) {
         navigation.navigate("Groups");
       }
     } catch (error) {
-      console.error("Erro ao entrar no grupo:", error);
+      console.log("Erro ao entrar no grupo:", error);
       setError(
         error.message?.includes("incompletos")
           ? error.message
@@ -50,70 +49,75 @@ export default function JoinGroup() {
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
+          <View style={styles.header}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
+            >
+              <Ionicons
+                name="arrow-back"
+                size={24}
+                color={theme.mode === "dark" ? "#fff" : "#000"}
+              />
+            </TouchableOpacity>
+            <Text style={[styles.headerText, { color: theme.text }]}>
+              Entrar em um grupo
+            </Text>
+          </View>
+
+          <View style={styles.content}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.inner}
           >
-            <Ionicons
-              name="arrow-back"
-              size={24}
-              color={theme.mode === "dark" ? "#fff" : "#000"}
+            <InputField
+              label="Tag do grupo"
+              value={alias}
+              onChangeText={setAlias}
+              placeholder="@Tag"
+              autoCapitalize="none"
             />
-          </TouchableOpacity>
-          <Text style={[styles.headerText, { color: theme.text }]}>
-            Entrar em um grupo
-          </Text>
-        </View>
 
-        <View style={styles.content}>
-          <InputField
-            label="Apelido do grupo"
-            value={alias}
-            onChangeText={setAlias}
-            placeholder="@alias"
-            autoCapitalize="none"
-          />
+            {error && <Text style={styles.error}>{error}</Text>}
 
-          {error && <Text style={styles.error}>{error}</Text>}
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              {
-                backgroundColor:
-                  theme.mode === "dark" ? "#DFBA69" : "#003366",
-              },
-            ]}
-            onPress={handleJoinGroup}
-            disabled={loading}
-          >
-            <Text
+            <TouchableOpacity
               style={[
-                styles.buttonText,
-                { color: theme.mode === "dark" ? "#000" : "#fff" },
+                styles.button,
+                {
+                  backgroundColor:
+                    theme.mode === "dark" ? "#DFBA69" : "#003366",
+                },
               ]}
+              onPress={handleJoinGroup}
+              disabled={loading}
             >
-              {loading ? "Entrando..." : "Entrar no Grupo"}
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={[
+                  styles.buttonText,
+                  { color: theme.mode === "dark" ? "#000" : "#fff" },
+                ]}
+              >
+                {loading ? "Entrando..." : "Entrar no Grupo"}
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.miniButton}
-            onPress={() => navigation.navigate("CreateGroup")}
-          >
-            <Text
-              style={[
-                styles.buttonText,
-                { color: theme.mode === "dark" ? "#fff" : "#000" },
-              ]}
+            <TouchableOpacity
+              style={styles.miniButton}
+              onPress={() => navigation.navigate("CreateGroup")}
             >
-              Criar um Grupo
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={[
+                  styles.buttonText,
+                  { color: theme.mode === "dark" ? "#fff" : "#000" },
+                ]}
+              >
+                Criar um Grupo
+              </Text>
+            </TouchableOpacity>
+            </KeyboardAvoidingView>
+          </View>
         </View>
-      </View>
     </SafeAreaView>
   );
 }
@@ -122,6 +126,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  inner: {
+    width: "100%",
+    top: 80,
+    alignItems: "center",
+    marginTop: 50,
   },
   header: {
     flexDirection: "row",

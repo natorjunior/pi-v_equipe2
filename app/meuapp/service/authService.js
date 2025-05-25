@@ -5,7 +5,7 @@ export const checkAuth = async () => {
         const token = await SecureStore.getItemAsync("token");
         return !!token;
     } catch (error) {
-        console.error("Erro ao verificar autenticação:", error);
+        console.log("Erro ao verificar autenticação:", error);
         return false;
     }
 };
@@ -16,7 +16,7 @@ export const logoutUser = async () => {
         console.log("Token de autenticação apagado com sucesso.");
         return true;
     } catch (error) {
-        console.error("Erro ao fazer logout:", error);
+        console.log("Erro ao fazer logout:", error);
         return false;
     }
 };
