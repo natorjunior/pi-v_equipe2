@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, TIMESTAMP, func
+from sqlalchemy import Column, Integer, String, Text, TIMESTAMP, func, relationship
 
 from app.src.infra.database.base import Base
 
@@ -15,3 +15,17 @@ class User(Base):
     created_at = Column(TIMESTAMP, server_default = func.now())
     motivation = Column(Text)
     genres = Column(Text, nullable=True)
+
+    checkins = relationship(
+        "Checkin",
+        backref="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    
+    group_participations = relationship(
+        "GroupParticipant",
+        backref="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )

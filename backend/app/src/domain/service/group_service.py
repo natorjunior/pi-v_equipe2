@@ -120,10 +120,10 @@ class GroupService:
             )
 
         group_participant = self.group_participant_repository.get_by_user_id_and_group_by_id(user_id, group.id)
-        if group_participant:
-            self.group_participant_repository.remove_participant(user_id, group.id)
-        else:
+        if not group_participant:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=" Vocé não faz parte deste grupo"
+                detail="Você não faz parte deste grupo"
             )
+
+        self.group_participant_repository.remove_participant(user_id, group.id)

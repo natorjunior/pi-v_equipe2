@@ -93,21 +93,13 @@ class UserService:
         updated_user = self.user_repository.set_user_avatar(user_id, avatar_url)
         return get_user_data_instance(updated_user)
 
-    def delete_user(self, user_id):
-        try:
-            user = self.user_repository.get_user_by_id(user_id)
-            if not user:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Usuário não encontrado"
-                )
-            self.user_repository.delete_user(user_id)
+    def delete_user(self, user_id: int):
+        user = self.user_repository.get_user_by_id(user_id)
+        if not user:
             raise HTTPException(
-                status_code=status.HTTP_200_OK,
-                detail="Usuário deletado com sucesso"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuário não encontrado"
             )
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=str(e)
-            )
+
+        self.user_repository.delete_user(user_id)
+        return {"detail": "Usuário deletado com sucesso"}
