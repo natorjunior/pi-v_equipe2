@@ -8,8 +8,8 @@ class Checkin(Base):
     __tablename__ = "checkin"
 
     id = Column(Integer, primary_key = True, autoincrement = True)
-    group_id = Column(Integer, ForeignKey("group.id"), nullable = False)
-    user_id = Column(Integer, ForeignKey("user.id"), nullable = False)
+    group_id = Column(Integer, ForeignKey("group.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
     title = Column(String(255), nullable = False)
     description = Column(Text)
     photo = Column(Text)
