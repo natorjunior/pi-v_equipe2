@@ -18,7 +18,7 @@ npm install
 
 3. **Instale dependências adicionais do Expo:**
 
-npm install @react-native-async-storage/async-storage@^2.1.2 @react-native-community/cli@latest @react-navigation/bottom-tabs@^7.2.1 @react-navigation/native@^7.0.15 @react-navigation/stack@^7.1.2 axios@^1.8.4 expo@^53.0.0 expo-av@^15.1.4 expo-barcode-scanner@^13.0.1 expo-checkbox@~4.1.4 expo-doctor@^1.12.8 expo-image@~2.1.7 expo-image-picker@^16.1.4 expo-linear-gradient@~14.1.4 expo-secure-store@~14.2.3 expo-video@~2.1.8 jwt-decode@^4.0.0 react@^19.0.0 react-dom@^19.0.0 react-native@^0.79.2 react-native-gesture-handler@~2.24.0 react-native-mail@^6.1.1 react-native-safe-area-context@5.4.0 react-native-screens@~4.10.0 react-native-video@^6.11.0
+npm install @react-native-async-storage/async-storage@^2.1.2 @react-native-community/cli@latest @react-navigation/bottom-tabs@^7.2.1 @react-navigation/native@^7.0.15 @react-navigation/stack@^7.1.2 axios@^1.8.4 expo@^53.0.0 expo-av@^15.1.4 expo-checkbox@~4.1.4 expo-doctor@^1.12.8 expo-image@~2.1.7 expo-image-picker@^16.1.4 expo-linear-gradient@~14.1.4 expo-secure-store@~14.2.3 expo-video@~2.1.8 jwt-decode@^4.0.0 react@^19.0.0 react-dom@^19.0.0 react-native@^0.79.2 react-native-gesture-handler@~2.24.0 react-native-mail@^6.1.1 react-native-safe-area-context@5.4.0 react-native-screens@~4.10.0 react-native-video@^6.11.0 react-native-image-picker@^6.1.4
 
 4. **Execute o projeto:**
 

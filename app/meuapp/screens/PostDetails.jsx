@@ -1,5 +1,5 @@
-    import React, { useState, useEffect } from 'react';
-    import {
+import React, { useState, useEffect } from 'react';
+import {
     View,
     Text,
     StyleSheet,
@@ -9,23 +9,23 @@
     TouchableOpacity,
     ActivityIndicator,
     Alert,
-    } from 'react-native';
-    import { Ionicons } from '@expo/vector-icons';
-    import { Menu, Provider } from 'react-native-paper';
-    import * as SecureStore from 'expo-secure-store';
-    import { useTheme } from '../service/themeService';
-    import { getGroup } from '../service/groupService';
-    import { deleteCheckin } from '../service/checkinService';
-    import dayjs from 'dayjs';
-    import utc from 'dayjs/plugin/utc';
-    import timezone from 'dayjs/plugin/timezone';
-    import 'dayjs/locale/pt-br';
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Menu, Provider } from 'react-native-paper';
+import * as SecureStore from 'expo-secure-store';
+import { useTheme } from '../service/themeService';
+import { getGroup } from '../service/groupService';
+import { deleteCheckin } from '../service/checkinService';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+import 'dayjs/locale/pt-br';
 
-    dayjs.extend(utc);
-    dayjs.extend(timezone);
-    dayjs.locale('pt-br');
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.locale('pt-br');
 
-    export default function PostDetails({ route, navigation }) {
+export default function PostDetails({ route, navigation }) {
     const { theme } = useTheme();
     const { checkin } = route.params;
 
@@ -134,7 +134,9 @@
                 )}
 
                 <Text style={[styles.postText, { color: theme.text }]}>{checkin.title}</Text>
-                <Text style={[styles.postText, { color: theme.text }]}>Descrição: {checkin.description}</Text>
+                {checkin.description ? (
+                    <Text style={[styles.postText, { color: theme.text }]}>Descrição: {checkin.description}</Text>
+                ) : null}
                 <Text style={[styles.postGroup, { color: theme.text }]}>
                 Postado no grupo {group ? group.group_name : 'Grupo não encontrado'}
                 </Text>
@@ -150,7 +152,7 @@
     );
     }
 
-    const styles = StyleSheet.create({
+const styles = StyleSheet.create({
     container: {
         flex: 1,
     },

@@ -2,7 +2,6 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { useColorScheme, StatusBar } from "react-native";
 import * as SecureStore from "expo-secure-store";
 
-// Definição dos temas
 const lightTheme = {
     mode: "light",
     background: "#f0f0f0",

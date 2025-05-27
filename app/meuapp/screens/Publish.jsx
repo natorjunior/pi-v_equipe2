@@ -9,15 +9,17 @@ import {
   ActivityIndicator,
   Platform,
   KeyboardAvoidingView,
+  PermissionsAndroid,
+  Alert,
 } from "react-native";
 import { useTheme } from "../service/themeService";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as ImagePicker from "expo-image-picker";
 import { createCheckin } from "../service/checkinService";
 import * as SecureStore from "expo-secure-store";
 import InputField from "../components/InputField";
+import { launchCamera, launchImageLibrary } from "react-native-image-picker";
 
 export default function Publish() {
   const { theme } = useTheme();
@@ -42,6 +44,102 @@ export default function Publish() {
     })();
   }, []);
 
+  const requestCameraPermission = async () => {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.CAMERA,
+        {
+          title: "Permissão da Câmera",
+          message: "O app precisa de acesso à sua câmera",
+          buttonNeutral: "Perguntar depois",
+          buttonNegative: "Cancelar",
+          buttonPositive: "OK",
+        }
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (err) {
+      console.warn(err);
+      return false;
+    }
+  };
+
+  const requestStoragePermission = async () => {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+        {
+          title: "Permissão de Armazenamento",
+          message: "O app precisa acessar seus arquivos",
+          buttonNeutral: "Perguntar depois",
+          buttonNegative: "Cancelar",
+          buttonPositive: "OK",
+        }
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (err) {
+      console.warn(err);
+      return false;
+    }
+  };
+
+  const handleImage = async (type) => {
+    try {
+      setLoading(true);
+      
+      // Verificar permissões
+      if (type === "camera") {
+        const hasPermission = await requestCameraPermission();
+        if (!hasPermission) {
+          Alert.alert("Permissão negada", "Não é possível acessar a câmera sem permissão");
+          return;
+        }
+      } else {
+        const hasPermission = await requestStoragePermission();
+        if (!hasPermission) {
+          Alert.alert("Permissão negada", "Não é possível acessar a galeria sem permissão");
+          return;
+        }
+      }
+
+      const options = {
+        mediaType: "photo",
+        quality: 0.8,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        includeBase64: false,
+      };
+
+      let result;
+      if (type === "camera") {
+        result = await launchCamera(options);
+      } else {
+        result = await launchImageLibrary(options);
+      }
+
+      if (result.didCancel) {
+        console.log("Usuário cancelou a seleção");
+      } else if (result.errorCode) {
+        console.log("ImagePicker Error: ", result.errorMessage);
+        Alert.alert("Erro", "Não foi possível acessar a imagem");
+      } else if (result.assets && result.assets.length > 0) {
+        const selectedImage = result.assets[0];
+        
+        setImage({
+          uri: selectedImage.uri,
+          width: selectedImage.width,
+          height: selectedImage.height,
+          fileName: selectedImage.fileName || `image_${Date.now()}.jpg`,
+          type: selectedImage.type || "image/jpeg",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao selecionar imagem:", error);
+      Alert.alert("Erro", "Ocorreu um erro ao processar a imagem");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handlePublish = async () => {
     if (!selectedGroupId) {
       navigation.navigate("Groups", {
@@ -52,16 +150,12 @@ export default function Publish() {
     }
 
     if (!title.trim()) {
-      navigation.navigate("Publish", {
-        titleError: "Por favor, informe um título antes de publicar.",
-      });
+      Alert.alert("Atenção", "Por favor, informe um título antes de publicar.");
       return;
     }
 
-    if (!image) {
-      navigation.navigate("Publish", {
-        imageError: "Por favor, selecione uma imagem antes de publicar.",
-      });
+    if (!image || !image.uri) {
+      Alert.alert("Atenção", "Por favor, selecione uma imagem antes de publicar.");
       return;
     }
 
@@ -76,54 +170,9 @@ export default function Publish() {
       setDescription("");
       setImage(null);
     } catch (error) {
-      navigation.navigate("Publish", {
-        error: error.message || "Não foi possível publicar o check-in.",
-      });
+      Alert.alert("Erro", error.message || "Não foi possível publicar o check-in.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleImage = async (type) => {
-    try {
-      const { status } =
-        type === "camera"
-          ? await ImagePicker.requestCameraPermissionsAsync()
-          : await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (status !== "granted") {
-        navigation.navigate("Publish", {
-          permissionError: "Precisamos acessar sua câmera para tirar uma foto.",
-        });
-        return;
-      }
-
-      const result =
-        type === "camera"
-          ? await ImagePicker.launchCameraAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
-              allowsEditing: true,
-              aspect: [1, 1],
-              quality: 0.8,
-            })
-          : await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
-              allowsEditing: true,
-              aspect: [1, 1],
-              quality: 0.8,
-            });
-
-      if (!result.canceled) {
-        setImage({
-          uri: result.assets[0].uri,
-          name: result.assets[0].uri.split("/").pop(),
-          type: "image/jpeg",
-        });
-      }
-    } catch {
-      navigation.navigate("Publish", {
-        error: "Não foi possível selecionar/tirar uma foto.",
-      });
     }
   };
 
@@ -152,16 +201,7 @@ export default function Publish() {
               </Text>
             </View>
 
-            <View
-              style={[
-                styles.imageButtons,
-                {
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                },
-              ]}
-            >
+            <View style={styles.imageButtons}>
               <TouchableOpacity
                 style={[styles.imageButton, { borderColor: theme.border }]}
                 onPress={() => handleImage("camera")}
@@ -185,7 +225,11 @@ export default function Publish() {
             </View>
 
             {image && (
-              <Image source={{ uri: image.uri }} style={styles.image} resizeMode="cover" />
+              <Image 
+                source={{ uri: image.uri }} 
+                style={styles.image} 
+                resizeMode="cover"
+              />
             )}
 
             <InputField
@@ -193,11 +237,11 @@ export default function Publish() {
                 styles.input,
                 {
                   backgroundColor: theme.inputBackground,
-                  color: theme.mode,
+                  color: theme.text,
                   borderColor: theme.border,
                 },
               ]}
-              label={"Titulo"}
+              label={"Título"}
               placeholder="Título"
               placeholderTextColor={theme.placeholder}
               value={title}
@@ -212,7 +256,7 @@ export default function Publish() {
                 styles.descriptionInput,
                 {
                   backgroundColor: theme.inputBackground,
-                  color: theme.mode,
+                  color: theme.text,
                   borderColor: theme.border,
                 },
               ]}
@@ -299,6 +343,8 @@ const styles = StyleSheet.create({
   imageButtons: {
     width: "100%",
     marginBottom: 15,
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   imageButton: {
     flex: 1,
