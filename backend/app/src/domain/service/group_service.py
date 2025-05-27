@@ -87,13 +87,14 @@ class GroupService:
                 detail="Grupo não encontrado"
             )
 
-        if group.created_by != user_id:
+        if group.created_by == user_id:
+            self.group_participant_repository.remove_all_participants(group_id)
+            return self.group_repository.delete_group(group_id)
+        else:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Apenas o dono pode deletar o grupo"
             )
-        self.group_participant_repository.remove_all_participants(group_id)
-        return self.group_repository.delete_group(group_id)
 
     def join_group(self, user_id, group_alias):
         group = self.group_repository.get_group_by_alias(group_alias)
@@ -103,7 +104,7 @@ class GroupService:
                 detail="Grupo não encontrado"
             )
         group_participant = self.group_participant_repository.get_by_user_id_and_group_by_id(user_id, group.id)
-        if not group_participant:
+        if group_participant:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Você já faz parte deste grupo"
@@ -119,9 +120,10 @@ class GroupService:
             )
 
         group_participant = self.group_participant_repository.get_by_user_id_and_group_by_id(user_id, group.id)
-        if not group_participant:
+        if group_participant:
+            self.group_participant_repository.remove_participant(user_id, group.id)
+        else:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Você não faz parte deste grupo"
+                detail=" Vocé não faz parte deste grupo"
             )
-        self.group_participant_repository.remove_participant(user_id, group.id)
