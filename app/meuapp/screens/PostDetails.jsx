@@ -9,6 +9,7 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     Alert,
+    Modal
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Menu, Provider } from 'react-native-paper';
@@ -32,6 +33,8 @@ export default function PostDetails({ route, navigation }) {
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState(null);
+    const [avatarLoading, setAvatarLoading] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
     const [menuVisible, setMenuVisible] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
@@ -103,11 +106,41 @@ export default function PostDetails({ route, navigation }) {
             </View>
 
             <ScrollView contentContainerStyle={styles.container}>
+                <Modal
+                animationType="fade"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+                >
+                <View style={styles.modalBackground}>
+                    <TouchableOpacity style={styles.modalCloseArea} onPress={() => setModalVisible(false)}>
+                    <Ionicons name="close" size={30} color="#fff" />
+                    </TouchableOpacity>
+                    <Image
+                    source={{ uri: checkin.user.avatar }}
+                    style={styles.fullscreenImage}
+                    resizeMode="contain"
+                    />
+                </View>
+                </Modal>
+
             <View style={[styles.post, { backgroundColor: theme.cardBackground }]}>
                 <View style={styles.postHeader}>
-                {checkin.user.avatar && (
-                    <Image source={{ uri: checkin.user.avatar }} style={styles.avatar} />
-                )}
+                <TouchableOpacity onPress={() => setModalVisible(true)}>
+                    {avatarLoading && (
+                    <ActivityIndicator size="large" color={theme.mode === "dark" ? "#fff" : "#000"} style={styles.avatarLoader} />
+                    )}
+                    {checkin.user.avatar && !avatarLoading && (
+                    <Image
+                        source={{ uri: checkin.user.avatar }}
+                        style={styles.avatar}
+                        onLoadStart={() => setAvatarLoading(true)}
+                        onLoadEnd={() => setAvatarLoading(false)}
+                    />
+                    )}
+                </TouchableOpacity>
+
+
 
                 <Text style={[styles.postTitle, { color: theme.text, flex: 1 }]}>
                     @{checkin.user.name}
@@ -213,4 +246,23 @@ const styles = StyleSheet.create({
         paddingVertical: 4,
         borderRadius: 8,
     },
+    modalBackground: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+    },
+    fullscreenImage: {
+    width: "90%",
+    height: "70%",
+    borderRadius: 10,
+    },
+    modalCloseArea: {
+    position: "absolute",
+    top: 50,
+    right: 30,
+    zIndex: 2,
+    padding: 10,
+},
+
 });
