@@ -17,56 +17,74 @@ import { joinGroup } from "../service/groupService";
 export default function JoinGroup() {
   const { theme } = useTheme();
   const navigation = useNavigation();
+
   const [alias, setAlias] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleJoinGroup = async () => {
-    setError(null);
+const handleJoinGroup = async () => {
+  setError(null);
 
-    if (!alias.trim()) {
-      setError("Por favor, informe o apelido do grupo.");
-      return;
+  if (!alias.trim()) {
+    setError("Por favor, informe o apelido do grupo.");
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    const response = await joinGroup(alias);
+
+    if (response == null) {
+      navigation.navigate("Groups");
     }
-    try {
-      setLoading(true);
-      const response = await joinGroup(alias);
 
-      if (response == null) {
-        navigation.navigate("Groups");
+  } catch (error) {
+    console.log("Erro ao entrar no grupo:", error);
+
+    if (error.response) {
+      const status = error.response.status;
+
+      switch (status) {
+        case 401:
+          setError("Você já está no grupo digitado.");
+          break;
+        case 404:
+          setError("Grupo não encontrado. Verifique a tag e tente novamente.");
+          break;
+        case 422:
+          setError("Dados inválidos. Verifique o apelido informado.");
+          break;
+        default:
+          setError("Erro ao entrar no grupo. Tente novamente mais tarde.");
+          break;
       }
-    } catch (error) {
-      console.log("Erro ao entrar no grupo:", error);
-      setError(
-        error.message?.includes("incompletos")
-          ? error.message
-          : "Erro ao entrar no grupo. Verifique o apelido e tente novamente."
-      );
-    } finally {
-      setLoading(false);
+    } else {
+      setError("Erro ao entrar no grupo. Tente novamente mais tarde.");
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-        <View style={[styles.container, { backgroundColor: theme.background }]}>
-          <View style={styles.header}>
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={styles.backButton}
-            >
-              <Ionicons
-                name="arrow-back"
-                size={24}
-                color={theme.mode === "dark" ? "#fff" : "#000"}
-              />
-            </TouchableOpacity>
-            <Text style={[styles.headerText, { color: theme.text }]}>
-              Entrar em um grupo
-            </Text>
-          </View>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons
+              name="arrow-back"
+              size={24}
+              color={theme.mode === "dark" ? "#fff" : "#000"}
+            />
+          </TouchableOpacity>
+          <Text style={[styles.headerText, { color: theme.text }]}>
+            Entrar em um grupo
+          </Text>
+        </View>
 
-          <View style={styles.content}>
+        <View style={styles.content}>
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.inner}
@@ -85,8 +103,7 @@ export default function JoinGroup() {
               style={[
                 styles.button,
                 {
-                  backgroundColor:
-                    theme.mode === "dark" ? "#DFBA69" : "#003366",
+                  backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
                 },
               ]}
               onPress={handleJoinGroup}
@@ -115,9 +132,9 @@ export default function JoinGroup() {
                 Criar um Grupo
               </Text>
             </TouchableOpacity>
-            </KeyboardAvoidingView>
-          </View>
+          </KeyboardAvoidingView>
         </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -126,12 +143,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 20,
-  },
-  inner: {
-    width: "100%",
-    top: 80,
-    alignItems: "center",
-    marginTop: 50,
   },
   header: {
     flexDirection: "row",
@@ -151,6 +162,12 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
+  },
+  inner: {
+    width: "100%",
+    top: 80,
+    alignItems: "center",
+    marginTop: 50,
   },
   button: {
     paddingVertical: 14,
@@ -179,4 +196,3 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
-

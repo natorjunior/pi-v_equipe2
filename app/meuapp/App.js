@@ -1,3 +1,5 @@
+//Esperar o backend pro join, montar os rankings, ajeitar o editprofile e publicação
+
 import { useEffect, useState } from "react";
 import { BackHandler, ToastAndroid, Platform, Alert } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";

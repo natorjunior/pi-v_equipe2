@@ -1,5 +1,5 @@
-    import React, { useState, useEffect } from 'react';
-    import {
+import React, { useState, useEffect } from 'react';
+import {
     View,
     Text,
     StyleSheet,
@@ -9,29 +9,32 @@
     TouchableOpacity,
     ActivityIndicator,
     Alert,
-    } from 'react-native';
-    import { Ionicons } from '@expo/vector-icons';
-    import { Menu, Provider } from 'react-native-paper';
-    import * as SecureStore from 'expo-secure-store';
-    import { useTheme } from '../service/themeService';
-    import { getGroup } from '../service/groupService';
-    import { deleteCheckin } from '../service/checkinService';
-    import dayjs from 'dayjs';
-    import utc from 'dayjs/plugin/utc';
-    import timezone from 'dayjs/plugin/timezone';
-    import 'dayjs/locale/pt-br';
+    Modal
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Menu, Provider } from 'react-native-paper';
+import * as SecureStore from 'expo-secure-store';
+import { useTheme } from '../service/themeService';
+import { getGroup } from '../service/groupService';
+import { deleteCheckin } from '../service/checkinService';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+import 'dayjs/locale/pt-br';
 
-    dayjs.extend(utc);
-    dayjs.extend(timezone);
-    dayjs.locale('pt-br');
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.locale('pt-br');
 
-    export default function PostDetails({ route, navigation }) {
+export default function PostDetails({ route, navigation }) {
     const { theme } = useTheme();
     const { checkin } = route.params;
 
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState(null);
+    const [avatarLoading, setAvatarLoading] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
     const [menuVisible, setMenuVisible] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
@@ -103,11 +106,41 @@
             </View>
 
             <ScrollView contentContainerStyle={styles.container}>
+                <Modal
+                animationType="fade"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+                >
+                <View style={styles.modalBackground}>
+                    <TouchableOpacity style={styles.modalCloseArea} onPress={() => setModalVisible(false)}>
+                    <Ionicons name="close" size={30} color="#fff" />
+                    </TouchableOpacity>
+                    <Image
+                    source={{ uri: checkin.user.avatar }}
+                    style={styles.fullscreenImage}
+                    resizeMode="contain"
+                    />
+                </View>
+                </Modal>
+
             <View style={[styles.post, { backgroundColor: theme.cardBackground }]}>
                 <View style={styles.postHeader}>
-                {checkin.user.avatar && (
-                    <Image source={{ uri: checkin.user.avatar }} style={styles.avatar} />
-                )}
+                <TouchableOpacity onPress={() => setModalVisible(true)}>
+                    {avatarLoading && (
+                    <ActivityIndicator size="large" color={theme.mode === "dark" ? "#fff" : "#000"} style={styles.avatarLoader} />
+                    )}
+                    {checkin.user.avatar && !avatarLoading && (
+                    <Image
+                        source={{ uri: checkin.user.avatar }}
+                        style={styles.avatar}
+                        onLoadStart={() => setAvatarLoading(true)}
+                        onLoadEnd={() => setAvatarLoading(false)}
+                    />
+                    )}
+                </TouchableOpacity>
+
+
 
                 <Text style={[styles.postTitle, { color: theme.text, flex: 1 }]}>
                     @{checkin.user.name}
@@ -134,7 +167,9 @@
                 )}
 
                 <Text style={[styles.postText, { color: theme.text }]}>{checkin.title}</Text>
-                <Text style={[styles.postText, { color: theme.text }]}>Descrição: {checkin.description}</Text>
+                {checkin.description ? (
+                    <Text style={[styles.postText, { color: theme.text }]}>Descrição: {checkin.description}</Text>
+                ) : null}
                 <Text style={[styles.postGroup, { color: theme.text }]}>
                 Postado no grupo {group ? group.group_name : 'Grupo não encontrado'}
                 </Text>
@@ -150,7 +185,7 @@
     );
     }
 
-    const styles = StyleSheet.create({
+const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
@@ -211,4 +246,23 @@
         paddingVertical: 4,
         borderRadius: 8,
     },
+    modalBackground: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+    },
+    fullscreenImage: {
+    width: "90%",
+    height: "70%",
+    borderRadius: 10,
+    },
+    modalCloseArea: {
+    position: "absolute",
+    top: 50,
+    right: 30,
+    zIndex: 2,
+    padding: 10,
+},
+
 });

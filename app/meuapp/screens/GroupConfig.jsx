@@ -1,4 +1,4 @@
-//inoperante ainda
+//inoperante ainda, falta o bakc liberar o alias do grupo
 
 import { useState, useEffect } from "react";
 import {

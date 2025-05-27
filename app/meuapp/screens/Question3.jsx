@@ -80,7 +80,7 @@ export default function Question3({ navigation, route }) {
                                 <Checkbox
                                     value={selectedGenres[genre] || false}
                                     onValueChange={() => toggleGenre(genre)}
-                                    color={theme === "dark" ? "#fff" : "#0D0058"}
+                                    color={theme.mode === "dark" ? "#000" : "#000"}
                                 />
                                 <Text style={[styles.buttonText, { color: theme.mode === "dark" ? "#fff" : "#000" }]}>
                                     {genre}

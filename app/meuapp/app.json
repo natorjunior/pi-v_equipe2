@@ -1,27 +1,25 @@
 {
   "expo": {
-    "name": "Stay_and_Learn",
+    "name": "Stay and Learn",
     "slug": "Stay_and_Learn",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/ApkIcon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/ApkIcon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "ios": {
-      "supportsTablet": true
+      "backgroundColor": "#0D0058"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/ApkIcon.png",
+        "backgroundColor": "#0D0058"
       },
       "permissions": [
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ],
       "package": "com.regisrafael.Stay_and_Learn"
     },
@@ -30,17 +28,18 @@
     },
     "plugins": [
       "expo-secure-store",
+      "expo-file-system",
       "react-native-video",
-      "expo-video",
-      "expo-barcode-scanner"
+      "expo-video"
     ],
     "updates": {
       "enabled": false
     },
     "extra": {
       "eas": {
-        "projectId": "c54cf135-ecaf-4e95-a237-7ecddf7c7549"
+        "projectId": "87474c93-2390-4963-b36c-ac911bfaeae4"
       }
-    }
+    },
+    "owner": "regis-rafael"
   }
 }
