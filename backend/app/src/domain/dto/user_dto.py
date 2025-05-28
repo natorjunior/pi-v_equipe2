@@ -1,6 +1,6 @@
 import datetime
 import json
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -27,11 +27,10 @@ class NewUser(BaseModel):
     genres: List[str]
 
 class UserUpdate(BaseModel):
-    name: str = None
-    email: str = None
-    motivation: str = None
-    genres: List[str] = None
-
+    name: Optional[str] = None
+    email: Optional[str] = None
+    motivation: Optional[str] = None
+    genres: Optional[List[str]] = None
 
 class UserUpdatePassword(BaseModel):
     old_password: str
