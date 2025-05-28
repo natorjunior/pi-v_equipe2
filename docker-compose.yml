@@ -20,7 +20,7 @@ services:
     container_name: my-mysql
     restart: always
     ports:
-      - "3307:3306"
+      - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: admin
       MYSQL_DATABASE: run2learn_app
@@ -42,7 +42,7 @@ services:
     container_name: my-minio
     restart: always
     ports:
-      - "7040:9000"
+      - "7041:9000"
     environment:
       MINIO_ACCESS_KEY: chavedeacesso
       MINIO_SECRET_KEY: supersecretchave

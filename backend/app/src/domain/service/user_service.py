@@ -42,7 +42,7 @@ class UserService:
 
         password_hash = self.encryption_service.generate_hash(new_user.password)
 
-        self.user_repository.create_user(
+        created_user = self.user_repository.create_user(
             name=new_user.name,
             email=new_user.email,
             password_hash=password_hash,
@@ -50,6 +50,8 @@ class UserService:
             genres=json.dumps(new_user.genres),
             avatar="default_avatar.jpeg",
         )
+
+        return created_user
 
     def update_user(self, user_id, user_changes: UserUpdate):
         user = self.user_repository.get_user_by_id(user_id)
