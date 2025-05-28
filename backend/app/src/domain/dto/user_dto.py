@@ -14,8 +14,8 @@ def get_user_data_instance(user: User):
         name=user.name,
         email=user.email,
         avatar=avatar_content,
-        motivation=user.motivation,
-        genres=json.loads(user.genres),
+        motivation=user.motivation if user.motivation else "",
+        genres=json.loads(user.genres) if user.genres else [],
         created_at=user.created_at.date()
     )
 
