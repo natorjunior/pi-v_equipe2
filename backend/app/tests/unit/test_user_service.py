@@ -53,7 +53,6 @@ def test_get_user_by_email(mock_minio, user_service):
 @patch("app.src.domain.dto.user_dto.get_file_from_minio", return_value="fake_url")
 def test_create_user(mock_minio, user_service):
     user_service.validation.email_validator.return_value = True
-
     new_user = NewUser(
         name="Nova Mentira",
         email="mentira2@mentir.com",

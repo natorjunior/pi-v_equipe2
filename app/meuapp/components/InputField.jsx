@@ -14,7 +14,13 @@ const InputField = ({ label, value, onChangeText, placeholder, secureTextEntry, 
           placeholderTextColor={theme.placeholder}
           style={[
             styles.input,
-            { backgroundColor: theme.inputBackground, color: theme.inputText, borderColor: theme.border },
+            {
+              backgroundColor: theme.inputBackground,
+              color: theme.inputText,
+              borderColor: theme.border,
+              paddingHorizontal: 24,
+              paddingVertical: 10,
+            },
           ]}
           value={value}
           onChangeText={onChangeText}
@@ -31,12 +37,12 @@ const InputField = ({ label, value, onChangeText, placeholder, secureTextEntry, 
 const styles = StyleSheet.create({
   inputContainer: {
     width: "100%",
-    marginBottom: 20,
+    marginBottom: 20, 
   },
   label: {
     alignSelf: "flex-start",
     fontSize: 16,
-    marginBottom: 8,
+    marginBottom: 8, 
   },
   inputWrapper: {
     flexDirection: "row",
@@ -45,16 +51,15 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    height: 50,
     borderWidth: 1,
     borderRadius: 8,
-    paddingHorizontal: 16,
-    fontSize: 16,
+    fontSize: 20,
   },
   iconContainer: {
     position: "absolute",
-    right: 10,
+    right: 20,
   },
 });
 
 export default InputField;
+

@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+//Esperando o backend
+//import { recoverPassword } from "../service/authService";
+import { useState } from "react";
 import {
   Alert,
   StyleSheet,
@@ -6,13 +8,13 @@ import {
   View,
   TouchableOpacity,
   KeyboardAvoidingView,
+  SafeAreaView,
   Platform,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTheme } from "../service/themeService";
 import Logo from "../components/Logo";
 import InputField from "../components/InputField";
-
 export default function ForgotPassword({ navigation }) {
   const { theme } = useTheme();
   const [email, setEmail] = useState("");
@@ -41,6 +43,7 @@ export default function ForgotPassword({ navigation }) {
   };
 
   return (
+    <SafeAreaView style={{ flex: 1 }}>
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <KeyboardAvoidingView
         style={styles.container}
@@ -72,12 +75,13 @@ export default function ForgotPassword({ navigation }) {
 
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text style={[styles.textLink, { color: theme.text }]}>
-              Voltar para o login
+              Voltar
             </Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
     </View>
+    </SafeAreaView>
   );
 }
 

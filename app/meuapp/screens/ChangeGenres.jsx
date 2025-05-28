@@ -1,18 +1,59 @@
-import { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView } from "react-native";
+import { useEffect, useState } from "react";
+import {
+    View,
+    Text,
+    StyleSheet,
+    ScrollView,
+    TouchableOpacity,
+    SafeAreaView,
+    Alert,
+} from "react-native";
 import { useTheme } from "../service/themeService";
 import { Checkbox } from "expo-checkbox";
+import { getUser, updateUser } from "../service/userService";
 
-export default function Question3({ navigation, route }) {
+export default function ChangeGenres() {
     const { theme } = useTheme();
+    const [motivation, setMotivation] = useState("");
     const [selectedGenres, setSelectedGenres] = useState({});
-    const { motivation } = route.params;
+
+    useEffect(() => {
+        const fetchMotivation = async () => {
+            try {
+                const user = await getUser();
+                setMotivation(user.motivation || "");
+                if (Array.isArray(user.genres)) {
+                    const initialGenres = {};
+                    user.genres.forEach((g) => {
+                        initialGenres[g] = true;
+                    });
+                    setSelectedGenres(initialGenres);
+                }
+            } catch (error) {
+                Alert.alert("Erro", "Não foi possível carregar os dados do usuário.");
+            }
+        };
+        fetchMotivation();
+    }, []);
 
     const toggleGenre = (genre) => {
         setSelectedGenres((prev) => ({
             ...prev,
             [genre]: !prev[genre],
         }));
+    };
+
+    const handleUpdate = async () => {
+        try {
+            const selectedArray = Object.entries(selectedGenres)
+                .filter(([_, isSelected]) => isSelected)
+                .map(([genre]) => genre);
+
+            await updateUser({ genres: selectedArray });
+            Alert.alert("Sucesso", "Gêneros atualizados com sucesso!");
+        } catch (error) {
+            Alert.alert("Erro", error.message || "Não foi possível atualizar os gêneros");
+        }
     };
 
     const literaryGenres = [
@@ -92,7 +133,7 @@ export default function Question3({ navigation, route }) {
 
                 <TouchableOpacity
                     style={[styles.nextButton, { backgroundColor: theme.mode === "dark" ? "#fff" : "#0D0058" }]}
-                    onPress={() => navigation.navigate("Question4", { ...route.params, selectedGenres: selectedGenres })}
+                    onPress={handleUpdate}
                 >
                     <Text style={[styles.nextButtonText, { color: theme.mode === "dark" ? "#000" : "#fff" }]}>
                         Continuar
@@ -102,6 +143,7 @@ export default function Question3({ navigation, route }) {
         </SafeAreaView>
     );
 }
+
 
 const styles = StyleSheet.create({
     container: {

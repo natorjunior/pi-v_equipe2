@@ -36,7 +36,6 @@ class UserUpdate(BaseModel):
 class UserUpdatePassword(BaseModel):
     old_password: str
     new_password: str
-    new_password_confirmation: str
 
 class UserData(BaseModel):
     name: str

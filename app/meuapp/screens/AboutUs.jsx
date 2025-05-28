@@ -1,7 +1,6 @@
-import React from "react";
-import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, Linking } from "react-native";
+import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, Linking, SafeAreaView } from "react-native";
 import { useTheme } from "../service/themeService";
-import Top from "../components/Top";
+import { Ionicons } from "@expo/vector-icons";
 
 const team = [
     {
@@ -34,8 +33,14 @@ export default function AboutUs({ navigation }) {
     const { theme } = useTheme();
 
     return (
+        <SafeAreaView style={{ flex: 1 }}>
         <View style={[styles.container, { backgroundColor: theme.background }]}> 
-            <Top navigation={navigation} />
+            <View style={[styles.header, { backgroundColor: theme.background }]}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <Ionicons name="arrow-back" size={24} color={theme.mode === "dark" ? "#fff" : "#000"} />
+                </TouchableOpacity>
+                <Text style={[styles.headerText, { color: theme.text }]}>Desenvolvedores</Text>
+            </View>
             <FlatList
                 ListHeaderComponent={() => (
                     <>
@@ -60,6 +65,7 @@ export default function AboutUs({ navigation }) {
                 contentContainerStyle={styles.teamContainer}
             />
         </View>
+        </SafeAreaView>
     );
 }
 
@@ -68,8 +74,8 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     title: {
-        marginTop: 80,
         fontSize: 26,
+        textAlign: "center",
         fontWeight: "bold",
         marginBottom: 10,
     },
@@ -81,6 +87,7 @@ const styles = StyleSheet.create({
         lineHeight: 22,
     },
     sectionTitle: {
+        textAlign: "center",
         fontSize: 22,
         fontWeight: "bold",
         marginTop: 20,
@@ -128,4 +135,22 @@ const styles = StyleSheet.create({
         marginTop: 20,
         marginHorizontal: 20,
     },
+    header: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: 15,
+    },
+    backButton: {
+        padding: 10,
+    },
+    headerText: {
+        fontSize: 20,
+        fontWeight: "bold",
+        flex: 1,
+        textAlign: "center",
+        right: 21,
+    },
+    
 });
+

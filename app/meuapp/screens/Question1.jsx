@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Text, TextInput, StyleSheet, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import { Text, TextInput, StyleSheet, TouchableOpacity, View, SafeAreaView } from "react-native";
 import { useTheme } from "../service/themeService";
 
 export default function Question1({ navigation }) {
@@ -9,49 +9,51 @@ export default function Question1({ navigation }) {
     const isButtonDisabled = name.trim().length === 0;
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.background }]}>
-            <Text style={[styles.text, { color: theme.text }]}>
-                Como podemos te chamar?
-            </Text>
-
-            <TextInput
-                style={[
-                    styles.input,
-                    {
-                        backgroundColor: theme.inputBackground,
-                        borderColor: theme.border,
-                        color: theme.inputText,
-                    },
-                ]}
-                placeholder="Digite seu nome"
-                placeholderTextColor={theme.placeholder}
-                value={name}
-                onChangeText={setName}
-                selectionColor={theme.text}
-                keyboardAppearance={theme.mode}
-            />
-
-            <TouchableOpacity
-                style={[
-                    styles.button,
-                    {
-                        backgroundColor: isButtonDisabled
-                            ? "#ccc"
-                            : theme.mode === "dark" ? "#fff" : "#003366",
-                        opacity: isButtonDisabled ? 0.5 : 1,
-                    },
-                ]}
-                onPress={() => navigation.navigate("Question2", { name })}
-                disabled={isButtonDisabled}
-            >
-                <Text style={[
-                    styles.buttonText,
-                    { color: isButtonDisabled ? "#888" : theme.mode === "dark" ? "#000" : "#fff" }
-                ]}>
-                    Continuar
+        <SafeAreaView style={{ flex: 1 }}>
+            <View style={[styles.container, { backgroundColor: theme.background }]}>
+                <Text style={[styles.text, { color: theme.text }]}>
+                    Como podemos te chamar?
                 </Text>
-            </TouchableOpacity>
-        </View>
+
+                <TextInput
+                    style={[
+                        styles.input,
+                        {
+                            backgroundColor: theme.inputBackground,
+                            borderColor: theme.border,
+                            color: theme.inputText,
+                        },
+                    ]}
+                    placeholder="Digite seu nome"
+                    placeholderTextColor={theme.placeholder}
+                    value={name}
+                    onChangeText={setName}
+                    selectionColor={theme.text}
+                    keyboardAppearance={theme.mode}
+                />
+
+                <TouchableOpacity
+                    style={[
+                        styles.button,
+                        {
+                            backgroundColor: isButtonDisabled
+                                ? "#ccc"
+                                : theme.mode === "dark" ? "#fff" : "#003366",
+                            opacity: isButtonDisabled ? 0.5 : 1,
+                        },
+                    ]}
+                    onPress={() => navigation.navigate("Question2", { name })}
+                    disabled={isButtonDisabled}
+                >
+                    <Text style={[
+                        styles.buttonText,
+                        { color: isButtonDisabled ? "#888" : theme.mode === "dark" ? "#000" : "#fff" }
+                    ]}>
+                        Continuar
+                    </Text>
+                </TouchableOpacity>
+            </View>
+        </SafeAreaView>
     );
 }
 
@@ -60,6 +62,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: "center",
         justifyContent: "center",
+        paddingHorizontal: 20,
     },
     text: {
         fontSize: 22,

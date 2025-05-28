@@ -1,171 +1,269 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   Image,
+  ActivityIndicator,
   Alert,
-  ActivityIndicator
+  PermissionsAndroid,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../service/themeService";
 import { useNavigation } from "@react-navigation/native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getUser, updateUser } from "../service/userService";
 import { Ionicons } from "@expo/vector-icons";
+import InputField from "../components/InputField";
+import { launchCamera, launchImageLibrary } from "react-native-image-picker";
+import * as SecureStore from "expo-secure-store";
+import { getUser, updateUser, uploadAvatar } from "../service/userService";
 
 export default function EditProfile() {
   const { theme } = useTheme();
   const navigation = useNavigation();
-  const [user, setUser] = useState(null);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
   const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    avatar: "",
+  });
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserData = async () => {
       try {
-        const token = await AsyncStorage.getItem("authToken");
-        if (!token) {
-          console.warn("Token de autenticação não encontrado.");
-          return;
-        }
-  
+        const token = await SecureStore.getItemAsync("token");
         const userData = await getUser(token);
-        setUser(userData);
-        setName(userData.name);
-        setEmail(userData.email);
-        setAvatarUrl(userData.avatar || "");
+
+        setFormData({
+          name: userData.name || "",
+          email: userData.email || "",
+          password: "",
+          avatar: userData.avatar || "",
+          motivation: userData.motivation || "",
+          genres: userData.genres || [],
+        });
+        setAvatarPreview(userData.avatar);
       } catch (error) {
-        console.error("Erro ao buscar usuário:", error);
+        Alert.alert("Erro", "Falha ao carregar dados do usuário");
       } finally {
         setLoading(false);
       }
     };
-  
-    fetchUser();
-  }, []);
-  
 
-  const handleUpdate = async () => {
+    fetchUserData();
+  }, []);
+
+  const requestCameraPermission = async () => {
     try {
-      const token = await AsyncStorage.getItem("authToken");
-      if (!token) {
-        Alert.alert("Erro", "Token de autenticação não encontrado.");
-        return;
-      }
-  
-      const updatedData = {
-        name,
-        email,
-        password: password || undefined,
-        avatarUrl,
-      };
-  
-      await updateUser(updatedData, token);
-  
-      Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
-      navigation.goBack();
-    } catch (error) {
-      console.error("Erro ao atualizar perfil:", error);
-      Alert.alert("Erro", "Não foi possível atualizar o perfil.");
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.CAMERA,
+        {
+          title: "Permissão da Câmera",
+          message: "O app precisa de acesso à sua câmera",
+          buttonNeutral: "Perguntar depois",
+          buttonNegative: "Cancelar",
+          buttonPositive: "OK",
+        }
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (err) {
+      console.warn(err);
+      return false;
     }
   };
-  
+
+  const requestStoragePermission = async () => {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+        {
+          title: "Permissão de Armazenamento",
+          message: "O app precisa acessar seus arquivos",
+          buttonNeutral: "Perguntar depois",
+          buttonNegative: "Cancelar",
+          buttonPositive: "OK",
+        }
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (err) {
+      console.warn(err);
+      return false;
+    }
+  };
+
+  const handleImage = async (type) => {
+    try {
+      setUploading(true);
+
+      if (type === "camera") {
+        const hasPermission = await requestCameraPermission();
+        if (!hasPermission) return;
+      } else {
+        const hasPermission = await requestStoragePermission();
+        if (!hasPermission) return;
+      }
+
+      const options = {
+        mediaType: "photo",
+        quality: 0.8,
+        maxWidth: 1024,
+        maxHeight: 1024,
+      };
+
+      const result = type === "camera"
+        ? await launchCamera(options)
+        : await launchImageLibrary(options);
+
+      if (result.assets?.[0]) {
+        const selectedImage = result.assets[0];
+        setAvatarPreview(selectedImage.uri);
+        setFormData(prev => ({ ...prev, avatar: selectedImage.uri }));
+      }
+    } catch (error) {
+      Alert.alert("Erro", "Falha ao atualizar a foto");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+const handleUpdate = async () => {
+  try {
+    const token = await SecureStore.getItemAsync("token");
+
+    if (avatarPreview && avatarPreview.startsWith("file://")) {
+      await uploadAvatar(avatarPreview);
+    }
+
+    const payload = {
+      name: formData.name,
+      email: formData.email,
+    };
+
+    await updateUser(payload);
+    Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
+    navigation.goBack();
+  } catch (error) {
+    Alert.alert("Erro", error.message || "Falha ao atualizar perfil");
+  }
+};
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.text} />
+      </View>
+    );
+  }
 
   return (
-    <LinearGradient
-      colors={[
-        theme.mode === "dark" ? "#0D0058" : "#f0f0f0",
-        theme.mode === "dark" ? "#000000" : "#d0d0d0",
-      ]}
-      style={styles.container}
-    >
-      <View style={[styles.header, { backgroundColor: 'transparent' }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.mode === "dark" ? "#fff" : "#000"} />
-        </TouchableOpacity>
-        <Text style={[styles.headerText, { color: theme.text }]}>Editar Perfil</Text>
-      </View>
-      {loading ? (
-        <ActivityIndicator size="large" color="#0000ff" />
-      ) : (
-        <View style={styles.form}>
-          {avatarUrl ? (
-            <Image source={{ uri: avatarUrl }} style={styles.avatar} />
-          ) : (
-            <View style={styles.defaultAvatar}>
-              <Ionicons name="person" size={60} color="#fff" />
-            </View>
-          )}
-          <TextInput
-            style={[styles.input, { 
-              color: theme.text,
-              backgroundColor: theme.mode === "dark" ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-              borderRadius: 8,
-              padding: 15,
-              borderBottomWidth: 0
-            }]}
-            placeholder="Nome"
-            placeholderTextColor="#aaa"
-            value={name}
-            onChangeText={setName}
-          />
-          <TextInput
-            style={[styles.input, { 
-              color: theme.text,
-              backgroundColor: theme.mode === "dark" ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-              borderRadius: 8,
-              padding: 15,
-              borderBottomWidth: 0
-            }]}
-            placeholder="Email"
-            placeholderTextColor="#aaa"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          <TextInput
-            style={[styles.input, { 
-              color: theme.text,
-              backgroundColor: theme.mode === "dark" ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-              borderRadius: 8,
-              padding: 15,
-              borderBottomWidth: 0
-            }]}
-            placeholder="Nova Senha (opcional)"
-            placeholderTextColor="#aaa"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-          <TextInput
-            style={[styles.input, { 
-              color: theme.text,
-              backgroundColor: theme.mode === "dark" ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-              borderRadius: 8,
-              padding: 15,
-              borderBottomWidth: 0
-            }]}
-            placeholder="URL do Avatar"
-            placeholderTextColor="#aaa"
-            value={avatarUrl}
-            onChangeText={setAvatarUrl}
-          />
-          <TouchableOpacity 
-            style={[styles.button, { backgroundColor: theme.mode === "dark" ? "#4A00E0" : "#007bff" }]} 
-            onPress={handleUpdate}
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
           >
-            <Text style={styles.buttonText}>Salvar Alterações</Text>
+            <Ionicons name="arrow-back" size={24} color={theme.text} />
           </TouchableOpacity>
+          <Text style={[styles.title, { color: theme.text }]}>
+            Editar Perfil
+          </Text>
         </View>
-      )}
-    </LinearGradient>
+
+        <View style={styles.avatarSection}>
+          <View style={styles.avatarContainer}>
+            {avatarPreview ? (
+              <Image source={{ uri: avatarPreview }} style={[styles.avatar, { borderColor: theme.mode === "dark" ? "#DFBA69" : "#003366" }]} />
+            ) : (
+              <View style={[styles.defaultAvatar, { backgroundColor: theme.inputBackground }]}>
+                <Ionicons name="person" size={40} color={theme.text} />
+              </View>
+            )}
+            {uploading && (
+              <View style={styles.loadingOverlay}>
+                <ActivityIndicator size="large" color={theme.text} />
+              </View>
+            )}
+          </View>
+
+          <View style={styles.avatarButtons}>
+            <TouchableOpacity
+              style={[styles.imageButton, { borderColor: theme.border }]}
+              onPress={() => handleImage("camera")}
+              disabled={uploading}
+            >
+              <Ionicons name="camera" size={20} color={theme.text} />
+              <Text style={[styles.buttonText, { color: theme.text }]}>
+                Câmera
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.imageButton, { borderColor: theme.border }]}
+              onPress={() => handleImage("library")}
+              disabled={uploading}
+            >
+              <Ionicons name="image" size={20} color={theme.text} />
+              <Text style={[styles.buttonText, { color: theme.text }]}>
+                Galeria
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <InputField
+          label="Nome"
+          value={formData.name}
+          onChangeText={(text) => setFormData({ ...formData, name: text })}
+          placeholder="Digite seu nome"
+          theme={theme}
+        />
+
+        <InputField
+          label="Email"
+          value={formData.email}
+          onChangeText={(text) => setFormData({ ...formData, email: text })}
+          placeholder="Digite seu email"
+          keyboardType="email-address"
+          theme={theme}
+        />
+
+        <TouchableOpacity
+          style={[styles.secondaryButton, { borderColor: theme.border }]}
+          onPress={() => navigation.navigate("ChangeMotivation")}
+        >
+          <Text style={[styles.secondaryButtonText, { color: theme.text }]}>
+            Alterar Motivação
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.secondaryButton, { borderColor: theme.border }]}
+          onPress={() => navigation.navigate("ChangeGenres")}
+        >
+          <Text style={[styles.secondaryButtonText, { color: theme.text }]}>
+            Alterar Gêneros
+          </Text>
+        </TouchableOpacity>
+
+
+        <TouchableOpacity
+          style={[styles.primaryButton, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366" }]}
+          onPress={handleUpdate}
+          disabled={uploading}
+        >
+          {uploading ? (
+            <ActivityIndicator color={theme.text} />
+          ) : (
+            <Text style={[styles.primaryButtonText, { color: theme.mode === "dark" ? "#000" : "#fff" }]}>
+              Salvar Alterações
+            </Text>
+          )}
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -173,58 +271,92 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scrollContainer: {
+    padding: 20,
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 15,
-    paddingHorizontal: 20,
+    marginBottom: 30,
   },
   backButton: {
     padding: 10,
   },
-  headerText: {
-    fontSize: 20,
+  title: {
+    fontSize: 24,
     fontWeight: "bold",
     flex: 1,
     textAlign: "center",
   },
-  form: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+  avatarSection: {
+    alignItems: "center",
+    marginBottom: 30,
+  },
+  avatarContainer: {
+    position: "relative",
+    marginBottom: 15,
   },
   avatar: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    alignSelf: "center",
-    marginBottom: 20,
     borderWidth: 3,
-    borderColor: "#ccc",
   },
   defaultAvatar: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: "#999",
-    alignSelf: "center",
-    marginBottom: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderWidth: 3,
   },
-  input: {
-    marginBottom: 20,
-    fontSize: 16,
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 60,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  button: {
+  avatarButtons: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  imageButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 5,
+  },
+  primaryButton: {
     padding: 15,
     borderRadius: 10,
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 20,
   },
-  buttonText: {
-    color: "#fff",
-    fontSize: 18,
+  primaryButtonText: {
+    fontSize: 16,
     fontWeight: "bold",
   },
+  secondaryButton: {
+  flexDirection: "row",
+  alignItems: "center",
+  padding: 12,
+  borderRadius: 10,
+  borderWidth: 1,
+  marginTop: 10,
+  gap: 10,
+},
+secondaryButtonText: {
+  fontSize: 16,
+  fontWeight: "bold",
+  justifyContent: "center",
+  alignItems: "center",
+  textAlign: "center",
+  flex: 1,
+},
 });
