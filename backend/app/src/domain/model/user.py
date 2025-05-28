@@ -1,4 +1,6 @@
-from sqlalchemy import Column, Integer, String, Text, TIMESTAMP, func, relationship
+from sqlalchemy import Column, Integer, String, Text, TIMESTAMP, func
+from sqlalchemy.orm import relationship
+
 
 from app.src.infra.database.base import Base
 
