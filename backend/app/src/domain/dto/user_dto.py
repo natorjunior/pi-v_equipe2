@@ -41,6 +41,6 @@ class UserData(BaseModel):
     name: str
     email: str
     avatar: str
-    motivation: str
-    genres: List[str]
+    motivation: str = ""
+    genres: List[str] = []
     created_at: datetime.date
