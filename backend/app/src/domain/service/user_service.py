@@ -60,11 +60,7 @@ class UserService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Usuário não encontado"
             )
-        user.name = user_changes.name
-        user.email = user_changes.email
-        user.motivation = user_changes.motivation
-        user.genres = json.dumps(user_changes.genres)
-        updated_user = self.user_repository.update_user(user_id, user)
+        updated_user = self.user_repository.update_user(user_id, user_changes)
         return get_user_data_instance(updated_user)
 
     def update_user_password(self, user_id, user_changes: UserUpdatePassword):

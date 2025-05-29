@@ -1,3 +1,5 @@
+import json
+
 from sqlalchemy.dialects.mysql import insert
 from sqlalchemy.orm import Session
 from app.src.domain.model.user import User
@@ -50,7 +52,7 @@ class UserRepository:
         if user_changes.motivation:
             user.motivation = user_changes.motivation
         if user_changes.genres:
-            user.genres = user_changes.genres
+            user.genres = json.dumps(user_changes.genres)
 
         self.session.commit()
         self.session.refresh(user)
