@@ -6,6 +6,7 @@ from app.src.domain.dto.group_dto import GroupWrapper, NewGroup
 from app.src.domain.repository.group_participant_repository import GroupParticipantRepository
 from app.src.domain.repository.group_repository import GroupRepository
 from app.src.domain.service.user_service import UserService
+# from app.src.domain.dto.user_dto import get_user_data_instance
 
 
 class GroupService:
@@ -48,17 +49,19 @@ class GroupService:
                 user = self.user_service.get_user_by_id(participant.user_id)
                 member_list.append(user)
 
-            group_wrapper_list.append(
-                GroupWrapper(
-                    id=group.id,
-                    group_name=group.group_name,
-                    description=group.description,
-                    created_by=created_by.name,
-                    created_at=group.created_at,
-                    entry_date=participant.entry_date,
-                    members=member_list
-                )
-            )
+            group_wrapper = {
+                "id": group.id,
+                "group_alias": group.group_alias,
+                "group_name": group.group_name,
+                "description": group.description,
+                "created_by": created_by.name,
+                "created_at": group.created_at,
+                "entry_date": participant.entry_date,
+                "members": member_list
+            }
+
+            group_wrapper_list.append(group_wrapper)
+
         return group_wrapper_list
 
     def create_group(self,user_id:int, new_group:NewGroup):

@@ -11,6 +11,7 @@ class GroupWrapper:
     def __init__(self, **kwargs):
         self.id = kwargs["id"]
         self.group_name = kwargs["group_name"]
+        self.group_alias = kwargs["group_alias"]
         self.description = kwargs["description"]
         self.created_by = kwargs["created_by"]
         self.created_at = kwargs["created_at"]
