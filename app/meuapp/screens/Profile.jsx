@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import {
   View,
   TouchableOpacity,
@@ -9,6 +9,7 @@ import {
   ScrollView,
   SafeAreaView,
   Modal,
+  RefreshControl,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../service/themeService";
@@ -31,33 +32,38 @@ export default function Profile() {
   const navigation = useNavigation();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("posts");
   const [checkins, setUserCheckins] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const scrollViewRef = useRef(null);
 
+  const fetchUser = async () => {
+  try {
+    setRefreshing(true);
+    const token = await SecureStore.getItemAsync("token");
+    if (token) {
+      const userData = await getUser(token);
+      setUser(userData);
+      const checkinsData = await getCheckinsByUser(token);
+      setUserCheckins(checkinsData);
+    } else {
+      console.warn("Token de autenticação não encontrado.");
+      navigation.navigate("Login");
+    }
+  } catch (error) {
+    console.error("Erro no profile ao buscar usuário:", error.message);
+  } finally {
+    setRefreshing(false);
+    setLoading(false);
+  }
+};
+
+
   useFocusEffect(
     useCallback(() => {
-      const fetchUser = async () => {
-        try {
-          setLoading(true);
-          const token = await SecureStore.getItemAsync("token");
-          if (token) {
-            const userData = await getUser(token);
-            setUser(userData);
-            const checkinsData = await getCheckinsByUser(token);
-            setUserCheckins(checkinsData);
-          } else {
-            console.warn("Token de autenticação não encontrado.");
-            navigation.navigate("Login");
-          }
-        } catch (error) {
-          console.error("Erro no profile ao buscar usuário:", error.message);
-        } finally {
-          setLoading(false);
-        }
-      };
+      setLoading(true);
       fetchUser();
     }, [])
   );
@@ -106,7 +112,17 @@ export default function Profile() {
         {loading ? (
           <ActivityIndicator size="large" color={theme.mode === "dark" ? "#fff" : "#000"} style={styles.loader} />
         ) : (
-          <ScrollView contentContainerStyle={styles.scrollContent}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={fetchUser}
+                colors={[theme.text]}
+                tintColor={theme.text}
+              />
+            }
+          >
             <Modal
               animationType="fade"
               transparent={true}
@@ -133,7 +149,13 @@ export default function Profile() {
                 {user?.avatar ? (
                   <Image
                     source={{ uri: user.avatar }}
-                    style={styles.avatar}
+                style={[
+                      styles.avatar,
+                      {
+                        borderColor:
+                          theme.mode === "dark" ? "#DFBA69" : "#003366",
+                      },
+                    ]}
                     onLoadStart={() => setAvatarLoading(true)}
                     onLoadEnd={() => setAvatarLoading(false)}
                   />
@@ -329,7 +351,6 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     marginBottom: 20,
     borderWidth: 3,
-    borderColor: "#ccc",
   },
   avatarLoader: {
     position: "absolute",

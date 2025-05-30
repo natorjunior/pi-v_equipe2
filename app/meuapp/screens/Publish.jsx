@@ -9,17 +9,17 @@ import {
   ActivityIndicator,
   Platform,
   KeyboardAvoidingView,
-  PermissionsAndroid,
   Alert,
+  SafeAreaView,
 } from "react-native";
-import { useTheme } from "../service/themeService";
+import * as SecureStore from "expo-secure-store";
+import { launchCamera, launchImageLibrary } from "react-native-image-picker";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useTheme } from "../service/themeService";
 import { createCheckin } from "../service/checkinService";
-import * as SecureStore from "expo-secure-store";
 import InputField from "../components/InputField";
-import { launchCamera, launchImageLibrary } from "react-native-image-picker";
+import { AndroidPermissions } from "../util/AndroidPermissions";
 
 export default function Publish() {
   const { theme } = useTheme();
@@ -44,61 +44,15 @@ export default function Publish() {
     })();
   }, []);
 
-  const requestCameraPermission = async () => {
-    try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.CAMERA,
-        {
-          title: "Permissão da Câmera",
-          message: "O app precisa de acesso à sua câmera",
-          buttonNeutral: "Perguntar depois",
-          buttonNegative: "Cancelar",
-          buttonPositive: "OK",
-        }
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    } catch (err) {
-      console.warn(err);
-      return false;
-    }
-  };
-
-  const requestStoragePermission = async () => {
-    try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-        {
-          title: "Permissão de Armazenamento",
-          message: "O app precisa acessar seus arquivos",
-          buttonNeutral: "Perguntar depois",
-          buttonNegative: "Cancelar",
-          buttonPositive: "OK",
-        }
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    } catch (err) {
-      console.warn(err);
-      return false;
-    }
-  };
-
   const handleImage = async (type) => {
     try {
-      setLoading(true);
-      
-      // Verificar permissões
-      if (type === "camera") {
-        const hasPermission = await requestCameraPermission();
-        if (!hasPermission) {
-          Alert.alert("Permissão negada", "Não é possível acessar a câmera sem permissão");
-          return;
-        }
-      } else {
-        const hasPermission = await requestStoragePermission();
-        if (!hasPermission) {
-          Alert.alert("Permissão negada", "Não é possível acessar a galeria sem permissão");
-          return;
-        }
+      const hasAllPermissions = await AndroidPermissions();
+      if (!hasAllPermissions) {
+        Alert.alert(
+          "Permissões negadas",
+          "O aplicativo precisa de permissões para acessar a câmera e a galeria."
+        );
+        return;
       }
 
       const options = {
@@ -106,6 +60,7 @@ export default function Publish() {
         quality: 0.8,
         maxWidth: 1024,
         maxHeight: 1024,
+        allowsMultipleSelection: false,
         includeBase64: false,
       };
 
@@ -123,7 +78,6 @@ export default function Publish() {
         Alert.alert("Erro", "Não foi possível acessar a imagem");
       } else if (result.assets && result.assets.length > 0) {
         const selectedImage = result.assets[0];
-        
         setImage({
           uri: selectedImage.uri,
           width: selectedImage.width,
@@ -135,8 +89,6 @@ export default function Publish() {
     } catch (error) {
       console.error("Erro ao selecionar imagem:", error);
       Alert.alert("Erro", "Ocorreu um erro ao processar a imagem");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -225,9 +177,9 @@ export default function Publish() {
             </View>
 
             {image && (
-              <Image 
-                source={{ uri: image.uri }} 
-                style={styles.image} 
+              <Image
+                source={{ uri: image.uri }}
+                style={styles.image}
                 resizeMode="cover"
               />
             )}
@@ -360,6 +312,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     textAlign: "center",
     marginTop: 5,
+    flexShrink: 1,
   },
   publishButton: {
     width: "100%",

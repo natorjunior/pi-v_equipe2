@@ -7,11 +7,12 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
+  TextInput,
 } from "react-native";
 import { useTheme } from "../service/themeService";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import InputField from "../components/InputField";
 import { joinGroup } from "../service/groupService";
 
 export default function JoinGroup() {
@@ -22,51 +23,50 @@ export default function JoinGroup() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-const handleJoinGroup = async () => {
-  setError(null);
+  const handleJoinGroup = async () => {
+    setError(null);
 
-  if (!alias.trim()) {
-    setError("Por favor, informe o apelido do grupo.");
-    return;
-  }
-
-  try {
-    setLoading(true);
-
-    const response = await joinGroup(alias);
-
-    if (response == null) {
-      navigation.navigate("Groups");
+    if (!alias.trim()) {
+      setError("Por favor, informe o apelido do grupo.");
+      return;
     }
 
-  } catch (error) {
-    console.log("Erro ao entrar no grupo:", error);
+    try {
+      setLoading(true);
 
-    if (error.response) {
-      const status = error.response.status;
+      const groupAlias = `@${alias.trim()}`;
+      const response = await joinGroup(groupAlias.replace("@", "").trim());
 
-      switch (status) {
-        case 401:
-          setError("Você já está no grupo digitado.");
-          break;
-        case 404:
-          setError("Grupo não encontrado. Verifique a tag e tente novamente.");
-          break;
-        case 422:
-          setError("Dados inválidos. Verifique o apelido informado.");
-          break;
-        default:
-          setError("Erro ao entrar no grupo. Tente novamente mais tarde.");
-          break;
+      if (response == null) {
+        navigation.navigate("Tabs", { screen: "Groups" });
       }
-    } else {
-      setError("Erro ao entrar no grupo. Tente novamente mais tarde.");
-    }
-  } finally {
-    setLoading(false);
-  }
-};
+    } catch (error) {
+      console.log("Erro ao entrar no grupo:", error);
 
+      if (error.response) {
+        const status = error.response.status;
+
+        switch (status) {
+          case 401:
+            setError("Você já está no grupo digitado.");
+            break;
+          case 404:
+            setError("Grupo não encontrado. Verifique a tag e tente novamente.");
+            break;
+          case 422:
+            setError("Dados inválidos. Verifique o apelido informado.");
+            break;
+          default:
+            setError("Erro ao entrar no grupo. Tente novamente mais tarde.");
+            break;
+        }
+      } else {
+        setError("Erro ao entrar no grupo. Tente novamente mais tarde.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -89,13 +89,36 @@ const handleJoinGroup = async () => {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.inner}
           >
-            <InputField
-              label="Tag do grupo"
-              value={alias}
-              onChangeText={setAlias}
-              placeholder="@Tag"
-              autoCapitalize="none"
-            />
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, { color: theme.text }]}>Apelido do Grupo:</Text>
+              <View style={styles.inputWrapper}>
+                <Text style={[styles.inputPrefix, { 
+                  color: theme.mode === "dark" ? "#000" : "#000",
+                  backgroundColor: theme.inputBackground,
+                  borderColor: theme.border,
+                  borderRadius: 5,
+                  paddingHorizontal: 10,
+                  paddingVertical: 10,
+                  }]}>@</Text>
+                <TextInput
+                  placeholder="Digite o apelido do grupo"
+                  placeholderTextColor={theme.placeholder}
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: theme.inputBackground,
+                      color: theme.inputText,
+                      borderColor: theme.border,
+                      paddingHorizontal: 24,
+                      paddingVertical: 10,
+                    },
+                  ]}
+                  value={alias}
+                  onChangeText={setAlias}
+                  autoCapitalize="none"
+                />
+              </View>
+            </View>
 
             {error && <Text style={styles.error}>{error}</Text>}
 
@@ -109,14 +132,18 @@ const handleJoinGroup = async () => {
               onPress={handleJoinGroup}
               disabled={loading}
             >
-              <Text
-                style={[
-                  styles.buttonText,
-                  { color: theme.mode === "dark" ? "#000" : "#fff" },
-                ]}
-              >
-                {loading ? "Entrando..." : "Entrar no Grupo"}
-              </Text>
+              {loading ? (
+                <ActivityIndicator color={theme.mode === "dark" ? "#000" : "#fff"} />
+              ) : (
+                <Text
+                  style={[
+                    styles.buttonText,
+                    { color: theme.mode === "dark" ? "#000" : "#fff" },
+                  ]}
+                >
+                  Entrar no Grupo
+                </Text>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -194,5 +221,35 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginTop: 8,
     textAlign: "center",
+  },
+  inputContainer: {
+    width: "100%",
+    marginBottom: 20,
+  },
+  label: {
+    alignSelf: "flex-start",
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+  },
+  input: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 8,
+    fontSize: 20,
+  },
+  iconContainer: {
+    position: "absolute",
+    right: 20,
+  },
+  inputPrefix: {
+    borderWidth: 1,
+    borderRadius: 8,
+    fontSize: 20,
+    marginRight: 10,
   },
 });

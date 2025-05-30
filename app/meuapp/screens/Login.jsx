@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
@@ -22,14 +23,17 @@ export default function Login({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [selectedGroupId, setSelectedGroupId] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleLoginButton = async () => {
     if (!email || !password) {
       setError("Preencha todos os campos!");
       return;
     }
+
+    setLoading(true);
+    setError("");
 
     try {
       const response = await loginUser({ email, password });
@@ -47,6 +51,8 @@ export default function Login({ navigation }) {
     } catch (error) {
       console.log("Erro:", error);
       setError("Falha ao fazer login. Verifique sua conexão.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -99,20 +105,26 @@ export default function Login({ navigation }) {
               { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366" },
             ]}
             onPress={handleLoginButton}
+            disabled={loading}
           >
-            <Text
-              style={[
-                styles.buttonText,
-                { color: theme.mode === "dark" ? "#000" : "#fff" },
-              ]}
-            >
-              Entrar
-            </Text>
+            {loading ? (
+              <ActivityIndicator
+                size="small"
+                color={theme.mode === "dark" ? "#000" : "#fff"}
+              />
+            ) : (
+              <Text
+                style={[
+                  styles.buttonText,
+                  { color: theme.mode === "dark" ? "#000" : "#fff" },
+                ]}
+              >
+                Entrar
+              </Text>
+            )}
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => navigation.navigate("ForgotPassword")}
-          >
+          <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword")}>
             <Text style={[styles.textLink, { color: theme.text }]}>
               Esqueci minha senha
             </Text>
@@ -177,4 +189,3 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
 });
-
