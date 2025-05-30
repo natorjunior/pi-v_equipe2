@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Text, TIMESTAMP, func
+from sqlalchemy import Column, DateTime, Integer, String, ForeignKey, Text, func
 
 from app.src.infra.database.base import Base
 
@@ -13,5 +13,5 @@ class Checkin(Base):
     title = Column(String(255), nullable = False)
     description = Column(Text)
     photo = Column(Text)
-    created_at = Column(TIMESTAMP, server_default = func.now())
-    updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp())
+    created_at = Column(DateTime(timezone=True), server_default = func.now())
+    updated_at = Column(DateTime(timezone=True), server_default = func.now(), onupdate=func.current_timestamp())
