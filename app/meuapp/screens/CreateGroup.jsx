@@ -41,10 +41,7 @@ const handleCreateGroup = async () => {
 
     const response = await createGroup(newGroup);
     if (response) {
-      navigation.navigate("Tabs", { 
-        screen: "Groups",
-        params: { selectedGroupId: response.id }
-      });
+      navigation.navigate("Tabs", { screen: "Groups" });
     } else {
       throw new Error("ID do grupo não encontrado na resposta.");
     }
@@ -59,7 +56,12 @@ const handleCreateGroup = async () => {
 
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+      <KeyboardAvoidingView
+        style={[styles.inner, { backgroundColor: theme.background }]}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={[styles.header, { backgroundColor: theme.background }]}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -67,11 +69,6 @@ const handleCreateGroup = async () => {
           </TouchableOpacity>
           <Text style={[styles.headerText, { color: theme.text }]}>Criar um Grupo</Text>
         </View>
-
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.inner}
-        >
           <InputField
             label="Nome do Grupo"
             value={groupName}
@@ -116,8 +113,8 @@ const handleCreateGroup = async () => {
               {loading ? "Criando..." : "Criar Grupo"}
             </Text>
           </TouchableOpacity>
-        </KeyboardAvoidingView>
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -125,13 +122,10 @@ const handleCreateGroup = async () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 20
   },
   inner: {
-    width: "100%",
-    top: "20%",
-    alignItems: "center",
-    marginTop: 50,
+    flex: 1,
   },
   button: {
     paddingVertical: 14,

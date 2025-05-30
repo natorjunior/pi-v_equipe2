@@ -5,6 +5,8 @@ import {
     View,
     SafeAreaView,
     TouchableOpacity,
+    KeyboardAvoidingView,
+    Platform,
 } from "react-native";
 import { useTheme } from "../service/themeService";
 import { createUser } from "../service/userService";
@@ -63,6 +65,11 @@ export default function Question4({ navigation, route }) {
 
     return (
         <SafeAreaView style={{ flex: 1 }}>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+            >
             <View style={[styles.container, { backgroundColor: theme.background }]}>
                 <Text style={[styles.text, { color: theme.text }]}>
                     Para salvar suas{"\n"} informações precisamos{"\n"} do seu email e uma senha{"\n"} para sua segurança.
@@ -128,6 +135,7 @@ export default function Question4({ navigation, route }) {
                     <Text style={styles.errorText}>{errorMessage}</Text>
                 ) : null}
             </View>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }

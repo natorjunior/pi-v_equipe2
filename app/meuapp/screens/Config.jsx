@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Alert } from "react-native";
 import { useTheme } from "../service/themeService";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -34,18 +34,33 @@ const Config = () => {
     fetchUser();
   }, []);
 
-  const handleDeleteUser = async () => {
-    try {
-      if (!token) throw new Error("Token de autenticação não disponível.");
-      await deleteUser(token);
-      await AsyncStorage.removeItem("authToken");
-      navigation.navigate("Entrada");
-      console.log("Conta apagada com sucesso.");
-      alert("Conta apagada com sucesso.");
-    } catch (error) {
-      console.error("Erro ao apagar conta:", error);
-    }
-  };
+const handleDeleteUser = () => {
+  Alert.alert(
+    "Confirmar exclusão",
+    "Deseja realmente excluir sua conta? Esta ação não poderá ser desfeita.",
+    [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Excluir",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            if (!token) throw new Error("Token de autenticação não disponível.");
+            await deleteUser(token);
+            await AsyncStorage.removeItem("authToken");
+            navigation.navigate("Entrada");
+            console.log("Conta apagada com sucesso.");
+            Alert.alert("Sucesso", "Conta apagada com sucesso.");
+          } catch (error) {
+            console.error("Erro ao apagar conta:", error);
+            Alert.alert("Erro", "Não foi possível apagar a conta.");
+          }
+        },
+      },
+    ]
+  );
+};
+
 
   const themeOptions = [
     { id: "light", title: "Tema Claro", description: "Usar cores claras" },
@@ -56,12 +71,12 @@ const Config = () => {
   return (
     <SafeAreaView style={{ flex: 1 }}>
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={[styles.header, { backgroundColor: theme.background }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.text} />
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: theme.text }]}>Configurações</Text>
-      </View>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={theme.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerText, { color: theme.text }]}>Configurações</Text>
+        </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {themeOptions.map((option) => (
@@ -83,8 +98,8 @@ const Config = () => {
           </TouchableOpacity>
         ))}
 
-        <TouchableOpacity onPress={handleDeleteUser} style={styles.deleteButton}>
-          <Text style={styles.deleteText}>Apagar Conta</Text>
+        <TouchableOpacity onPress={handleDeleteUser} style={[styles.deleteButton, { backgroundColor: theme.error }]}>
+          <Text style={[styles.deleteText, {color: theme.text}]}>Apagar Conta</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -104,6 +119,13 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 10,
+  },
+    headerText: {
+    fontSize: 20,
+    fontWeight: "bold",
+    flex: 1,
+    textAlign: "center",
+    marginRight: 30,
   },
   title: {
     fontSize: 24,
@@ -135,13 +157,20 @@ const styles = StyleSheet.create({
     padding: 15,
     width: "90%",
     borderRadius: 8,
-    backgroundColor: "#ff4d4d",
     alignItems: "center",
   },
   deleteText: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#fff",
+  },
+    header: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 15,
+  },
+  backButton: {
+    padding: 10,
   },
 });
 

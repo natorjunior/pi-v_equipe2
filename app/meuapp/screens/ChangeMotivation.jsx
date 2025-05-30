@@ -20,7 +20,7 @@ const handleUpdate = async (motivation) => {
     try {
         await updateUser({ motivation });
         Alert.alert("Sucesso", "Motivação atualizada!");
-        navigation.goBack();
+        navigation.navigate("AppDrawer", { refresh: true });
     } catch (error) {
         Alert.alert("Erro", error.message || "Não foi possível atualizar");
     }

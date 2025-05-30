@@ -8,6 +8,7 @@ import {
     SafeAreaView,
     Image,
     TouchableOpacity,
+    RefreshControl,
 } from "react-native";
 import { DrawerActions, useFocusEffect, useNavigation } from "@react-navigation/native";
 import * as SecureStore from "expo-secure-store";
@@ -22,12 +23,15 @@ export default function Home({ route }) {
     const navigation = useNavigation();
     const [loading, setLoading] = useState(false);
     const [checkins, setCheckins] = useState([]);
+    const [groupName, setGroupName] = useState(null);
     const [selectedGroupId, setSelectedGroupId] = useState(null);
+    const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState(null);
 
     const fetchData = async () => {
         try {
-            setLoading(true);
+            if (!refreshing) setLoading(true);
+
             const token = await SecureStore.getItemAsync("token");
             if (!token) {
                 navigation.navigate("Login");
@@ -35,12 +39,20 @@ export default function Home({ route }) {
             }
 
             let storedGroupId = await SecureStore.getItemAsync("selectedGroupId");
-            if (!storedGroupId && route?.params?.groupId) {
+            let storedGroupName = await SecureStore.getItemAsync("selectedGroupName");
+
+            if (route?.params?.groupId) {
                 storedGroupId = route.params.groupId.toString();
                 await SecureStore.setItemAsync("selectedGroupId", storedGroupId);
             }
 
+            if (route?.params?.groupName) {
+                storedGroupName = route.params.groupName;
+                await SecureStore.setItemAsync("selectedGroupName", storedGroupName);
+            }
+
             setSelectedGroupId(storedGroupId);
+            setGroupName(storedGroupName);
 
             if (storedGroupId) {
                 const checkinsData = await getCheckinsByGroup(storedGroupId);
@@ -53,12 +65,36 @@ export default function Home({ route }) {
             }
 
             await getUser(token);
+            setError(null);
         } catch (error) {
-            setError(error.message);
+            const status =
+                error?.response?.status ||
+                error?.status ||
+                (error.message?.includes("401") ? 401 :
+                error.message?.includes("404") ? 404 : null);
+
+            if (status === 404 || status === 401) {
+                await SecureStore.deleteItemAsync("selectedGroupId");
+                await SecureStore.deleteItemAsync("selectedGroupName");
+                setSelectedGroupId(null);
+                setGroupName(null);
+                setCheckins([]);
+                setError("Você não faz mais parte deste grupo.");
+                return;
+            }
+
+            setError(error.message || "Erro ao carregar dados.");
         } finally {
-            setLoading(false);
+            if (!refreshing) setLoading(false);
         }
     };
+
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await fetchData();
+        setRefreshing(false);
+    }, [route?.params?.groupId]);
 
     useFocusEffect(
         useCallback(() => {
@@ -127,6 +163,18 @@ export default function Home({ route }) {
 
                     {selectedGroupId && (
                         <TouchableOpacity
+                            onPress={() => navigation.navigate("GroupDetails", { groupId: selectedGroupId })}
+                            style={[styles.groupButton, { padding: 5, borderRadius: 100 }]}
+                        >
+                            <Text style={[styles.grupname, { color: theme.text }]}>
+                                {groupName || `Grupo ${selectedGroupId}`}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+
+
+                    {selectedGroupId && (
+                        <TouchableOpacity
                             onPress={async () => {
                                 await SecureStore.deleteItemAsync("selectedGroupId");
                                 setSelectedGroupId(null);
@@ -142,7 +190,7 @@ export default function Home({ route }) {
                 <FlatList
                     style={styles.list}
                     data={checkins}
-                    inverted={true}
+                    //inverted={true}
                     keyExtractor={(item) => item.id.toString()}
                     contentContainerStyle={{ padding: 20 }}
                     renderItem={({ item }) => (
@@ -152,7 +200,7 @@ export default function Home({ route }) {
                             }
                         >
                             <View
-                                style={[styles.post, { backgroundColor: theme.cardBackground }]}
+                                style={[styles.post, {  borderColor: theme.mode === "dark" ? "#fff" : "#000"}]}
                             >
                                 <View style={styles.postHeader}>
                                     {item.user.avatar && (
@@ -192,6 +240,13 @@ export default function Home({ route }) {
                         </TouchableOpacity>
                     )}
                     ListEmptyComponent={renderEmptyComponent()}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            tintColor={theme.text}
+                        />
+                    }
                 />
                 {selectedGroupId && (
                     <TouchableOpacity
@@ -217,13 +272,14 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     list: {
-        marginTop: 50,
+        marginTop: 1,
     },
     header: {
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "center",
-        position: "relative",
+        justifyContent: "space-between",
+        paddingTop: 10,
+        paddingBottom: 10,
     },
     hamburgerButton: {
         position: "absolute",
@@ -239,7 +295,6 @@ const styles = StyleSheet.create({
     },
     messageContainer: {
         flex: 1,
-        marginTop: 300,
         justifyContent: "center",
         alignItems: "center",
         padding: 20,
@@ -248,7 +303,6 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         padding: 15,
         marginBottom: 15,
-        borderColor: "#ccc",
         borderWidth: 1,
     },
     postHeader: {
@@ -297,9 +351,8 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     icon: {
-        right: 138,
-        top: 325,
-        
+        right: 1,
+        top: 1,
     },
     fab: {
         position: "absolute",
@@ -311,5 +364,15 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         elevation: 5,
+    },
+    groupButton: {
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        marginBottom: 7,
+    },
+    grupname: {
+        fontSize: 20,
+        fontWeight: "bold",
     },
 });

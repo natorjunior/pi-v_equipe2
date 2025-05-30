@@ -8,15 +8,15 @@ import {
   Image,
   ActivityIndicator,
   Alert,
-  PermissionsAndroid,
 } from "react-native";
-import { useTheme } from "../service/themeService";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import InputField from "../components/InputField";
 import { launchCamera, launchImageLibrary } from "react-native-image-picker";
 import * as SecureStore from "expo-secure-store";
+import { useTheme } from "../service/themeService";
+import InputField from "../components/InputField";
 import { getUser, updateUser, uploadAvatar } from "../service/userService";
+import { AndroidPermissions } from "../util/AndroidPermissions";
 
 export default function EditProfile() {
   const { theme } = useTheme();
@@ -39,10 +39,7 @@ export default function EditProfile() {
         setFormData({
           name: userData.name || "",
           email: userData.email || "",
-          password: "",
           avatar: userData.avatar || "",
-          motivation: userData.motivation || "",
-          genres: userData.genres || [],
         });
         setAvatarPreview(userData.avatar);
       } catch (error) {
@@ -55,54 +52,15 @@ export default function EditProfile() {
     fetchUserData();
   }, []);
 
-  const requestCameraPermission = async () => {
-    try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.CAMERA,
-        {
-          title: "Permissão da Câmera",
-          message: "O app precisa de acesso à sua câmera",
-          buttonNeutral: "Perguntar depois",
-          buttonNegative: "Cancelar",
-          buttonPositive: "OK",
-        }
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    } catch (err) {
-      console.warn(err);
-      return false;
-    }
-  };
-
-  const requestStoragePermission = async () => {
-    try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-        {
-          title: "Permissão de Armazenamento",
-          message: "O app precisa acessar seus arquivos",
-          buttonNeutral: "Perguntar depois",
-          buttonNegative: "Cancelar",
-          buttonPositive: "OK",
-        }
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    } catch (err) {
-      console.warn(err);
-      return false;
-    }
-  };
-
   const handleImage = async (type) => {
     try {
-      setUploading(true);
-
-      if (type === "camera") {
-        const hasPermission = await requestCameraPermission();
-        if (!hasPermission) return;
-      } else {
-        const hasPermission = await requestStoragePermission();
-        if (!hasPermission) return;
+      const hasAllPermissions = await AndroidPermissions();
+      if (!hasAllPermissions) {
+        Alert.alert(
+          "Permissões negadas",
+          "O aplicativo precisa de permissões para acessar a câmera e a galeria."
+        );
+        return;
       }
 
       const options = {
@@ -110,44 +68,59 @@ export default function EditProfile() {
         quality: 0.8,
         maxWidth: 1024,
         maxHeight: 1024,
+        includeBase64: false,
       };
 
-      const result = type === "camera"
-        ? await launchCamera(options)
-        : await launchImageLibrary(options);
+      let result;
+      if (type === "camera") {
+        result = await launchCamera(options);
+      } else {
+        result = await launchImageLibrary(options);
+      }
 
-      if (result.assets?.[0]) {
+      if (result.didCancel) {
+        console.log("Usuário cancelou a seleção");
+      } else if (result.errorCode) {
+        console.log("ImagePicker Error: ", result.errorMessage);
+        Alert.alert("Erro", "Não foi possível acessar a imagem");
+      } else if (result.assets && result.assets.length > 0) {
         const selectedImage = result.assets[0];
         setAvatarPreview(selectedImage.uri);
-        setFormData(prev => ({ ...prev, avatar: selectedImage.uri }));
+        setFormData((prev) => ({
+          ...prev,
+          avatar: selectedImage.uri,
+        }));
       }
     } catch (error) {
-      Alert.alert("Erro", "Falha ao atualizar a foto");
+      console.error("Erro ao selecionar imagem:", error);
+      Alert.alert("Erro", "Ocorreu um erro ao processar a imagem");
+    }
+  };
+
+  const handleUpdate = async () => {
+    try {
+      setUploading(true);
+      const token = await SecureStore.getItemAsync("token");
+
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+      };
+
+      if (avatarPreview && avatarPreview.startsWith("file://")) {
+        const uploadedUrl = await uploadAvatar(avatarPreview, token);
+        payload.avatar = uploadedUrl;
+      }
+
+      await updateUser(payload);
+      Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
+      navigation.navigate("AppDrawer", { refresh: true });
+    } catch (error) {
+      Alert.alert("Erro", error.message || "Falha ao atualizar perfil");
     } finally {
       setUploading(false);
     }
   };
-
-const handleUpdate = async () => {
-  try {
-    const token = await SecureStore.getItemAsync("token");
-
-    if (avatarPreview && avatarPreview.startsWith("file://")) {
-      await uploadAvatar(avatarPreview);
-    }
-
-    const payload = {
-      name: formData.name,
-      email: formData.email,
-    };
-
-    await updateUser(payload);
-    Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
-    navigation.goBack();
-  } catch (error) {
-    Alert.alert("Erro", error.message || "Falha ao atualizar perfil");
-  }
-};
 
   if (loading) {
     return (
@@ -175,9 +148,23 @@ const handleUpdate = async () => {
         <View style={styles.avatarSection}>
           <View style={styles.avatarContainer}>
             {avatarPreview ? (
-              <Image source={{ uri: avatarPreview }} style={[styles.avatar, { borderColor: theme.mode === "dark" ? "#DFBA69" : "#003366" }]} />
+              <Image
+                source={{ uri: avatarPreview }}
+                style={[
+                  styles.avatar,
+                  {
+                    borderColor:
+                      theme.mode === "dark" ? "#DFBA69" : "#003366",
+                  },
+                ]}
+              />
             ) : (
-              <View style={[styles.defaultAvatar, { backgroundColor: theme.inputBackground }]}>
+              <View
+                style={[
+                  styles.defaultAvatar,
+                  { backgroundColor: theme.inputBackground },
+                ]}
+              >
                 <Ionicons name="person" size={40} color={theme.text} />
               </View>
             )}
@@ -234,7 +221,9 @@ const handleUpdate = async () => {
           style={[styles.secondaryButton, { borderColor: theme.border }]}
           onPress={() => navigation.navigate("ChangeMotivation")}
         >
-          <Text style={[styles.secondaryButtonText, { color: theme.text }]}>
+          <Text
+            style={[styles.secondaryButtonText, { color: theme.text }]}
+          >
             Alterar Motivação
           </Text>
         </TouchableOpacity>
@@ -243,21 +232,33 @@ const handleUpdate = async () => {
           style={[styles.secondaryButton, { borderColor: theme.border }]}
           onPress={() => navigation.navigate("ChangeGenres")}
         >
-          <Text style={[styles.secondaryButtonText, { color: theme.text }]}>
+          <Text
+            style={[styles.secondaryButtonText, { color: theme.text }]}
+          >
             Alterar Gêneros
           </Text>
         </TouchableOpacity>
 
-
         <TouchableOpacity
-          style={[styles.primaryButton, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366" }]}
+          style={[
+            styles.primaryButton,
+            {
+              backgroundColor:
+                theme.mode === "dark" ? "#DFBA69" : "#003366",
+            },
+          ]}
           onPress={handleUpdate}
           disabled={uploading}
         >
           {uploading ? (
             <ActivityIndicator color={theme.text} />
           ) : (
-            <Text style={[styles.primaryButtonText, { color: theme.mode === "dark" ? "#000" : "#fff" }]}>
+            <Text
+              style={[
+                styles.primaryButtonText,
+                { color: theme.mode === "dark" ? "#000" : "#fff" },
+              ]}
+            >
               Salvar Alterações
             </Text>
           )}
@@ -312,6 +313,8 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     borderWidth: 3,
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -343,20 +346,20 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   secondaryButton: {
-  flexDirection: "row",
-  alignItems: "center",
-  padding: 12,
-  borderRadius: 10,
-  borderWidth: 1,
-  marginTop: 10,
-  gap: 10,
-},
-secondaryButtonText: {
-  fontSize: 16,
-  fontWeight: "bold",
-  justifyContent: "center",
-  alignItems: "center",
-  textAlign: "center",
-  flex: 1,
-},
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginTop: 10,
+    gap: 10,
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    justifyContent: "center",
+    alignItems: "center",
+    textAlign: "center",
+    flex: 1,
+  },
 });

@@ -1,24 +1,24 @@
 import { useState, useEffect } from "react";
 import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    TouchableOpacity,
-    Image,
-    ActivityIndicator,
-    Platform,
-    KeyboardAvoidingView,
-    SafeAreaView,
-    Alert,
-    PermissionsAndroid
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+  Platform,
+  KeyboardAvoidingView,
+  SafeAreaView,
+  Alert,
 } from "react-native";
-import { useTheme } from "../service/themeService";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { launchCamera, launchImageLibrary } from "react-native-image-picker";
+import { useTheme } from "../service/themeService";
 import { updateCheckin, deleteCheckin } from "../service/checkinService";
 import InputField from "../components/InputField";
+import { AndroidPermissions } from "../util/AndroidPermissions";
 
     export default function EditPost() {
     const { theme } = useTheme();
@@ -32,101 +32,55 @@ import InputField from "../components/InputField";
     const [loading, setLoading] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const requestCameraPermission = async () => {
-        try {
-            const granted = await PermissionsAndroid.request(
-                PermissionsAndroid.PERMISSIONS.CAMERA,
-                {
-                title: "Permissão da Câmera",
-                message: "O app precisa de acesso à sua câmera",
-                buttonNeutral: "Perguntar depois",
-                buttonNegative: "Cancelar",
-                buttonPositive: "OK",
-                }
-            );
-            return granted === PermissionsAndroid.RESULTS.GRANTED;
-            } catch (err) {
-            console.warn(err);
-            return false;
-            }
-    };
-
-    const requestStoragePermission = async () => {
-        try {
-            const granted = await PermissionsAndroid.request(
-                PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-                {
-                title: "Permissão de Armazenamento",
-                message: "O app precisa acessar seus arquivos",
-                buttonNeutral: "Perguntar depois",
-                buttonNegative: "Cancelar",
-                buttonPositive: "OK",
-                }
-            );
-            return granted === PermissionsAndroid.RESULTS.GRANTED;
-        } catch (err) {
-        console.warn(err);
-        return false;
-    }
-    };
 
     const handleImage = async (type) => {
-        try {
-        setLoading(true);
-        
-        // Verificar permissões
-        if (type === "camera") {
-            const hasPermission = await requestCameraPermission();
-            if (!hasPermission) {
-            Alert.alert("Permissão negada", "Não é possível acessar a câmera sem permissão");
-            return;
-            }
-        } else {
-            const hasPermission = await requestStoragePermission();
-            if (!hasPermission) {
-            Alert.alert("Permissão negada", "Não é possível acessar a galeria sem permissão");
-            return;
-            }
+      try {
+        const hasAllPermissions = await AndroidPermissions();
+        if (!hasAllPermissions) {
+          Alert.alert(
+            "Permissões negadas",
+            "O aplicativo precisa de permissões para acessar a câmera e a galeria."
+          );
+          return;
         }
 
         const options = {
-            mediaType: "photo",
-            quality: 0.8,
-            maxWidth: 1024,
-            maxHeight: 1024,
-            includeBase64: false,
+          mediaType: "photo",
+          quality: 0.8,
+          maxWidth: 1024,
+          maxHeight: 1024,
+          allowsMultipleSelection: false,
+          includeBase64: false,
         };
 
         let result;
         if (type === "camera") {
-            result = await launchCamera(options);
+          result = await launchCamera(options);
         } else {
-            result = await launchImageLibrary(options);
+          result = await launchImageLibrary(options);
         }
 
         if (result.didCancel) {
-            console.log("Usuário cancelou a seleção");
+          console.log("Usuário cancelou a seleção");
         } else if (result.errorCode) {
-            console.log("ImagePicker Error: ", result.errorMessage);
-            Alert.alert("Erro", "Não foi possível acessar a imagem");
+          console.log("ImagePicker Error: ", result.errorMessage);
+          Alert.alert("Erro", "Não foi possível acessar a imagem");
         } else if (result.assets && result.assets.length > 0) {
-            const selectedImage = result.assets[0];
-            
-            setImage({
+          const selectedImage = result.assets[0];
+          setImage({
             uri: selectedImage.uri,
             width: selectedImage.width,
             height: selectedImage.height,
             fileName: selectedImage.fileName || `image_${Date.now()}.jpg`,
             type: selectedImage.type || "image/jpeg",
-            });
+          });
         }
-        } catch (error) {
+      } catch (error) {
         console.error("Erro ao selecionar imagem:", error);
         Alert.alert("Erro", "Ocorreu um erro ao processar a imagem");
-        } finally {
-        setLoading(false);
-        }
+      }
     };
+
 
     const handleUpdate = async () => {
         if (!title.trim()) {

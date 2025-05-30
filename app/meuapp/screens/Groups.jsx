@@ -13,7 +13,7 @@ import * as SecureStore from "expo-secure-store";
 import { useTheme } from "../service/themeService";
 import { useNavigation, DrawerActions } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { getGroup, deleteGroup } from "../service/groupService";
+import { getGroup } from "../service/groupService";
 import { LinearGradient } from "expo-linear-gradient";
 
 export default function Groups({ route }) {
@@ -59,28 +59,6 @@ const handleSelectGroup = async (groupId, groupName) => {
     refresh: true,
   });
 };
-
-  const confirmDeleteGroup = (groupId) => {
-    Alert.alert(
-      "Excluir grupo",
-      "Tem certeza de que deseja excluir este grupo?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Confirmar",
-          onPress: async () => {
-            try {
-              await deleteGroup(groupId);
-              fetchGroups();
-            } catch (err) {
-              Alert.alert("Erro", err.message);
-            }
-          },
-        },
-      ],
-      { cancelable: true }
-    );
-  };
 
   const ErrorMessage = ({ error }) =>
     error && (
@@ -167,14 +145,10 @@ const handleSelectGroup = async (groupId, groupName) => {
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => confirmDeleteGroup(group.id)}
-                style={styles.trashButton}
+                onPress={() => navigation.navigate("GroupDetails", { groupId: group.id })}
+                style={styles.DetailsButton}
               >
-                <Ionicons
-                  name="trash"
-                  size={20}
-                  color={theme.error || "red"}
-                />
+                <Ionicons name="information-circle" size={24} color={theme.text} />
               </TouchableOpacity>
             </View>
           ))
@@ -240,7 +214,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontStyle: "italic",
   },
-  trashButton: {
+  DetailsButton: {
     paddingLeft: 12,
   },
   noGroupsText: {

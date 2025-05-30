@@ -22,7 +22,7 @@ import Question1 from "./screens/Question1";
 import Question2 from "./screens/Question2";
 import Question3 from "./screens/Question3";
 import Question4 from "./screens/Question4";
-import GroupConfig from "./screens/GroupConfig";
+import GroupDetails from "./screens/GroupDetails";
 import Home from "./screens/Home";
 import Groups from "./screens/Groups";
 import AboutUs from "./screens/AboutUs";
@@ -122,13 +122,12 @@ function Tabs() {
                   {user?.avatar ? (
                     <Image
                       source={{ uri: user.avatar }}
-                      style={styles.avatar}
+                      style={[styles.avatar , { borderColor: theme.mode === "dark" ? "#fff" : "#000"}]}
                       onLoadStart={() => setAvatarLoading(true)}
                       onLoadEnd={() => setAvatarLoading(false)}
                     />
                   ) : (
-                    <View style={[styles.defaultAvatar, { backgroundColor: theme.mode === "dark" ? "#1a1a2e" : "#ccc" }]}>
-                      <Ionicons name="person" size={60} color={theme.mode === "dark" ? "#fff" : "#000"} />
+                    <View style={[styles.defaultAvatar, { borderColor: theme.mode === "dark" ? "#fff" : "#000"}]}>
                     </View>
                   )}
                 </View>
@@ -226,7 +225,7 @@ function App() {
           <Stack.Screen name="Question2" component={Question2} />
           <Stack.Screen name="Question3" component={Question3} />
           <Stack.Screen name="Question4" component={Question4} />
-          <Stack.Screen name="GroupConfig" component={GroupConfig} />
+          <Stack.Screen name="GroupDetails" component={GroupDetails} />
           <Stack.Screen name="PostDetails" component={PostDetails} />
           <Stack.Screen name="EditPost" component={EditPost} />
           <Stack.Screen name="EditProfile" component={EditProfile}/>
@@ -263,11 +262,15 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 20,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   defaultAvatar: {
     width: 30,
     height: 30,
     borderRadius: 20,
+    borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",
   },

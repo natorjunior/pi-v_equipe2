@@ -11,9 +11,11 @@ import {
 import { useTheme } from "../service/themeService";
 import { Checkbox } from "expo-checkbox";
 import { getUser, updateUser } from "../service/userService";
+import { useNavigation } from "@react-navigation/native";
 
 export default function ChangeGenres() {
     const { theme } = useTheme();
+    const navigation = useNavigation();
     const [motivation, setMotivation] = useState("");
     const [selectedGenres, setSelectedGenres] = useState({});
 
@@ -50,7 +52,8 @@ export default function ChangeGenres() {
                 .map(([genre]) => genre);
 
             await updateUser({ genres: selectedArray });
-            Alert.alert("Sucesso", "Gêneros atualizados com sucesso!");
+            Alert.alert("Sucesso", "Gêneros atualizados!");
+            navigation.navigate("AppDrawer", { refresh: true });
         } catch (error) {
             Alert.alert("Erro", error.message || "Não foi possível atualizar os gêneros");
         }
@@ -107,7 +110,9 @@ export default function ChangeGenres() {
         <SafeAreaView style={{ flex: 1 }}>
             <View style={[styles.container, { backgroundColor: theme.background }]}>
                 <ScrollView contentContainerStyle={styles.scrollContainer}>
-                    <Text style={[styles.text, { color: theme.text }]}>Selecione seus gêneros favoritos:</Text>
+                    <Text style={[styles.text, { color: theme.text }]}>
+                        Selecione seus gêneros favoritos:
+                    </Text>
                     {genresToShow.map((genre, index) => (
                         <TouchableOpacity
                             key={index}
@@ -116,12 +121,13 @@ export default function ChangeGenres() {
                                 { backgroundColor: theme.mode === "dark" ? "#0D0058" : "#fff" },
                             ]}
                             onPress={() => toggleGenre(genre)}
+                            activeOpacity={0.7}
                         >
                             <View style={styles.buttonContent}>
                                 <Checkbox
                                     value={selectedGenres[genre] || false}
                                     onValueChange={() => toggleGenre(genre)}
-                                    color={theme.mode === "dark" ? "#000" : "#000"}
+                                    color={theme.mode === "dark" ? "#fff" : "#000"}
                                 />
                                 <Text style={[styles.buttonText, { color: theme.mode === "dark" ? "#fff" : "#000" }]}>
                                     {genre}
@@ -134,6 +140,7 @@ export default function ChangeGenres() {
                 <TouchableOpacity
                     style={[styles.nextButton, { backgroundColor: theme.mode === "dark" ? "#fff" : "#0D0058" }]}
                     onPress={handleUpdate}
+                    activeOpacity={0.7}
                 >
                     <Text style={[styles.nextButtonText, { color: theme.mode === "dark" ? "#000" : "#fff" }]}>
                         Continuar
@@ -143,7 +150,6 @@ export default function ChangeGenres() {
         </SafeAreaView>
     );
 }
-
 
 const styles = StyleSheet.create({
     container: {
