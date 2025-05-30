@@ -2,6 +2,7 @@ from fastapi import Form
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from app.src.adapter.minio_adapter import get_file_from_minio
 from app.src.domain.dto.user_dto import UserData
@@ -10,6 +11,12 @@ from app.src.domain.model.checkin import Checkin
 
 def get_checkin_data_instance(checkin:Checkin, user:UserData):
     photo = get_file_from_minio(bucket_name="checkin-photos", file_name=checkin.photo)
+    
+    tz_fortaleza = ZoneInfo("America/Fortaleza")
+
+    checkin.created_at = checkin.created_at.astimezone(tz_fortaleza)
+    checkin.updated_at = checkin.updated_at.astimezone(tz_fortaleza)
+   
     return CheckinData(
         id = checkin.id,
         group_id=checkin.group_id,
