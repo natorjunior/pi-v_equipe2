@@ -107,16 +107,29 @@ export default function Home({ route }) {
             return (
                 <View style={styles.messageContainer}>
                     <Text style={[styles.text, { color: theme.text }]}>
-                        Selecione um grupo para ver as publicações
+                        Selecione um grupo na aba de grupos.{"\n"} Se não tiver nenhum grupo você pode criar ou entrar em um.
                     </Text>
-                    <Ionicons
-                        name="arrow-down-outline"
-                        size={50}
-                        color={theme.text}
-                        style={styles.icon}
-                    />
+                    <TouchableOpacity
+                        style={[styles.actionButton, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#fff" }]}
+                        onPress={() => navigation.navigate("CreateGroup")}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={[styles.buttonText, { color: theme.text }]}>
+                            Criar um grupo
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.actionButton, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#fff" }]}
+                        onPress={() => navigation.navigate("JoinGroup")}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={[styles.buttonText, { color: theme.text }]}>
+                            Entrar em um grupo
+                        </Text>
+                    </TouchableOpacity>
                 </View>
-            );
+                );
         }
 
         if (loading) {
@@ -374,5 +387,23 @@ const styles = StyleSheet.create({
     grupname: {
         fontSize: 20,
         fontWeight: "bold",
+    },
+        actionButton: {
+        width: "80%",
+        marginTop: 20,
+        paddingVertical: 14,
+        marginVertical: 10,
+        borderRadius: 30,
+        alignItems: "center",
+        justifyContent: "center",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        elevation: 5,
+    },
+    buttonText: {
+        fontSize: 16,
+        fontWeight: "600",
     },
 });

@@ -1,3 +1,4 @@
+//opçõa tirar o avatar e voltar a ser o padrão
 import { useState, useEffect } from "react";
 import {
   View,
@@ -92,7 +93,7 @@ export default function EditProfile() {
         }));
       }
     } catch (error) {
-      console.error("Erro ao selecionar imagem:", error);
+      console.log("Erro ao selecionar imagem:", error);
       Alert.alert("Erro", "Ocorreu um erro ao processar a imagem");
     }
   };
@@ -113,6 +114,7 @@ export default function EditProfile() {
       }
 
       await updateUser(payload);
+      await SecureStore.setItemAsync("user", JSON.stringify(payload));
       Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
       navigation.navigate("AppDrawer", { refresh: true });
     } catch (error) {

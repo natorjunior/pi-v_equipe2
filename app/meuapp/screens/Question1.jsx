@@ -9,7 +9,7 @@ export default function Question1({ navigation }) {
     const isButtonDisabled = name.trim().length === 0;
 
     return (
-        <SafeAreaView style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: theme.background  }}>
             <KeyboardAvoidingView
                     style={{ flex: 1 }}
                     behavior={Platform.OS === "ios" ? "padding" : "height"}

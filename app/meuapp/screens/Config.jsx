@@ -4,7 +4,7 @@ import { useTheme } from "../service/themeService";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { deleteUser, getUser } from "../service/userService";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 
 const Config = () => {
   const { theme, setThemeMode, themeMode } = useTheme();
@@ -16,7 +16,7 @@ const Config = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const storedToken = await AsyncStorage.getItem("authToken");
+        const storedToken = await SecureStore.getItem("token");
         if (storedToken) {
           setToken(storedToken);
           const userData = await getUser(storedToken);
@@ -47,7 +47,7 @@ const handleDeleteUser = () => {
           try {
             if (!token) throw new Error("Token de autenticação não disponível.");
             await deleteUser(token);
-            await AsyncStorage.removeItem("authToken");
+            await SecureStore.deleteItemAsync("token");
             navigation.navigate("Entrada");
             console.log("Conta apagada com sucesso.");
             Alert.alert("Sucesso", "Conta apagada com sucesso.");

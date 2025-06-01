@@ -34,8 +34,8 @@ export default function JoinGroup() {
     try {
       setLoading(true);
 
-      const groupAlias = `@${alias.trim()}`;
-      const response = await joinGroup(groupAlias.replace("@", "").trim());
+      const groupAlias = alias.trim().replace(/^@+/, "");
+      const response = await joinGroup(groupAlias);
 
       if (response == null) {
         navigation.navigate("Tabs", { screen: "Groups" });
@@ -69,7 +69,7 @@ export default function JoinGroup() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>

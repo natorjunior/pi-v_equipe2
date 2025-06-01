@@ -127,7 +127,7 @@ export default function ChangeGenres() {
                                 <Checkbox
                                     value={selectedGenres[genre] || false}
                                     onValueChange={() => toggleGenre(genre)}
-                                    color={theme.mode === "dark" ? "#fff" : "#000"}
+                                    color={theme.mode === "dark" ? "#000" : "#000"}
                                 />
                                 <Text style={[styles.buttonText, { color: theme.mode === "dark" ? "#fff" : "#000" }]}>
                                     {genre}
