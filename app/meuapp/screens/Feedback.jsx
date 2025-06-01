@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Platform,
   KeyboardAvoidingView,
+  Linking,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -31,6 +32,13 @@ export default function Feedback() {
     setFeedbacks([...feedbacks, feedback]);
     setFeedback("");
     setSending(false);
+  };
+
+  const handleOpenLink = (url) => {
+Linking.openURL(
+  "mailto:stayandlearn2025@gmail.com?subject=Denúncia de conteúdo&body=Descreva o problema aqui..."
+);
+
   };
 
   return (
@@ -84,6 +92,23 @@ export default function Feedback() {
             {sending ? "Enviando..." : "Enviar"}
           </Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.denunbutton,
+            { backgroundColor: theme.error },
+          ]}
+          onPress={handleOpenLink}
+        >
+          <Text
+            style={[
+              styles.buttonText,
+              { color: theme.mode === "dark" ? "#000" : "#fff" },
+            ]}
+          >
+            Denunciar
+          </Text>
+        </TouchableOpacity>
+
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -113,6 +138,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   button: {
+    marginTop: 10,
     padding: 10,
     borderRadius: 10,
     alignItems: "center",
@@ -124,6 +150,12 @@ const styles = StyleSheet.create({
   charCount: {
     textAlign: "right",
     marginBottom: 10,
+  },
+  denunbutton: {
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 10,
+    alignItems: "center",
   },
 });
 
