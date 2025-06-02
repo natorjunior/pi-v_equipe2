@@ -20,12 +20,15 @@
 
 ---
 
+
 ## 🏷️ Versões
-- **v0.5.0** — Sistema de perfis de terceiros, denúncias, modal aprimorado e primeira versão na Play Store
-- **v0.4.0** — Refatoração de telas, autenticação e perfil
-- **v0.3.0** — Storage, CI/CD, ranking por grupo
-- **v0.2.0** — Rebranding, novas telas, JWT
-- **v0.1.0** — Estrutura inicial, login/cadastro
+
+- **[v0.5.0](https://github.com/natorjunior/pi-v_equipe2/releases/tag/v0.5.0)** — Sistema de perfis de terceiros, denúncias, modal aprimorado e primeira versão na Play Store
+- **[v0.4.0](https://github.com/natorjunior/pi-v_equipe2/releases/tag/v0.4.0)** — Refatoração de telas, autenticação e perfil
+- **[v0.3.0](https://github.com/natorjunior/pi-v_equipe2/releases/tag/v0.3.0)** — Storage, CI/CD, ranking por grupo
+- **[v0.2.0](https://github.com/natorjunior/pi-v_equipe2/releases/tag/v0.2.0)** — Rebranding, novas telas, JWT
+- **[v0.1.0](https://github.com/natorjunior/pi-v_equipe2/releases/tag/v0.1.0)** — Estrutura inicial, login/cadastro
+
 
 ---
 
