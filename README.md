@@ -1,3 +1,15 @@
+
+# 📱 Stay and Learn
+
+**Stay and Learn** é uma plataforma móvel de aprendizado gamificada que conecta estudantes em grupos de estudo, promovendo engajamento através de rankings, desafios e check-ins educacionais. O aplicativo oferece um ambiente colaborativo onde usuários podem se organizar por grupos de interesse, acompanhar progresso individual e coletivo, e manter a motivação nos estudos.
+
+## 🚀 Download
+
+[![Google Play Store](https://img.shields.io/badge/Google_Play-414141?style=for-the-badge&logo=google-play&logoColor=white)](https://play.google.com/store/apps/details?id=com.regisrafael.Stay_and_Learn)
+
+**Versão Beta disponível:** [Stay and Learn na Play Store](https://play.google.com/store/apps/details?id=com.regisrafael.Stay_and_Learn)
+
+---
 ## 👥 Contribuidores
 
 - [**natorjunior**](https://github.com/natorjunior) — Backend, frontend e infraestrutura
