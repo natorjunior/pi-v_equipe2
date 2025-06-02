@@ -2,12 +2,13 @@
 
 O repositório conta com uma equipe diversificada de colaboradores, cada um com contribuições importantes para diferentes áreas do projeto:
 
-- **[natorjunior](https://github.com/natorjunior)** (60 contribuições) – Responsável principal, atua em todas as áreas do projeto, incluindo backend, frontend, infraestrutura e documentação.
+
 - **[jorgelucas-rm](https://github.com/jorgelucas-rm)** (13 contribuições) – Destaque para integrações de storage, backend e correções de bugs.
 - **[Regis-Rafael](https://github.com/Regis-Rafael)** (7 contribuições) – Atua principalmente no frontend, criação de telas, design de interface e ajustes de nomenclatura.
 - **[BomDiaSol](https://github.com/BomDiaSol)** (4 contribuições) – Apoio em funcionalidades e ajustes gerais.
 - **[EduCode98](https://github.com/EduCode98)** (1 contribuição) – Contribuição em documentação e material acadêmico.
-
+- **[natorjunior](https://github.com/natorjunior)** (X contribuições) – Coordenador, Atua em todas as áreas do projeto, incluindo backend, frontend, infraestrutura e documentação.
+- 
 ## Histórico de Versões
 
 O projeto adota uma estratégia clara de versionamento, com releases documentadas:
