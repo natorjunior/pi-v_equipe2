@@ -1,6 +1,6 @@
 import datetime
 import json
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -14,8 +14,8 @@ def get_user_data_instance(user: User):
         name=user.name,
         email=user.email,
         avatar=avatar_content,
-        motivation=user.motivation,
-        genres=json.loads(user.genres),
+        motivation=user.motivation if user.motivation else "",
+        genres=json.loads(user.genres) if user.genres else [],
         created_at=user.created_at.date()
     )
 
@@ -27,11 +27,10 @@ class NewUser(BaseModel):
     genres: List[str]
 
 class UserUpdate(BaseModel):
-    name: str = None
-    email: str = None
-    motivation: str = None
-    genres: List[str] = None
-
+    name: Optional[str] = None
+    email: Optional[str] = None
+    motivation: Optional[str] = None
+    genres: Optional[List[str]] = None
 
 class UserUpdatePassword(BaseModel):
     old_password: str
@@ -41,6 +40,6 @@ class UserData(BaseModel):
     name: str
     email: str
     avatar: str
-    motivation: str
-    genres: List[str]
+    motivation: str = ""
+    genres: List[str] = []
     created_at: datetime.date

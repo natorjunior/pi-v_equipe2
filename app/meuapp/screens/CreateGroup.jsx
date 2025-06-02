@@ -12,7 +12,7 @@ import { useTheme } from "../service/themeService";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import InputField from "../components/InputField";
-import { createGroup, joinGroup, getGroup } from "../service/groupService";
+import { createGroup } from "../service/groupService";
 
 export default function CreateGroup() {
   const { theme } = useTheme();
@@ -23,53 +23,51 @@ export default function CreateGroup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-const handleCreateGroup = async () => {
-  if (!groupName || !groupAlias) {
-    setError("Por favor, informe todos os campos obrigatórios.");
-    return;
-  }
-
-  try {
-    setLoading(true);
-    setError(null);
-
-    const newGroup = {
-      name: groupName.trim(),
-      alias: groupAlias.replace("@", "").trim(),
-      description: description.trim(),
-    };
-
-    const response = await createGroup(newGroup);
-
-    if (response) {
-      navigation.navigate("Groups");
-    } else {
-      throw new Error("ID do grupo não encontrado na resposta.");
+  const handleCreateGroup = async () => {
+    if (!groupName || !groupAlias) {
+      setError("Por favor, informe todos os campos obrigatórios.");
+      return;
     }
-  } catch (error) {
-    console.error("Erro ao criar ou entrar no grupo", error);
-    setError("Erro ao criar ou entrar no grupo. Tente novamente.");
-  } finally {
-    setLoading(false);
-  }
-};
 
+    try {
+      setLoading(true);
+      setError(null);
 
+      const newGroup = {
+        name: groupName.trim(),
+        alias: groupAlias.replace("@", "").trim(),
+        description: description.trim(),
+      };
+
+      const response = await createGroup(newGroup);
+      if (response) {
+        navigation.navigate("Tabs", { screen: "Groups" });
+      } else {
+        throw new Error("ID do grupo não encontrado na resposta.");
+      }
+    } catch (error) {
+      console.log("Erro ao criar ou entrar no grupo", error);
+      setError("Erro ao criar ou entrar no grupo. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={[styles.header, { backgroundColor: theme.background }]}>
-          <TouchableOpacity onPress={() => navigation.navigate("Home")} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={theme.mode === "dark" ? "#fff" : "#000"} />
-          </TouchableOpacity>
-          <Text style={[styles.headerText, { color: theme.text }]}>Criar um Grupo</Text>
-        </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+      <KeyboardAvoidingView
+        style={[styles.inner, { backgroundColor: theme.background }]}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
+          <View style={[styles.header, { backgroundColor: theme.background }]}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color={theme.mode === "dark" ? "#fff" : "#000"} />
+            </TouchableOpacity>
+            <Text style={[styles.headerText, { color: theme.text }]}>Criar um Grupo</Text>
+          </View>
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.inner}
-        >
           <InputField
             label="Nome do Grupo"
             value={groupName}
@@ -77,13 +75,13 @@ const handleCreateGroup = async () => {
             placeholder="Digite o nome do grupo"
           />
           <InputField
-            label="Alias do Grupo"
+            label="Codigo de acesso do Grupo (tag)"
             value={groupAlias}
             onChangeText={setGroupAlias}
-            placeholder="Digite o alias do grupo"
+            placeholder="Digite a tag do grupo"
           />
           <InputField
-            label="Descrição"
+            label="Descrição do grupo"
             value={description}
             onChangeText={setDescription}
             placeholder="Digite uma descrição (opcional)"
@@ -114,8 +112,23 @@ const handleCreateGroup = async () => {
               {loading ? "Criando..." : "Criar Grupo"}
             </Text>
           </TouchableOpacity>
-        </KeyboardAvoidingView>
-      </View>
+
+            <TouchableOpacity
+              style={styles.miniButton}
+              onPress={() => navigation.navigate("JoinGroup")}
+            >
+              <Text
+                style={[
+                  styles.buttonText,
+                  { color: theme.mode === "dark" ? "#fff" : "#000" },
+                ]}
+              >
+                Se juntar a um Grupo
+              </Text>
+            </TouchableOpacity>
+
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -126,10 +139,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   inner: {
-    width: "100%",
-    top: 80,
-    alignItems: "center",
-    marginTop: 50,
+    flex: 1,
   },
   button: {
     paddingVertical: 14,
@@ -143,10 +153,17 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
+  miniButton: {
+    paddingVertical: 10,
+    borderRadius: 8,
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     padding: 15,
   },
   backButton: {

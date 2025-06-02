@@ -1,24 +1,23 @@
-//Falta ajeitar o mudar senha juntamente com o recuperar senha, espera o backend
-
+//opçõa tirar o avatar e voltar a ser o padrão
 import { useState, useEffect } from "react";
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   Image,
-  Alert,
   ActivityIndicator,
+  Alert,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { useTheme } from "../service/themeService";
 import { useNavigation } from "@react-navigation/native";
-import * as SecureStore from "expo-secure-store";
-import { getUser, updateUser, uploadAvatar } from "../service/userService";
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
-import * as FileSystem from "expo-file-system";
+import { launchCamera, launchImageLibrary } from "react-native-image-picker";
+import * as SecureStore from "expo-secure-store";
+import { useTheme } from "../service/themeService";
+import InputField from "../components/InputField";
+import { getUser, updateUser, uploadAvatar } from "../service/userService";
+import { AndroidPermissions } from "../util/AndroidPermissions";
 
 export default function EditProfile() {
   const { theme } = useTheme();
@@ -27,292 +26,247 @@ export default function EditProfile() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    password: "",
     avatar: "",
-    motivation: "",
-    genres: [],
   });
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserData = async () => {
       try {
         const token = await SecureStore.getItemAsync("token");
-        if (!token) {
-          Alert.alert("Erro", "Sessão expirada. Faça login novamente.");
-          navigation.navigate("Login");
-          return;
-        }
-
         const userData = await getUser(token);
+
         setFormData({
           name: userData.name || "",
           email: userData.email || "",
-          password: "",
           avatar: userData.avatar || "",
-          motivation: userData.motivation || "",
-          genres: userData.genres || [],
         });
         setAvatarPreview(userData.avatar);
       } catch (error) {
-        console.error("Erro ao buscar usuário:", error);
-        Alert.alert("Erro", "Não foi possível carregar os dados do perfil");
+        Alert.alert("Erro", "Falha ao carregar dados do usuário");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUser();
-    requestPermissions();
+    fetchUserData();
   }, []);
 
-  const requestPermissions = async () => {
-    const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
-    const { status: libraryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (cameraStatus !== "granted" || libraryStatus !== "granted") {
-      Alert.alert("Permissão necessária", "Precisamos acessar sua câmera e galeria para alterar a foto.");
-    }
-  };
-
-  const pickImage = async (source) => {
+  const handleImage = async (type) => {
     try {
-      let result;
+      const hasAllPermissions = await AndroidPermissions();
+      if (!hasAllPermissions) {
+        Alert.alert(
+          "Permissões negadas",
+          "O aplicativo precisa de permissões para acessar a câmera e a galeria."
+        );
+        return;
+      }
+
       const options = {
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
+        mediaType: "photo",
         quality: 0.8,
-        saveToPhotos: false // Don't save images to the gallery
+        maxWidth: 1024,
+        maxHeight: 1024,
+        includeBase64: false,
       };
 
-      result = source === "camera"
-        ? await ImagePicker.launchCameraAsync(options)
-        : await ImagePicker.launchImageLibraryAsync(options);
+      let result;
+      if (type === "camera") {
+        result = await launchCamera(options);
+      } else {
+        result = await launchImageLibrary(options);
+      }
 
-      if (!result.canceled && result.assets?.[0]?.uri) {
-        await handleImageUpload(result.assets[0].uri);
+      if (result.didCancel) {
+        console.log("Usuário cancelou a seleção");
+      } else if (result.errorCode) {
+        console.log("ImagePicker Error: ", result.errorMessage);
+        Alert.alert("Erro", "Não foi possível acessar a imagem");
+      } else if (result.assets && result.assets.length > 0) {
+        const selectedImage = result.assets[0];
+        setAvatarPreview(selectedImage.uri);
+        setFormData((prev) => ({
+          ...prev,
+          avatar: selectedImage.uri,
+        }));
       }
     } catch (error) {
-      console.error("Erro ao selecionar imagem:", error);
-      Alert.alert("Erro", "Não foi possível selecionar a imagem");
-    }
-  };
-
-  const handleImageUpload = async (uri) => {
-    try {
-      setUploading(true);
-      const token = await SecureStore.getItemAsync("token");
-      if (!token) throw new Error("Token de autenticação não encontrado");
-
-      const fileInfo = await FileSystem.getInfoAsync(uri);
-      if (!fileInfo.exists) throw new Error("Arquivo não encontrado");
-
-      const newAvatarUrl = await uploadAvatar(uri, token);
-      setAvatarPreview(newAvatarUrl);
-      setFormData((prev) => ({ ...prev, avatar: newAvatarUrl }));
-      Alert.alert("Sucesso", "Foto de perfil atualizada com sucesso!");
-    } catch (error) {
-      console.error("Erro no upload:", error);
-      Alert.alert("Erro", error.message || "Falha ao atualizar a foto de perfil");
-    } finally {
-      setUploading(false);
+      console.log("Erro ao selecionar imagem:", error);
+      Alert.alert("Erro", "Ocorreu um erro ao processar a imagem");
     }
   };
 
   const handleUpdate = async () => {
     try {
+      setUploading(true);
       const token = await SecureStore.getItemAsync("token");
-      if (!token) {
-        Alert.alert("Erro", "Sessão expirada. Faça login novamente.");
-        navigation.navigate("Login");
-        return;
-      }
 
       const payload = {
         name: formData.name,
         email: formData.email,
-        ...(formData.password && { password: formData.password }),
-        motivation: formData.motivation,
-        genres: formData.genres,
       };
 
-      await updateUser(payload, token);
+      if (avatarPreview && avatarPreview.startsWith("file://")) {
+        const uploadedUrl = await uploadAvatar(avatarPreview, token);
+        payload.avatar = uploadedUrl;
+      }
+
+      await updateUser(payload);
+      await SecureStore.setItemAsync("user", JSON.stringify(payload));
       Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
-      navigation.goBack();
+      navigation.navigate("AppDrawer", { refresh: true });
     } catch (error) {
-      console.error("Erro ao atualizar perfil:", error);
-      Alert.alert("Erro", error.response?.data?.message || "Não foi possível atualizar o perfil");
+      Alert.alert("Erro", error.message || "Falha ao atualizar perfil");
+    } finally {
+      setUploading(false);
     }
   };
 
   if (loading) {
     return (
-      <LinearGradient
-        colors={[
-          theme.mode === "dark" ? "#0D0058" : "#f0f0f0",
-          theme.mode === "dark" ? "#000000" : "#d0d0d0",
-        ]}
-        style={[styles.container, { justifyContent: "center" }]}
-      >
-        <ActivityIndicator
-          size="large"
-          color={theme.mode === "dark" ? "#fff" : "#000"}
-        />
-      </LinearGradient>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.text} />
+      </View>
     );
   }
 
   return (
-    <LinearGradient
-      colors={[
-        theme.mode === "dark" ? "#0D0058" : "#f0f0f0",
-        theme.mode === "dark" ? "#000000" : "#d0d0d0",
-      ]}
-      style={styles.container}
-    >
-      <View style={[styles.header, { backgroundColor: "transparent" }]}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color={theme.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerText, { color: theme.text }]}>
-          Editar Perfil
-        </Text>
-      </View>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color={theme.text} />
+          </TouchableOpacity>
+          <Text style={[styles.title, { color: theme.text }]}>
+            Editar Perfil
+          </Text>
+        </View>
 
-      <View style={styles.form}>
-        <View style={styles.avatarContainer}>
-          {avatarPreview &&
-          typeof avatarPreview === "string" &&
-          avatarPreview.startsWith("http") ? (
-            <Image
-              source={{ uri: avatarPreview }}
-              style={styles.avatar}
-              onError={() => {
-                console.warn("Erro ao carregar imagem:", avatarPreview);
-                setAvatarPreview(null);
-              }}
-            />
-          ) : (
-            <View
-              style={[
-                styles.defaultAvatar,
-                { backgroundColor: theme.mode === "dark" ? "#333" : "#999" },
-              ]}
+        <View style={styles.avatarSection}>
+          <View style={styles.avatarContainer}>
+            {avatarPreview ? (
+              <Image
+                source={{ uri: avatarPreview }}
+                style={[
+                  styles.avatar,
+                  {
+                    borderColor:
+                      theme.mode === "dark" ? "#DFBA69" : "#003366",
+                  },
+                ]}
+              />
+            ) : (
+              <View
+                style={[
+                  styles.defaultAvatar,
+                  { backgroundColor: theme.inputBackground },
+                ]}
+              >
+                <Ionicons name="person" size={40} color={theme.text} />
+              </View>
+            )}
+            {uploading && (
+              <View style={styles.loadingOverlay}>
+                <ActivityIndicator size="large" color={theme.text} />
+              </View>
+            )}
+          </View>
+
+          <View style={styles.avatarButtons}>
+            <TouchableOpacity
+              style={[styles.imageButton, { borderColor: theme.border }]}
+              onPress={() => handleImage("camera")}
+              disabled={uploading}
             >
-              <Ionicons name="person" size={60} color="#fff" />
-            </View>
-          )}
+              <Ionicons name="camera" size={20} color={theme.text} />
+              <Text style={[styles.buttonText, { color: theme.text }]}>
+                Câmera
+              </Text>
+            </TouchableOpacity>
 
-          {uploading && (
-            <View style={styles.uploadOverlay}>
-              <ActivityIndicator size="large" color="#fff" />
-            </View>
-          )}
+            <TouchableOpacity
+              style={[styles.imageButton, { borderColor: theme.border }]}
+              onPress={() => handleImage("library")}
+              disabled={uploading}
+            >
+              <Ionicons name="image" size={20} color={theme.text} />
+              <Text style={[styles.buttonText, { color: theme.text }]}>
+                Galeria
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <View style={styles.avatarButtons}>
-          <TouchableOpacity
-            style={[
-              styles.avatarButton,
-              { backgroundColor: theme.text === "dark" ? "#000" : "black" },
-            ]}
-            onPress={() => pickImage("gallery")}
-            disabled={uploading}
-          >
-            <Ionicons name="image" size={20} color="#fff" />
-            <Text style={styles.avatarButtonText}>Galeria</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.avatarButton,
-              { backgroundColor: theme.text === "dark" ? "#000" : "black" },
-            ]}
-            onPress={() => pickImage("camera")}
-            disabled={uploading}
-          >
-            <Ionicons name="camera" size={20} color="#fff" />
-            <Text style={styles.avatarButtonText}>Câmera</Text>
-          </TouchableOpacity>
-        </View>
-
-        <TextInput
-          style={[
-            styles.input,
-            {
-              color: theme.mode,
-              backgroundColor: theme.inputBackground,
-              borderColor: theme.border,
-            },
-          ]}
-          placeholder="Nome"
-          placeholderTextColor={theme.placeholder}
+        <InputField
+          label="Nome"
           value={formData.name}
           onChangeText={(text) => setFormData({ ...formData, name: text })}
+          placeholder="Digite seu nome"
+          theme={theme}
         />
 
-        <TextInput
-          style={[
-            styles.input,
-            {
-              color: theme.mode,
-              backgroundColor: theme.inputBackground,
-              borderColor: theme.border,
-            },
-          ]}
-          placeholder="Email"
-          placeholderTextColor={theme.placeholder}
+        <InputField
+          label="Email"
           value={formData.email}
           onChangeText={(text) => setFormData({ ...formData, email: text })}
+          placeholder="Digite seu email"
           keyboardType="email-address"
-          autoCapitalize="none"
-        />
-
-        <TextInput
-          style={[
-            styles.input,
-            {
-              color: theme.mode,
-              backgroundColor: theme.inputBackground,
-              borderColor: theme.border,
-            },
-          ]}
-          placeholder="Nova Senha (opcional)"
-          placeholderTextColor={theme.placeholder}
-          value={formData.password}
-          onChangeText={(text) => setFormData({ ...formData, password: text })}
-          secureTextEntry
+          theme={theme}
         />
 
         <TouchableOpacity
-          style={[styles.button]}
+          style={[styles.secondaryButton, { borderColor: theme.border }]}
           onPress={() => navigation.navigate("ChangeMotivation")}
         >
-          <Text style={[styles.buttonText, { color: theme.text }]}>
-            Alterar Motivação e Gêneros
+          <Text
+            style={[styles.secondaryButtonText, { color: theme.text }]}
+          >
+            Alterar Motivação
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.saveButton, { color: theme.mode }]}
+          style={[styles.secondaryButton, { borderColor: theme.border }]}
+          onPress={() => navigation.navigate("ChangeGenres")}
+        >
+          <Text
+            style={[styles.secondaryButtonText, { color: theme.text }]}
+          >
+            Alterar Gêneros
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.primaryButton,
+            {
+              backgroundColor:
+                theme.mode === "dark" ? "#DFBA69" : "#003366",
+            },
+          ]}
           onPress={handleUpdate}
           disabled={uploading}
         >
           {uploading ? (
-            <ActivityIndicator />
+            <ActivityIndicator color={theme.text} />
           ) : (
-            <Text style={[styles.buttonText, { color: theme.text }]}>
+            <Text
+              style={[
+                styles.primaryButtonText,
+                { color: theme.mode === "dark" ? "#000" : "#fff" },
+              ]}
+            >
               Salvar Alterações
             </Text>
           )}
         </TouchableOpacity>
-      </View>
-    </LinearGradient>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -320,94 +274,94 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scrollContainer: {
+    padding: 20,
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 15,
-    paddingHorizontal: 20,
+    marginBottom: 30,
   },
   backButton: {
     padding: 10,
   },
-  headerText: {
-    fontSize: 20,
+  title: {
+    fontSize: 24,
     fontWeight: "bold",
     flex: 1,
     textAlign: "center",
   },
-  form: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
+  avatarSection: {
+    alignItems: "center",
+    marginBottom: 30,
   },
   avatarContainer: {
-    alignItems: "center",
-    marginBottom: 20,
-    position: 'relative',
+    position: "relative",
+    marginBottom: 15,
   },
   avatar: {
     width: 120,
     height: 120,
     borderRadius: 60,
     borderWidth: 3,
-    borderColor: "#ccc",
   },
   defaultAvatar: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderWidth: 3,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  uploadOverlay: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.5)",
     borderRadius: 60,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   avatarButtons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 20,
+    flexDirection: "row",
     gap: 10,
   },
-  avatarButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 15,
+  imageButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 10,
     borderRadius: 20,
+    borderWidth: 1,
     gap: 5,
   },
-  avatarButtonText: {
-    color: "#fff",
-    fontSize: 14,
+  primaryButton: {
+    padding: 15,
+    borderRadius: 10,
+    alignItems: "center",
+    marginTop: 20,
   },
-  input: {
-    marginBottom: 15,
+  primaryButtonText: {
     fontSize: 16,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-  },
-  button: {
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  saveButton: {
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 18,
     fontWeight: "bold",
   },
+  secondaryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginTop: 10,
+    gap: 10,
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    justifyContent: "center",
+    alignItems: "center",
+    textAlign: "center",
+    flex: 1,
+  },
 });
-

@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Text, TextInput, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Text, TextInput, StyleSheet, TouchableOpacity, View, SafeAreaView, KeyboardAvoidingView, Platform } from "react-native";
 import { useTheme } from "../service/themeService";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Question1({ navigation }) {
     const { theme } = useTheme();
@@ -10,7 +9,12 @@ export default function Question1({ navigation }) {
     const isButtonDisabled = name.trim().length === 0;
 
     return (
-        <SafeAreaView style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: theme.background  }}>
+            <KeyboardAvoidingView
+                    style={{ flex: 1 }}
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+            >
             <View style={[styles.container, { backgroundColor: theme.background }]}>
                 <Text style={[styles.text, { color: theme.text }]}>
                     Como podemos te chamar?
@@ -29,7 +33,6 @@ export default function Question1({ navigation }) {
                     placeholderTextColor={theme.placeholder}
                     value={name}
                     onChangeText={setName}
-                    selectionColor={theme.text}
                     keyboardAppearance={theme.mode}
                 />
 
@@ -54,6 +57,7 @@ export default function Question1({ navigation }) {
                     </Text>
                 </TouchableOpacity>
             </View>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
@@ -63,6 +67,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: "center",
         justifyContent: "center",
+        paddingHorizontal: 20,
     },
     text: {
         fontSize: 22,

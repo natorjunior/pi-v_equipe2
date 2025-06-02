@@ -1,44 +1,48 @@
-import { useState, useEffect, useCallback } from "react";
 import {
     View,
     TouchableOpacity,
     Text,
     StyleSheet,
-    Modal,
-    Pressable,
     SafeAreaView,
-    BackHandler,
+    FlatList,
+    Alert,
+    Platform,
+    Image
 } from "react-native";
 import { useTheme } from "../service/themeService";
-import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
 import { logoutUser } from "../service/authService";
-import { useFocusEffect } from "@react-navigation/native";
+import { getUser } from "../service/userService";
 
-const Hamburger = ({ navigation, inGroup }) => {
-    const [menuOpen, setMenuOpen] = useState(false);
+const Hamburger = ({ navigation }) => {
     const { theme } = useTheme();
+    const [avatarLoading, setAvatarLoading] = useState(false);
+    const [user, setUser] = useState(null);
+    const [groups, setGroups] = useState([]);
 
-    useFocusEffect(
-        useCallback(() => {
-            const onBackPress = () => {
-                if (menuOpen) {
-                    setMenuOpen(false);
-                    return true;
-                }
-                return false;
-            };
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const userData = await getUser();
+                setUser(userData);
+            } catch (error) {
+                console.error("Erro ao buscar usuário:", error);
+            }
+        };
 
-            const subscription = BackHandler.addEventListener(
-                'hardwareBackPress',
-                onBackPress
-            );
+        const fetchGroups = async () => {
+            try {
+                setGroups([]);
+            } catch (error) {
+                console.error("Erro ao buscar grupos:", error);
+            }
+        };
 
-            return () => subscription.remove();
-        }, [menuOpen])
-    );
+        fetchUser();
+        fetchGroups();
+    }, []);
 
     const handleLogout = async () => {
-        setMenuOpen(false);
         await logoutUser();
         navigation.reset({
             index: 0,
@@ -46,68 +50,77 @@ const Hamburger = ({ navigation, inGroup }) => {
         });
     };
 
-    const handleNavigate = (screen) => {
+    const handleNavigate = (screen, params) => {
         if (navigation) {
-            setMenuOpen(false);
-            navigation.navigate(screen);
+            navigation.navigate(screen, params);
         }
     };
 
-    const handleGroupConfigNavigation = () => {
-        if (inGroup) {
-            handleNavigate("GroupConfig");
-        }
+    const confirmLogout = () => {
+        Alert.alert(
+            "Confirmar Logout",
+            "Você tem certeza que deseja sair?",
+            [
+                { text: "Cancelar", style: "cancel" },
+                { text: "Confirmar", onPress: handleLogout }
+            ]
+        );
+    };
+
+    const renderGroupItem = ({ item }) => {
+        return (
+            <TouchableOpacity style={styles.menuItem} onPress={() => handleNavigate("Group", { groupId: item.id })}>
+                <Text style={[styles.menuItemText, { color: theme.text }]}>{item.name}</Text>
+            </TouchableOpacity>
+        );
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.mode === "dark" ? "#050024" : "#fff" }]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.mode === "dark" ? "#0D0058" : "#fff" }]}>
             <TouchableOpacity
-                style={styles.hamburgerButton}
-                onPress={() => setMenuOpen(true)}
+                onPress={() => { navigation.navigate("Tabs", { screen: "Profile" }) }}
+                style={styles.profileContainer}
             >
-                <Text style={[styles.hamburgerIcon, { color: theme.mode === "dark" ? "#fff" : "#000" }]}>☰</Text>
+                {user?.avatar ? (
+                    <Image
+                        source={{ uri: user.avatar }}
+                        style={[styles.avatar, { borderColor: theme.mode === "dark" ? "#fff" : "#000" }]}
+                        onLoadStart={() => setAvatarLoading(true)}
+                        onLoadEnd={() => setAvatarLoading(false)}
+                    />
+                ) : null}
+                <Text style={[styles.username, { color: theme.text }]}>{user?.name}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-                style={[
-                    styles.GroupDetails,
-                    !inGroup && { opacity: 0.5 }
-                ]}
-                onPress={handleGroupConfigNavigation}
-                disabled={!inGroup}
-            >
-                <Ionicons name="settings-outline" size={24} color={theme.text} />
-            </TouchableOpacity>
 
-            <Modal transparent visible={menuOpen} animationType="fade" onRequestClose={() => setMenuOpen(false)}>
-                <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
-                    <View style={[styles.menu, { backgroundColor: theme.mode === "dark" ? "#0D0058" : "#f0f0f0" }]}>
-                        <View style={styles.groupSelection}>
-                            <Text style={[styles.groupText, { color: theme.text }]}>Seleção de Grupo</Text>
-                        </View>
-                        <View style={styles.menuButtons}>
-                            <TouchableOpacity onPress={() => handleNavigate("CreateGroup")}>
-                                <Text style={[styles.menuItem, { color: theme.text }]}>Criar Grupo</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => handleNavigate("JoinGroup")}>
-                                <Text style={[styles.menuItem, { color: theme.text }]}>Entrar em um grupo</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => handleNavigate("Config")}>
-                                <Text style={[styles.menuItem, { color: theme.text }]}>Configurações</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => handleNavigate("Feedback")}>
-                                <Text style={[styles.menuItem, { color: theme.text }]}>Ajuda e Feedback</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => handleNavigate("AboutUs")}>
-                                <Text style={[styles.menuItem, { color: theme.text }]}>Sobre nós</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={handleLogout}>
-                                <Text style={[styles.menuItem, { color: theme.text }]}>Sair</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </Pressable>
-            </Modal>
+            <FlatList
+                data={groups}
+                renderItem={renderGroupItem}
+                keyExtractor={(item) => item.id.toString()}
+                style={styles.groupsList}
+                contentContainerStyle={styles.listContent}
+            />
+
+            <View style={styles.menuButtons}>
+                <TouchableOpacity style={styles.menuItem} onPress={() => handleNavigate("CreateGroup")}>
+                    <Text style={[styles.menuItemText, { color: theme.text }]}>Criar Grupo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={() => handleNavigate("JoinGroup")}>
+                    <Text style={[styles.menuItemText, { color: theme.text }]}>Entrar em um grupo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={() => handleNavigate("Config")}>
+                    <Text style={[styles.menuItemText, { color: theme.text }]}>Configurações</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={() => handleNavigate("Feedback")}>
+                    <Text style={[styles.menuItemText, { color: theme.text }]}>Ajuda e Feedback</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={() => handleNavigate("AboutUs")}>
+                    <Text style={[styles.menuItemText, { color: theme.text }]}>Sobre nós</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={confirmLogout}>
+                    <Text style={[styles.menuItemText, { color: theme.text }]}>Sair</Text>
+                </TouchableOpacity>
+            </View>
         </SafeAreaView>
     );
 };
@@ -115,60 +128,53 @@ const Hamburger = ({ navigation, inGroup }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        height: 60,
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        paddingHorizontal: 20,
-        zIndex: 1000,
+        width: '100%',
+        justifyContent: 'flex-end',
+        paddingHorizontal: 30,
+        paddingBottom: 30,
     },
-    hamburgerButton: {
-        padding: 10,
-        borderRadius: 5,
+    profileContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 20,
+        marginBottom: 20,
     },
-    hamburgerIcon: {
-        fontSize: 24,
-        textAlign: "center",
+    avatar: {
+        width: 40,
+        height: 40,
+        borderRadius: 40,
+        borderWidth: 1,
+        marginTop: 20,
+        alignSelf: "flex-start",
     },
-    GroupDetails: {
-        padding: 10,
+    avatarLoader: {
+        alignSelf: "center",
+        marginBottom: 20,
     },
-    overlay: {
-        flex: 1,
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        justifyContent: "flex-start",
-        alignItems: "flex-start",
+    username: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginTop: 20,
+        marginLeft: 10,
     },
-    menu: {
-        width: "80%",
-        height: "100%",
-        padding: 15,
-        borderRadius: 10,
-        marginTop: 0,
-        marginLeft: 0,
-        elevation: 5,
-    },
-    groupSelection: {
-        paddingVertical: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: "#aaa",
-        marginBottom: "auto",
-    },
-    groupText: {
-        fontSize: 18,
-        fontWeight: "bold",
+    listContent: {
+        paddingHorizontal: 0,
     },
     menuButtons: {
-        marginBottom: 20,
-        marginLeft: 30,
+        paddingBottom: Platform.OS === 'ios' ? 30 : 0,
+        width: '100%',
+    },
+    groupsList: {
+        marginBottom: 10,
+        width: '100%',
     },
     menuItem: {
-        fontSize: 16,
         paddingVertical: 10,
+        width: '100%',
+    },
+    menuItemText: {
+        fontSize: 18,
+        paddingLeft: Platform.OS === 'ios' ? 30 : 0,
     },
 });
 

@@ -41,7 +41,7 @@ def mock_session():
 def checkin_service(mock_session):
     service = CheckinService(mock_session)
     service.checkin_repository = MagicMock()
-    service.user_service = MagicMock    ()
+    service.user_service = MagicMock()
     service.group_service = MagicMock()
     return service
 
@@ -99,7 +99,7 @@ def test_delete_checkin_by_id(checkin_service):
                            photo="img.jpg", 
                            group_id=1)
     
-    checkin_service.checkin_repository.get_checkin_by_id(mock_checkin)
+    checkin_service.checkin_repository.get_checkin_by_id.return_value = mock_checkin
 
     checkin_service.delete_checkin_by_id(user_id = 10, checkin_id = 1)
 

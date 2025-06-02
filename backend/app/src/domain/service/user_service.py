@@ -42,7 +42,7 @@ class UserService:
 
         password_hash = self.encryption_service.generate_hash(new_user.password)
 
-        self.user_repository.create_user(
+        created_user = self.user_repository.create_user(
             name=new_user.name,
             email=new_user.email,
             password_hash=password_hash,
@@ -51,6 +51,8 @@ class UserService:
             avatar="default_avatar.jpeg",
         )
 
+        return created_user
+
     def update_user(self, user_id, user_changes: UserUpdate):
         user = self.user_repository.get_user_by_id(user_id)
         if not user:
@@ -58,7 +60,6 @@ class UserService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Usuário não encontado"
             )
-        user_changes = json.dumps(user_changes.genres)
         updated_user = self.user_repository.update_user(user_id, user_changes)
         return get_user_data_instance(updated_user)
 
@@ -69,7 +70,7 @@ class UserService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Email ou senha incorretos"
             )
-        if not self.encryption_service.verify_password:
+        if not self.encryption_service.verify_password(user.password_hash, user_changes.old_password):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Email ou senha incorretos"
@@ -80,7 +81,6 @@ class UserService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=valid_password["Message"],
             )
-
         password_hash = self.encryption_service.generate_hash(user_changes.new_password)
         self.user_repository.update_user_password(user_id, password_hash)
 
@@ -91,11 +91,13 @@ class UserService:
         updated_user = self.user_repository.set_user_avatar(user_id, avatar_url)
         return get_user_data_instance(updated_user)
 
-    def delete_user(self, user_id):
+    def delete_user(self, user_id: int):
         user = self.user_repository.get_user_by_id(user_id)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Usuário não encontado"
+                detail="Usuário não encontrado"
             )
-        return self.user_repository.delete_user(user_id)
+
+        self.user_repository.delete_user(user_id)
+        return {"detail": "Usuário deletado com sucesso"}

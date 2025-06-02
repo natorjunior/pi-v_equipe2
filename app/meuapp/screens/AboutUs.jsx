@@ -36,7 +36,7 @@ export default function AboutUs({ navigation }) {
         <SafeAreaView style={{ flex: 1 }}>
         <View style={[styles.container, { backgroundColor: theme.background }]}> 
             <View style={[styles.header, { backgroundColor: theme.background }]}>
-                <TouchableOpacity onPress={() => navigation.navigate("Home")} style={styles.backButton}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={theme.mode === "dark" ? "#fff" : "#000"} />
                 </TouchableOpacity>
                 <Text style={[styles.headerText, { color: theme.text }]}>Desenvolvedores</Text>
@@ -45,7 +45,9 @@ export default function AboutUs({ navigation }) {
                 ListHeaderComponent={() => (
                     <>
                         <Text style={[styles.title, { color: theme.text }]}>Sobre Nós</Text>
-                        <Text style={[styles.subtitle, { color: theme.text }]}>A SAL é um software de estudos e agrupamento, desenvolvido em um trabalho universitário.</Text>
+                        <Text style={[styles.subtitle, { color: theme.text }]}>A SAL é um software de estudos e agrupamento, desenvolvido em um trabalho universitário.
+                            O software tem como objetivo ajudar estudantes e amantes de aprendizado a se conectar, compartilhar suas experiências e construir amizades.
+                        </Text>
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>Conheça nossa equipe</Text>
                     </>
                 )}

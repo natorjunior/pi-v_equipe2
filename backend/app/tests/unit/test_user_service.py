@@ -1,8 +1,12 @@
+import json
 import pytest
 from unittest.mock import MagicMock, patch
+from datetime import datetime
 from fastapi import UploadFile
 from app.src.domain.service.user_service import UserService
-from app.src.domain.dto.user_dto import UserUpdate
+from app.src.domain.dto.user_dto import NewUser, UserUpdate
+from app.src.domain.model.group_participant import GroupParticipant
+from app.src.domain.model.checkin import Checkin
 from app.src.domain.repository.user_repository import UserRepository
 from app.src.infra.security.encryption_service import EncryptionService
 from app.src.domain.model.user import User
@@ -13,8 +17,9 @@ mock_user = User(
     email="mentirinhas@exemplo.com",
     name="Mentirinha",
     motivation="Vencer",
-    genres=["Mentir", "Mentir"],
-    avatar="default_avatar.jpeg"
+    genres=json.dumps(["Mentir", "Mentir"]),
+    avatar="default_avatar.jpeg",
+    created_at=datetime.now()
 )
 
 @pytest.fixture
@@ -48,13 +53,12 @@ def test_get_user_by_email(mock_minio, user_service):
 @patch("app.src.domain.dto.user_dto.get_file_from_minio", return_value="fake_url")
 def test_create_user(mock_minio, user_service):
     user_service.validation.email_validator.return_value = True
-    #user_service.validation.password_validator.return_value = {"Success": True}
-
-    new_user = UserUpdate(
+    new_user = NewUser(
         name="Nova Mentira",
         email="mentira2@mentir.com",
         motivation="Nada",
-        genres=["Nenhum", "Zero"]
+        genres=["Nenhum", "Zero"],
+        password="senha123"
     )
 
     user_service.user_repository.create_user.return_value = User(
@@ -77,12 +81,13 @@ def test_update_user(mock_minio, user_service):
 
     user_service.user_repository.get_user_by_id.return_value = mock_user
     user_service.user_repository.update_user.return_value = User(
-        id=69,
-        email="mentirinhas@exemplo.com",
-        name="Mentirinha",
-        motivation="Vencer",
-        genres=user_changes.genres,
-        avatar="default_avatar.jpeg"
+        id=mock_user.id,
+        email=mock_user.email,
+        name=mock_user.name,
+        motivation=mock_user.motivation,
+        genres=json.dumps(user_changes.genres),
+        avatar=mock_user.avatar,
+        created_at=datetime.now()
     )
 
     result = user_service.update_user(user_id=69, user_changes=user_changes)
@@ -93,13 +98,26 @@ def test_update_user(mock_minio, user_service):
 def test_update_user_avatar(mock_minio, user_service):
     mock_file = MagicMock(spec=UploadFile)
     mock_file.filename = "new_avatar.jpeg"
+    mock_file.content_type = "image/jpeg"
     mock_file.file = MagicMock()
 
-    user_service.user_repository.set_user_avatar.return_value = mock_user
+    mock_user = User(
+        id=69,
+        email="mentirinhas@exemplo.com",
+        name="Mentirinha",
+        motivation="Vencer",
+        genres=json.dumps(["Mentir", "Mentir"]),
+        avatar="default_avatar.jpeg",
+        created_at=datetime.now()
+    )
 
-    result = user_service.update_user_avatar(user_id=69, avatar=mock_file)
+    with patch("app.src.adapter.minio_adapter.upload_file_to_minio", return_value="new_avatar_url"):
+        mock_user.avatar = "new_avatar_url"
+        user_service.user_repository.set_user_avatar.return_value = mock_user
 
-    assert result.avatar == "default_avatar.jpeg"
+        result = user_service.update_user_avatar(user_id=69, avatar=mock_file)
+
+    assert result.avatar == "fake_url"
 
 def test_delete_user(user_service):
     user_service.user_repository.get_user_by_id.return_value = mock_user
@@ -107,4 +125,4 @@ def test_delete_user(user_service):
 
     result = user_service.delete_user(user_id=69)
 
-    assert result is None
+    assert result == {'detail': 'Usuário deletado com sucesso'}

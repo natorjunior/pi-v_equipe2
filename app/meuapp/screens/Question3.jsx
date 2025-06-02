@@ -66,7 +66,7 @@ export default function Question3({ navigation, route }) {
         <SafeAreaView style={{ flex: 1 }}>
             <View style={[styles.container, { backgroundColor: theme.background }]}>
                 <ScrollView contentContainerStyle={styles.scrollContainer}>
-                    <Text style={[styles.text, { color: theme.text }]}>Selecione seus gêneros favoritos:</Text>
+                    <Text style={[styles.text, { color: theme.text }]}>Selecione seus gêneros literarios ou acadêmicos favoritos{"\n"} (essa opção aparecera no seu perfil):</Text>
                     {genresToShow.map((genre, index) => (
                         <TouchableOpacity
                             key={index}
@@ -80,7 +80,7 @@ export default function Question3({ navigation, route }) {
                                 <Checkbox
                                     value={selectedGenres[genre] || false}
                                     onValueChange={() => toggleGenre(genre)}
-                                    color={theme === "dark" ? "#fff" : "#0D0058"}
+                                    color={theme.mode === "dark" ? "#000" : "#000"}
                                 />
                                 <Text style={[styles.buttonText, { color: theme.mode === "dark" ? "#fff" : "#000" }]}>
                                     {genre}
