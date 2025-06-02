@@ -36,7 +36,7 @@ export default function GroupDetails() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
 
-  const [groupOwnerId, setGroupOwnerId] = useState(null);
+  const [groupCreatedBy, setGroupCreatedBy] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
 
   const fetchCurrentUser = async () => {
@@ -69,10 +69,10 @@ export default function GroupDetails() {
       setGroupAlias(selectedGroup.group_alias);
       setDescription(selectedGroup.description || "");
       setMembers(selectedGroup.members || []);
-      setGroupOwnerId(selectedGroup.owner_id);
+      setGroupCreatedBy(selectedGroup.created_by);
 
     } catch (err) {
-      console.error("Erro ao carregar grupo:", err);
+      console.log("Erro ao carregar grupo:", err);
       setError("Erro ao carregar informações do grupo.");
     } finally {
       setLoading(false);
@@ -110,7 +110,7 @@ export default function GroupDetails() {
               { text: "OK", onPress: () => navigation.navigate("AppDrawer", { refresh: true })},
             ]);
           } catch (err) {
-            console.error("Erro ao excluir grupo", err);
+            console.log("Erro ao excluir grupo", err);
             Alert.alert("Erro", "Não foi possível excluir o grupo.");
           } finally {
             setLoading(false);
@@ -133,7 +133,7 @@ export default function GroupDetails() {
             Alert.alert("Você saiu do grupo.");
             navigation.navigate("AppDrawer", { refresh: true, selectedGroupId: null });
           } catch (err) {
-            console.error("Erro ao sair do grupo", err);
+            console.log("Erro ao sair do grupo", err);
             Alert.alert("Erro", "Não foi possível sair do grupo.");
           } finally {
             setLoading(false);
@@ -204,12 +204,49 @@ export default function GroupDetails() {
               </>
             }
             ListEmptyComponent={<Text style={{ color: theme.text }}>Nenhum membro encontrado.</Text>}
-            renderItem={({ item }) => (
-              <TouchableOpacity style={styles.memberRow} onPress={() => handleAvatarPress(item.avatar)}>
-                <Image source={{ uri: item.avatar }} style={styles.memberAvatar} />
-                <Text style={{ color: theme.text }}>{item.name || item.email}</Text>
-              </TouchableOpacity>
-            )}
+            renderItem={({ item }) => {
+              const isAdmin = item.name === groupCreatedBy;
+
+            return (
+              <View style={styles.memberRow}>
+                <TouchableOpacity onPress={() => handleAvatarPress(item.avatar)}>
+                  <Image source={{ uri: item.avatar }} style={styles.memberAvatar} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => {
+                    if (currentUser && item.email === currentUser.email) {
+                        navigation.navigate("AppDrawer", { 
+                            screen: "Tabs", 
+                            params: { screen: "Profile" } 
+                        });
+                    } else {
+                      navigation.navigate("OtherProfile", { member: item });
+                    }
+                  }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Text
+                      style={[
+                        {
+                          color: theme.text,
+                          fontWeight: isAdmin ? "bold" : "normal",
+                        },
+                      ]}
+                    >
+                      {item.name || item.email}
+                    </Text>
+                    {isAdmin && (
+                      <View style={styles.adminBadge}>
+                        <Text style={styles.adminBadgeText}>ADM</Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              </View>
+            );
+
+            }}
           />
         </KeyboardAvoidingView>
 
@@ -218,7 +255,7 @@ export default function GroupDetails() {
             <Text style={[styles.buttonText, { color: theme.error }]}>Deixar o Grupo</Text>
           </TouchableOpacity>
 
-          {currentUser && groupOwnerId === currentUser.id && (
+          {currentUser && groupCreatedBy === currentUser.name && (
             <TouchableOpacity
               style={[styles.button, { backgroundColor: theme.error }]}
               onPress={handleDeleteGroup}
@@ -325,4 +362,17 @@ const styles = StyleSheet.create({
     right: 0,
     padding: 20,
   },
+  adminBadge: {
+  backgroundColor: "#FFD700",
+  marginLeft: 8,
+  paddingHorizontal: 6,
+  paddingVertical: 2,
+  borderRadius: 4,
+},
+adminBadgeText: {
+  color: "#000",
+  fontWeight: "bold",
+  fontSize: 12,
+},
+
 });

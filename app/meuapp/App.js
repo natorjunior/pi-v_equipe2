@@ -37,6 +37,7 @@ import ChangeGenres from "./screens/ChangeGenres";
 import ForgotPassword from "./screens/ForgotPassword";
 import PostDetails from "./screens/PostDetails";
 import EditPost from "./screens/EditPost";
+import OtherProfile from "./screens/OtherProfile";
 
 import Top from "./components/Top";
 
@@ -233,6 +234,7 @@ function App() {
           <Stack.Screen name="ChangeGenres" component={ChangeGenres} />
           <Stack.Screen name="AppDrawer" component={AppDrawer} />
           <Stack.Screen name="Publish" component={Publish} />
+          <Stack.Screen name="OtherProfile" component={OtherProfile} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaView>

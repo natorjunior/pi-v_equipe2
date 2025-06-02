@@ -4,10 +4,10 @@
     "@expo/prebuild-config": "~9.0.0",
     "@react-native-async-storage/async-storage": "^2.1.2",
     "@react-native-community/cli": "^18.0.0",
-    "@react-navigation/bottom-tabs": "^7.3.13",
+    "@react-navigation/bottom-tabs": "^7.3.14",
     "@react-navigation/drawer": "^7.3.12",
-    "@react-navigation/native": "^7.1.9",
-    "@react-navigation/stack": "^7.3.2",
+    "@react-navigation/native": "^7.1.10",
+    "@react-navigation/stack": "^7.3.3",
     "axios": "^1.9.0",
     "expo": "^53.0.9",
     "expo-av": "^15.1.4",
@@ -23,6 +23,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-native": "^0.79.2",
+    "react-native-dotenv": "^3.4.11",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-image-picker": "^8.2.1",
     "react-native-paper": "^5.14.5",
@@ -30,7 +31,7 @@
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "^5.4.0",
     "react-native-screens": "~4.10.0",
-    "react-native-video": "^6.14.0"
+    "react-native-video": "^6.14.1"
   },
   "expo": {
     "doctor": {
@@ -44,5 +45,11 @@
         "listUnknownPackages": false
       }
     }
+  },
+  "name": "meuapp",
+  "version": "1.0.0",
+  "scripts": {
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   }
 }

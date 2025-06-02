@@ -45,7 +45,9 @@ export default function AboutUs({ navigation }) {
                 ListHeaderComponent={() => (
                     <>
                         <Text style={[styles.title, { color: theme.text }]}>Sobre Nós</Text>
-                        <Text style={[styles.subtitle, { color: theme.text }]}>A SAL é um software de estudos e agrupamento, desenvolvido em um trabalho universitário.</Text>
+                        <Text style={[styles.subtitle, { color: theme.text }]}>A SAL é um software de estudos e agrupamento, desenvolvido em um trabalho universitário.
+                            O software tem como objetivo ajudar estudantes e amantes de aprendizado a se conectar, compartilhar suas experiências e construir amizades.
+                        </Text>
                         <Text style={[styles.sectionTitle, { color: theme.text }]}>Conheça nossa equipe</Text>
                     </>
                 )}

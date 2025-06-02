@@ -8,6 +8,7 @@ import {
     KeyboardAvoidingView,
     Platform,
 } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { useTheme } from "../service/themeService";
 import { createUser } from "../service/userService";
 import InputField from "../components/InputField";
@@ -18,6 +19,8 @@ export default function Question4({ navigation, route }) {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
 
     const name = route.params?.name || "Usuário";
@@ -57,84 +60,102 @@ export default function Question4({ navigation, route }) {
             console.log("Erro ao criar usuario:", error);
             setErrorMessage(
                 error.response?.data?.message ||
-                    error.response?.data?.detail ||
-                    error.message
+                error.response?.data?.detail ||
+                error.message
             );
         }
     };
 
     return (
-        <SafeAreaView style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
             >
-            <View style={[styles.container, { backgroundColor: theme.background }]}>
-                <Text style={[styles.text, { color: theme.text }]}>
-                    Para salvar suas{"\n"} informações precisamos{"\n"} do seu email e uma senha{"\n"} para sua segurança.
-                </Text>
+                <View style={[styles.container, { backgroundColor: theme.background }]}>
+                    <Text style={[styles.text, { color: theme.text }]}>
+                        Para salvar suas informações precisamos do seu email e uma senha para sua segurança.
+                    </Text>
 
-                <InputField
-                    label="Digite seu email"
-                    placeholder="Digite seu email"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                />
+                    <InputField
+                        label="Digite seu email"
+                        placeholder="Digite seu email"
+                        value={email}
+                        onChangeText={setEmail}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                    />
 
-                <InputField
-                    label="Digite sua senha"
-                    placeholder="Digite sua senha"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                />
+                    <InputField
+                        label="Digite sua senha"
+                        placeholder="Digite sua senha"
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry={!showPassword}
+                        icon={
+                            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                                <Feather
+                                    name={showPassword ? "eye" : "eye-off"}
+                                    size={24}
+                                    color={theme.inputText}
+                                />
+                            </TouchableOpacity>
+                        }
+                    />
 
-                <InputField
-                    label="Confirme sua senha"
-                    placeholder="Confirme sua senha"
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    secureTextEntry
-                />
+                    <InputField
+                        label="Confirme sua senha"
+                        placeholder="Confirme sua senha"
+                        value={confirmPassword}
+                        onChangeText={setConfirmPassword}
+                        secureTextEntry={!showConfirmPassword}
+                        icon={
+                            <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                                <Feather
+                                    name={showConfirmPassword ? "eye" : "eye-off"}
+                                    size={24}
+                                    color={theme.inputText}
+                                />
+                            </TouchableOpacity>
+                        }
+                    />
 
-                <TouchableOpacity
-                    style={[
-                        styles.button,
-                        {
-                            backgroundColor: isButtonDisabled()
-                                ? "#DFBA69"
-                                : theme.mode === "dark"
-                                    ? "#DFBA69"
-                                    : "#003366",
-                            opacity: isButtonDisabled() ? 0.5 : 1,
-                        },
-                    ]}
-                    onPress={handleRegister}
-                    disabled={isButtonDisabled()}
-                >
-                    <Text
+                    <TouchableOpacity
                         style={[
-                            styles.buttonText,
+                            styles.button,
                             {
-                                color: isButtonDisabled()
-                                    ? "#888"
+                                backgroundColor: isButtonDisabled()
+                                    ? "#DFBA69"
                                     : theme.mode === "dark"
-                                        ? "#000"
-                                        : "#fff",
+                                        ? "#DFBA69"
+                                        : "#003366",
+                                opacity: isButtonDisabled() ? 0.5 : 1,
                             },
                         ]}
+                        onPress={handleRegister}
+                        disabled={isButtonDisabled()}
                     >
-                        Concluir
-                    </Text>
-                </TouchableOpacity>
+                        <Text
+                            style={[
+                                styles.buttonText,
+                                {
+                                    color: isButtonDisabled()
+                                        ? "#888"
+                                        : theme.mode === "dark"
+                                            ? "#000"
+                                            : "#fff",
+                                },
+                            ]}
+                        >
+                            Concluir
+                        </Text>
+                    </TouchableOpacity>
 
-                {errorMessage ? (
-                    <Text style={styles.errorText}>{errorMessage}</Text>
-                ) : null}
-            </View>
+                    {errorMessage ? (
+                        <Text style={styles.errorText}>{errorMessage}</Text>
+                    ) : null}
+                </View>
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
@@ -149,7 +170,7 @@ const styles = StyleSheet.create({
     },
     text: {
         textAlign: "center",
-        fontSize: 24,
+        fontSize: 18,
         fontWeight: "bold",
         marginBottom: 15,
     },
@@ -172,4 +193,3 @@ const styles = StyleSheet.create({
         textAlign: "center",
     },
 });
-

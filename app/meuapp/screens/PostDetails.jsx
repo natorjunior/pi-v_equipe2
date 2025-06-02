@@ -49,7 +49,7 @@ export default function PostDetails({ route, navigation }) {
             const response = await getGroup();
             setGroups(response || []);
         } catch (error) {
-            console.error("Erro ao carregar dados:", error);
+            console.log("Erro ao carregar dados:", error);
         } finally {
             setLoading(false);
         }
@@ -58,7 +58,7 @@ export default function PostDetails({ route, navigation }) {
     }, [checkin.group_id]);
 
     const group = groups.find(g => String(g.id) === String(checkin.group_id));
-    const isOwner = currentUser?.id === checkin.user.id;
+    const isOwner = currentUser?.name && checkin.user?.name && String(currentUser.name) === String(checkin.user.name);
 
     const handleDeletePost = () => {
         Alert.alert("Apagar post", "Deseja apagar esta publicação?", [
@@ -74,7 +74,7 @@ export default function PostDetails({ route, navigation }) {
                 navigation.goBack();
             } catch (error) {
                 Alert.alert("Erro", "Não foi possível apagar a publicação.");
-                console.error("Erro ao apagar post:", error);
+                console.log("Erro ao apagar post:", error);
             } finally {
                 setDeleting(false);
             }
@@ -141,25 +141,38 @@ export default function PostDetails({ route, navigation }) {
                 </TouchableOpacity>
 
 
-
+                <TouchableOpacity 
+                    style={[styles.postTitle, { color: theme.text, flex: 1 }]}
+                    onPress={() => {
+                    if (currentUser && checkin.user.email === currentUser.email) {
+                    navigation.navigate("AppDrawer", { 
+                        screen: "Tabs", 
+                        params: { screen: "Profile" } 
+                    });
+                    } else {
+                    navigation.navigate("OtherProfile", { member: checkin.user })}}
+                    }>
                 <Text style={[styles.postTitle, { color: theme.text, flex: 1 }]}>
                     @{checkin.user.name}
                 </Text>
+                </TouchableOpacity>
 
                 {isOwner && (
                     <Menu
                     visible={menuVisible}
                     onDismiss={() => setMenuVisible(false)}
                     anchor={
-                        <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.menuButton}>
+                    <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.menuButton}>
                         <Ionicons name="ellipsis-vertical" size={24} color={theme.text} />
-                        </TouchableOpacity>
+                    </TouchableOpacity>
                     }
                     >
                     <Menu.Item onPress={handleEditPost} title="Editar post" />
                     <Menu.Item onPress={handleDeletePost} title="Apagar post" />
                     </Menu>
                 )}
+
+
                 </View>
 
                 {checkin.photo && (
@@ -183,7 +196,7 @@ export default function PostDetails({ route, navigation }) {
         </SafeAreaView>
         </Provider>
     );
-    }
+}
 
 const styles = StyleSheet.create({
     container: {
@@ -219,6 +232,7 @@ const styles = StyleSheet.create({
         marginRight: 10,
     },
     postTitle: {
+        paddingVertical: 3,
         fontSize: 16,
         fontWeight: 'bold',
     },
@@ -264,5 +278,10 @@ const styles = StyleSheet.create({
     zIndex: 2,
     padding: 10,
 },
-
+postTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 10,
+    marginBottom: 8,
+},
 });

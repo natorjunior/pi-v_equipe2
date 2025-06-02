@@ -9,7 +9,11 @@ export default function Question2({ navigation, route }) {
     return (
         <SafeAreaView style={{ flex: 1 }}>
             <View style={[styles.container, { backgroundColor: theme.background }]}>
-                <Text style={[styles.text, { color: theme.text }]}>O que buscas?</Text>
+                <Text style={[styles.text, { color: theme.text }]}>
+                    Por que você quer usar este aplicativo? 
+                    Escolha a opção que mais combina com você.{"\n"}
+                    (Essa escolha vai aparecer no seu perfil)
+                </Text>
                 <TouchableOpacity
                     style={[styles.button, { backgroundColor: theme.mode === "dark" ? "#0D0058" : "#fff" }]}
                     value={route.params?.motivation}
@@ -88,9 +92,11 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
     text: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: "bold",
-        marginBottom: 20, 
+        marginBottom: 20,
+        textAlign: "center",
+        paddingHorizontal: 20,
     },
     button: {
         width: "95%",
