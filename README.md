@@ -9,7 +9,7 @@
 ---
 
 ## 🏷️ Versões
-
+- **v0.5.0** — Sistema de perfis de terceiros, denúncias, modal aprimorado e primeira versão na Play Store
 - **v0.4.0** — Refatoração de telas, autenticação e perfil
 - **v0.3.0** — Storage, CI/CD, ranking por grupo
 - **v0.2.0** — Rebranding, novas telas, JWT
