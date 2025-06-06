@@ -15,7 +15,7 @@
 - [**natorjunior**](https://github.com/natorjunior) — Backend, frontend e infraestrutura
 - [**jorgelucas-rm**](https://github.com/jorgelucas-rm) — integrações, backend, correções
 - [**Regis-Rafael**](https://github.com/Regis-Rafael) — frontend, design, ajustes
-- [**BomDiaSol**](https://github.com/BomDiaSol) — suporte e melhorias gerais
+- [**BomDiaSol**](https://github.com/BomDiaSol) — backend, testes e infraestrutura
 - [**EduCode98**](https://github.com/EduCode98) — documentação
 
 ---
