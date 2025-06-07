@@ -1,11 +1,14 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
+import { API_URL } from "@env";
 
-const API_URL = "https://api.homolog.sal.acilab.com.br/authentication/login";
+const api = axios.create({
+  baseURL: API_URL,
+});
 
 export const loginUser = async (loginData) => {
   try {
-    const response = await axios.post(API_URL, loginData);
+    const response = await api.post("/authentication/login", loginData);
 
     if (response.status === 200 && response.data) {
       await SecureStore.setItemAsync("token", response.data);
@@ -14,7 +17,7 @@ export const loginUser = async (loginData) => {
       throw new Error("Login falhou, sem token recebido.");
     }
   } catch (error) {
-    console.log("Erro ao fazer login:", error);
+    console.log("Erro ao fazer login:", error.response?.data || error.message);
     throw error;
   }
 };

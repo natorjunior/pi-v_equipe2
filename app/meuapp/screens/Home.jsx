@@ -185,19 +185,26 @@ export default function Home({ route }) {
                         </TouchableOpacity>
                     )}
 
-
-                    {selectedGroupId && (
-                        <TouchableOpacity
-                            onPress={async () => {
+                    <TouchableOpacity
+                        onPress={async () => {
+                            if (selectedGroupId) {
                                 await SecureStore.deleteItemAsync("selectedGroupId");
+                                await SecureStore.deleteItemAsync("selectedGroupName");
                                 setSelectedGroupId(null);
+                                setGroupName(null);
                                 navigation.navigate("Home");
-                            }}
-                            style={[styles.leaveButton, { padding: 5, borderRadius: 100 }]}
-                        >
-                            <Ionicons name="exit-outline" size={30} color={theme.text} />
-                        </TouchableOpacity>
-                    )}
+                            } else {
+                                navigation.navigate("InfoPage");
+                            }
+                        }}
+                        style={[styles.leaveButton, { padding: 5, borderRadius: 100 }]}
+                    >
+                        <Ionicons
+                            name={selectedGroupId ? "exit-outline" : "information-circle-outline"}
+                            size={30}
+                            color={theme.text}
+                        />
+                    </TouchableOpacity>
                 </View>
 
                 <FlatList
