@@ -1,45 +1,53 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
+import { API_URL } from "@env";
 
-const BASE_URL = "https://api.homolog.sal.acilab.com.br";
+if (!API_URL) {
+  throw new Error("API_URL não definida no .env");
+}
 
+// Instância do Axios com URL base
 const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_URL,
 });
 
-api.interceptors.request.use(async (config) => {
-  try {
+// Interceptor para adicionar token automaticamente
+api.interceptors.request.use(
+  async (config) => {
     const token = await SecureStore.getItemAsync("token");
-
-    if (!token) {
-      throw new Error("Sessão expirada. Faça login novamente.");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
-
-    config.headers.Authorization = `Bearer ${token}`;
     return config;
-  } catch (error) {
-    throw error;
-  }
-});
+  },
+  (error) => Promise.reject(error)
+);
 
+// Obter check-ins do usuário autenticado
 export const getCheckinsByUser = async () => {
   try {
     const response = await api.get("/check-in/user");
     return response.data;
   } catch (error) {
-    throw error;
+    throw new Error(
+      error?.response?.data?.message || "Erro ao buscar seus check-ins"
+    );
   }
 };
 
+// Obter check-ins por grupo
 export const getCheckinsByGroup = async (groupId) => {
   try {
     const response = await api.get(`/check-in/group/${groupId}`);
     return response.data;
   } catch (error) {
-    throw error;
+    throw new Error(
+      error?.response?.data?.message || "Erro ao buscar check-ins do grupo"
+    );
   }
 };
 
+// Criar novo check-in com imagem
 export const createCheckin = async (groupId, title, description, photo) => {
   try {
     const formData = new FormData();
@@ -63,10 +71,13 @@ export const createCheckin = async (groupId, title, description, photo) => {
 
     return response.data;
   } catch (error) {
-    throw error;
+    throw new Error(
+      error?.response?.data?.message || "Erro ao criar check-in"
+    );
   }
 };
 
+// Atualizar check-in
 export const updateCheckin = async (checkinId, title, description, photo) => {
   try {
     const formData = new FormData();
@@ -90,25 +101,32 @@ export const updateCheckin = async (checkinId, title, description, photo) => {
 
     return response.data;
   } catch (error) {
-    throw error;
+    throw new Error(
+      error?.response?.data?.message || "Erro ao atualizar check-in"
+    );
   }
 };
 
+// Deletar check-in
 export const deleteCheckin = async (checkinId) => {
   try {
     const response = await api.delete(`/check-in/${checkinId}`);
     return response.data;
   } catch (error) {
-    throw error;
+    throw new Error(
+      error?.response?.data?.message || "Erro ao excluir check-in"
+    );
   }
 };
 
+// Obter ranking de um grupo
 export const getGroupRanking = async (groupId) => {
   try {
     const response = await api.get(`/check-in/group/${groupId}/ranking`);
     return response.data;
   } catch (error) {
-    throw error;
+    throw new Error(
+      error?.response?.data?.message || "Erro ao buscar ranking do grupo"
+    );
   }
 };
-

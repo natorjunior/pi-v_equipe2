@@ -1,4 +1,4 @@
-//Esperar o backend pro join, montar os rankings, ajeitar o editprofile e publicação
+//Montar os rankings, ajeitar o editprofile e publicação
 
 import { useEffect, useState } from "react";
 import { BackHandler, ToastAndroid, Platform, Alert } from "react-native";
@@ -38,6 +38,7 @@ import ForgotPassword from "./screens/ForgotPassword";
 import PostDetails from "./screens/PostDetails";
 import EditPost from "./screens/EditPost";
 import OtherProfile from "./screens/OtherProfile";
+import InfoPage from "./screens/InfoPage";
 
 import Top from "./components/Top";
 
@@ -235,6 +236,7 @@ function App() {
           <Stack.Screen name="AppDrawer" component={AppDrawer} />
           <Stack.Screen name="Publish" component={Publish} />
           <Stack.Screen name="OtherProfile" component={OtherProfile} />
+          <Stack.Screen name="InfoPage" component={InfoPage} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaView>
