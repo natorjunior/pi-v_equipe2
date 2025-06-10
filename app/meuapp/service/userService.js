@@ -10,7 +10,6 @@ const api = axios.create({
   baseURL: API_URL,
 });
 
-// Criar usuário (sem token)
 export const createUser = async (newUser) => {
   try {
     const response = await api.post("/user", newUser);
@@ -22,7 +21,6 @@ export const createUser = async (newUser) => {
   }
 };
 
-// Obter dados do usuário autenticado
 export const getUser = async () => {
   try {
     const token = await SecureStore.getItemAsync("token");
@@ -42,7 +40,6 @@ export const getUser = async () => {
   }
 };
 
-// Atualizar dados do usuário
 export const updateUser = async (userData) => {
   try {
     const token = await SecureStore.getItemAsync("token");
@@ -63,7 +60,6 @@ export const updateUser = async (userData) => {
   }
 };
 
-// Excluir conta de usuário
 export const deleteUser = async () => {
   try {
     const token = await SecureStore.getItemAsync("token");
@@ -84,7 +80,6 @@ export const deleteUser = async () => {
   }
 };
 
-// Enviar imagem de avatar
 export const uploadAvatar = async (imageUri) => {
   try {
     const token = await SecureStore.getItemAsync("token");

@@ -40,26 +40,25 @@ export default function Profile() {
   const scrollViewRef = useRef(null);
 
   const fetchUser = async () => {
-  try {
-    setRefreshing(true);
-    const token = await SecureStore.getItemAsync("token");
-    if (token) {
-      const userData = await getUser(token);
-      setUser(userData);
-      const checkinsData = await getCheckinsByUser(token);
-      setUserCheckins(checkinsData);
-    } else {
-      console.warn("Token de autenticação não encontrado.");
-      navigation.navigate("Login");
+    try {
+      setRefreshing(true);
+      const token = await SecureStore.getItemAsync("token");
+      if (token) {
+        const userData = await getUser(token);
+        setUser(userData);
+        const checkinsData = await getCheckinsByUser(token);
+        setUserCheckins(checkinsData);
+      } else {
+        console.warn("Token de autenticação não encontrado.");
+        navigation.navigate("Login");
+      }
+    } catch (error) {
+      console.error("Erro no profile ao buscar usuário:", error.message);
+    } finally {
+      setRefreshing(false);
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Erro no profile ao buscar usuário:", error.message);
-  } finally {
-    setRefreshing(false);
-    setLoading(false);
-  }
-};
-
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -136,7 +135,7 @@ export default function Profile() {
                 <Image
                   source={{ uri: user?.avatar }}
                   style={styles.fullscreenImage}
-                  resizeMode="contain"
+                  resizeMode="cover"
                 />
               </View>
             </Modal>
@@ -149,7 +148,7 @@ export default function Profile() {
                 {user?.avatar ? (
                   <Image
                     source={{ uri: user.avatar }}
-                style={[
+                    style={[
                       styles.avatar,
                       {
                         borderColor:
@@ -202,7 +201,7 @@ export default function Profile() {
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[
+                style={[ 
                   styles.tabButton,
                   activeTab === "genres" && {
                     borderBottomColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
@@ -454,8 +453,8 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   postImage: {
-    width: "100%",
-    height: 320,
+    width: 330,
+    height: 330,
   },
   postImageLoading: {
     position: "absolute",
@@ -493,7 +492,8 @@ const styles = StyleSheet.create({
   },
   fullscreenImage: {
     width: "90%",
-    height: "70%",
+    aspectRatio: 1,
+    resizeMode: "cover",
   },
   modalCloseArea: {
     position: "absolute",

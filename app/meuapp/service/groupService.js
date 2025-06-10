@@ -10,7 +10,6 @@ const api = axios.create({
   baseURL: API_URL,
 });
 
-// Interceptor para adicionar token automaticamente a cada requisição
 api.interceptors.request.use(
   async (config) => {
     const token = await SecureStore.getItemAsync("token");
@@ -22,7 +21,6 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Criar novo grupo
 export const createGroup = async (newGroup) => {
   try {
     const payload = {
@@ -42,7 +40,6 @@ export const createGroup = async (newGroup) => {
   }
 };
 
-// Buscar grupos do usuário
 export const getGroup = async () => {
   try {
     const response = await api.get("/group");
@@ -56,7 +53,6 @@ export const getGroup = async () => {
   }
 };
 
-// Entrar em um grupo por alias
 export const joinGroup = async (group_alias) => {
   try {
     const response = await api.get(`/group/join/${group_alias}`);
@@ -71,7 +67,6 @@ export const joinGroup = async (group_alias) => {
   }
 };
 
-// Sair de um grupo por alias
 export const leaveGroup = async (group_alias) => {
   try {
     const response = await api.get(`/group/leave/${group_alias}`);
@@ -85,7 +80,6 @@ export const leaveGroup = async (group_alias) => {
   }
 };
 
-// Deletar grupo pelo ID
 export const deleteGroup = async (group_id) => {
   try {
     const response = await api.delete(`/group/${group_id}`);

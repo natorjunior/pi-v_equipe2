@@ -58,11 +58,21 @@ export default function Login({ navigation }) {
           });
         }
       } else {
-        setError("E-mail ou senha inválidos!");
+        setError("E-mail ou senha incorretos.");
       }
     } catch (error) {
-      console.log("Erro:", error);
-      setError("Falha ao fazer login. Verifique sua conexão.");
+      console.log("Erro ao fazer login:", error);
+
+      const message =
+        error?.response?.data?.detail?.toLowerCase?.() || error.message || "";
+
+      if (message.includes("credenciais inválidas")) {
+        setError("E-mail ou senha incorretos.");
+      } else if (message.includes("network error")) {
+        setError("Não foi possível conectar. Verifique sua conexão com a internet.");
+      } else {
+        setError("Falha ao fazer login. Tente novamente mais tarde.");
+      }
     } finally {
       setLoading(false);
     }

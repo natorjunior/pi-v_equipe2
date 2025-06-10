@@ -39,7 +39,7 @@ export default function InfoPage({ navigation }) {
             </Text>
 
             <TouchableOpacity
-                style={[styles.button, { backgroundColor: theme.primary }]}
+                style={[styles.button, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366"}]}
                 onPress={() => navigation.navigate("AppDrawer")}
             >
                 <Text style={styles.buttonText}>Começar agora</Text>

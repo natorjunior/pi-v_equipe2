@@ -1,5 +1,3 @@
-//Publish, EditProfile, EditPost
-
 import { Platform } from 'react-native';
 import { requestMultiple, PERMISSIONS, RESULTS } from 'react-native-permissions';
 
@@ -9,18 +7,18 @@ export async function AndroidPermissions() {
         ? [
             PERMISSIONS.ANDROID.CAMERA,
             PERMISSIONS.ANDROID.READ_MEDIA_IMAGES,
-            PERMISSIONS.ANDROID.READ_MEDIA_VIDEO,
             ]
         : [
             PERMISSIONS.ANDROID.CAMERA,
             PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE,
-        ];
+            PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE,
+            ];
 
-    const statuses = await requestMultiple(permissions);
+        const statuses = await requestMultiple(permissions);
 
-    const allGranted = Object.values(statuses).every(
-        status => status === RESULTS.GRANTED
-    );
+        const allGranted = Object.values(statuses).every(
+        (status) => status === RESULTS.GRANTED
+        );
 
         return allGranted;
     }

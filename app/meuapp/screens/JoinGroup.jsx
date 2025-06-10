@@ -23,50 +23,52 @@ export default function JoinGroup() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleJoinGroup = async () => {
-    setError(null);
+const handleJoinGroup = async () => {
+  setError(null);
 
-    if (!alias.trim()) {
-      setError("Por favor, informe o apelido do grupo.");
-      return;
+  if (!alias.trim()) {
+    setError("Por favor, informe o apelido do grupo.");
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    const groupAlias = alias.trim().replace(/^@+/, "");
+    const response = await joinGroup(groupAlias);
+
+    if (response == null) {
+      setAlias("");
+      navigation.navigate("Tabs", { screen: "Groups", params: { refresh: true } });
     }
+  } catch (error) {
+    console.log("Erro ao entrar no grupo:", error);
 
-    try {
-      setLoading(true);
+    if (error.response) {
+      const status = error.response.status;
 
-      const groupAlias = alias.trim().replace(/^@+/, "");
-      const response = await joinGroup(groupAlias);
-
-      if (response == null) {
-        navigation.navigate("Tabs", { screen: "Groups" });
+      switch (status) {
+        case 401:
+          setError("Você já está no grupo digitado.");
+          break;
+        case 404:
+          setError("Grupo não encontrado. Verifique a tag e tente novamente.");
+          break;
+        case 422:
+          setError("Dados inválidos. Verifique o apelido informado.");
+          break;
+        default:
+          setError("Erro ao entrar no grupo. Tente novamente mais tarde.");
+          break;
       }
-    } catch (error) {
-      console.log("Erro ao entrar no grupo:", error);
-
-      if (error.response) {
-        const status = error.response.status;
-
-        switch (status) {
-          case 401:
-            setError("Você já está no grupo digitado.");
-            break;
-          case 404:
-            setError("Grupo não encontrado. Verifique a tag e tente novamente.");
-            break;
-          case 422:
-            setError("Dados inválidos. Verifique o apelido informado.");
-            break;
-          default:
-            setError("Erro ao entrar no grupo. Tente novamente mais tarde.");
-            break;
-        }
-      } else {
-        setError("Erro ao entrar no grupo. Tente novamente mais tarde.");
-      }
-    } finally {
-      setLoading(false);
+    } else {
+      setError("Erro ao entrar no grupo. Tente novamente mais tarde.");
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>

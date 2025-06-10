@@ -6,12 +6,10 @@ if (!API_URL) {
   throw new Error("API_URL não definida no .env");
 }
 
-// Instância do Axios com URL base
 const api = axios.create({
   baseURL: API_URL,
 });
 
-// Interceptor para adicionar token automaticamente
 api.interceptors.request.use(
   async (config) => {
     const token = await SecureStore.getItemAsync("token");
@@ -23,7 +21,6 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Obter check-ins do usuário autenticado
 export const getCheckinsByUser = async () => {
   try {
     const response = await api.get("/check-in/user");
@@ -35,7 +32,6 @@ export const getCheckinsByUser = async () => {
   }
 };
 
-// Obter check-ins por grupo
 export const getCheckinsByGroup = async (groupId) => {
   try {
     const response = await api.get(`/check-in/group/${groupId}`);
@@ -47,7 +43,6 @@ export const getCheckinsByGroup = async (groupId) => {
   }
 };
 
-// Criar novo check-in com imagem
 export const createCheckin = async (groupId, title, description, photo) => {
   try {
     const formData = new FormData();
@@ -77,7 +72,6 @@ export const createCheckin = async (groupId, title, description, photo) => {
   }
 };
 
-// Atualizar check-in
 export const updateCheckin = async (checkinId, title, description, photo) => {
   try {
     const formData = new FormData();
@@ -107,7 +101,6 @@ export const updateCheckin = async (checkinId, title, description, photo) => {
   }
 };
 
-// Deletar check-in
 export const deleteCheckin = async (checkinId) => {
   try {
     const response = await api.delete(`/check-in/${checkinId}`);
@@ -119,7 +112,6 @@ export const deleteCheckin = async (checkinId) => {
   }
 };
 
-// Obter ranking de um grupo
 export const getGroupRanking = async (groupId) => {
   try {
     const response = await api.get(`/check-in/group/${groupId}/ranking`);
