@@ -350,8 +350,9 @@ const styles = StyleSheet.create({
         fontStyle: "italic",
     },
     postImage: {
-        width: "100%",
-        height: 320,
+        width: 330,
+        height: 330,
+        alignSelf: "center",
         resizeMode: "cover",
         borderRadius: 10,
         marginBottom: 10,

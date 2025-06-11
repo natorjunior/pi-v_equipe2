@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,102 +7,106 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
-  Platform,
-  KeyboardAvoidingView,
   SafeAreaView,
+  StatusBar,
   Alert,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { launchCamera, launchImageLibrary } from "react-native-image-picker";
+import ImagePicker from "react-native-image-crop-picker";
 import { useTheme } from "../service/themeService";
 import { updateCheckin, deleteCheckin } from "../service/checkinService";
 import InputField from "../components/InputField";
 import { AndroidPermissions } from "../util/AndroidPermissions";
 
-    export default function EditPost() {
-    const { theme } = useTheme();
-    const navigation = useNavigation();
-    const route = useRoute();
-    const { checkin } = route.params;
-    
-    const [title, setTitle] = useState(checkin.title || "");
-    const [description, setDescription] = useState(checkin.description || "");
-    const [image, setImage] = useState(checkin.photo ? { uri: checkin.photo } : null);
-    const [loading, setLoading] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
+export default function EditPost() {
+  const { theme } = useTheme();
+  const navigation = useNavigation();
+  const route = useRoute();
+  const { checkin } = route.params;
+  const scrollViewRef = useRef(null);
 
+  const [title, setTitle] = useState(checkin.title || "");
+  const [description, setDescription] = useState(checkin.description || "");
+  const [image, setImage] = useState(checkin.photo ? { uri: checkin.photo } : null);
+  const [loading, setLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-    const handleImage = async (type) => {
-      try {
-        const hasAllPermissions = await AndroidPermissions();
-        if (!hasAllPermissions) {
-          Alert.alert(
-            "Permissões negadas",
-            "O aplicativo precisa de permissões para acessar a câmera e a galeria."
-          );
-          return;
-        }
+  const handleImage = async (type) => {
+    try {
+      const hasAllPermissions = await AndroidPermissions();
+      if (!hasAllPermissions) {
+        Alert.alert(
+          "Permissões negadas",
+          "O aplicativo precisa de permissões para acessar a câmera e a galeria."
+        );
+        return;
+      }
 
-        const options = {
+      let selectedImage;
+      if (type === "camera") {
+        selectedImage = await ImagePicker.openCamera({
+          width: 1024,
+          height: 1024,
+          cropping: true,
+          compressImageQuality: 0.8,
           mediaType: "photo",
-          quality: 0.8,
-          maxWidth: 1024,
-          maxHeight: 1024,
-          allowsMultipleSelection: false,
-          includeBase64: false,
-        };
+          forceJpg: true,
+        });
+      } else {
+        selectedImage = await ImagePicker.openPicker({
+          width: 1024,
+          height: 1024,
+          cropping: true,
+          compressImageQuality: 0.8,
+          mediaType: "photo",
+          forceJpg: true,
+        });
+      }
 
-        let result;
-        if (type === "camera") {
-          result = await launchCamera(options);
-        } else {
-          result = await launchImageLibrary(options);
-        }
+      setImage({
+        uri: selectedImage.path,
+        width: selectedImage.width,
+        height: selectedImage.height,
+        fileName: selectedImage.filename || `image_${Date.now()}.jpg`,
+        type: selectedImage.mime || "image/jpeg",
+      });
 
-        if (result.didCancel) {
-          console.log("Usuário cancelou a seleção");
-        } else if (result.errorCode) {
-          console.log("ImagePicker Error: ", result.errorMessage);
-          Alert.alert("Erro", "Não foi possível acessar a imagem");
-        } else if (result.assets && result.assets.length > 0) {
-          const selectedImage = result.assets[0];
-          setImage({
-            uri: selectedImage.uri,
-            width: selectedImage.width,
-            height: selectedImage.height,
-            fileName: selectedImage.fileName || `image_${Date.now()}.jpg`,
-            type: selectedImage.type || "image/jpeg",
-          });
-        }
-      } catch (error) {
-        console.error("Erro ao selecionar imagem:", error);
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    } catch (error) {
+      if (error.message?.includes("cancel")) {
+        console.log("Usuário cancelou a seleção");
+      } else {
+        console.error("Erro ao selecionar ou recortar imagem:", error);
         Alert.alert("Erro", "Ocorreu um erro ao processar a imagem");
       }
-    };
+    }
+  };
 
+  const handleUpdate = async () => {
+    if (!title.trim()) {
+      Alert.alert("Erro", "Por favor, informe um título antes de salvar.");
+      return;
+    }
 
-    const handleUpdate = async () => {
-        if (!title.trim()) {
-        Alert.alert("Erro", "Por favor, informe um título antes de salvar.");
-        return;
-        }
-
-        try {
-        setLoading(true);
-        await updateCheckin(checkin.id, title, description, image?.uri);
-        navigation.goBack();
-        navigation.navigate("AppDrawer", { refresh: true });
-        } catch (error) {
-        if (error.response?.status === 401 && error.response?.data?.message === "propriedade de outro usuario") {
-            Alert.alert("Erro", "Você não tem permissão para editar essa publicação.");
-        } else {
-            Alert.alert("Erro", error.message || "Não foi possível atualizar a publicação.");
-        }
-        } finally {
-        setLoading(false);
-        }
-    };
+    try {
+      setLoading(true);
+      await updateCheckin(checkin.id, title, description, image?.uri);
+      navigation.goBack();
+      navigation.navigate("AppDrawer", { refresh: true });
+    } catch (error) {
+      console.error("Update error:", error);
+      if (error.response?.status === 401 && error.response?.data?.message === "propriedade de outro usuario") {
+        Alert.alert("Erro", "Você não tem permissão para editar essa publicação.");
+      } else {
+        Alert.alert("Erro", error.message || "Não foi possível atualizar a publicação.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDelete = async () => {
     Alert.alert(
@@ -123,6 +127,7 @@ import { AndroidPermissions } from "../util/AndroidPermissions";
               navigation.goBack();
               navigation.navigate("AppDrawer", { refresh: true });
             } catch (error) {
+              console.error("Delete error:", error);
               Alert.alert("Erro", error.message || "Não foi possível excluir a publicação.");
             } finally {
               setIsDeleting(false);
@@ -134,160 +139,162 @@ import { AndroidPermissions } from "../util/AndroidPermissions";
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={theme.text === "#000" ? "dark-content" : "light-content"} />
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView
-          contentContainerStyle={[styles.scrollContainer, { paddingBottom: 40 }]}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={[styles.container, { backgroundColor: theme.background }]}>
-            <View style={[styles.header, { backgroundColor: theme.background }]}>
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                style={styles.backButton}
-                disabled={loading || isDeleting}
-              >
-                <Ionicons name="arrow-back" size={24} color={theme.text} />
-              </TouchableOpacity>
-              <Text style={[styles.headerText, { color: theme.text }]}>
-                Editar Publicação
-              </Text>
-            </View>
-
-            <View style={styles.imageButtons}>
-              <TouchableOpacity
-                style={[styles.imageButton, { borderColor: theme.border }]}
-                onPress={() => handleImage("camera")}
-                disabled={loading || isDeleting}
-              >
-                <Ionicons name="camera" size={24} color={theme.text} />
-                <Text style={[styles.imageButtonText, { color: theme.text }]}>
-                  Tirar Foto com a Câmera
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.imageButton, { borderColor: theme.border }]}
-                onPress={() => handleImage("library")}
-                disabled={loading || isDeleting}
-              >
-                <Ionicons name="image" size={24} color={theme.text} />
-                <Text style={[styles.imageButtonText, { color: theme.text }]}>
-                  Selecionar Imagem da Biblioteca
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {image && (
-              <Image 
-                source={{ uri: image.uri }} 
-                style={styles.image} 
-                resizeMode="cover"
-              />
-            )}
-
-            <InputField
-              style={[
-                styles.input,
-                {
-                  backgroundColor: theme.inputBackground,
-                  color: theme.text,
-                  borderColor: theme.border,
-                },
-              ]}
-              label={"Título"}
-              placeholder="Título"
-              placeholderTextColor={theme.placeholder}
-              value={title}
-              onChangeText={setTitle}
-              maxLength={100}
-              editable={!loading && !isDeleting}
-            />
-
-            <InputField
-              style={[
-                styles.input,
-                styles.descriptionInput,
-                {
-                  backgroundColor: theme.inputBackground,
-                  color: theme.text,
-                  borderColor: theme.border,
-                },
-              ]}
-              label={"Descrição"}
-              placeholder="Descrição (opcional)"
-              placeholderTextColor={theme.placeholder}
-              value={description}
-              onChangeText={setDescription}
-              multiline
-              numberOfLines={4}
-              editable={!loading && !isDeleting}
-            />
-
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.saveButton,
-                  {
-                    backgroundColor: "#DFBA69",
-                    opacity: loading || isDeleting ? 0.6 : 1,
-                  },
-                ]}
-                onPress={handleUpdate}
-                disabled={loading || isDeleting}
-              >
-                {loading ? (
-                  <ActivityIndicator color={theme.buttonText} />
-                ) : (
-                  <Text style={[styles.buttonText, { color: theme.text }]}>
-                    Salvar Alterações
-                  </Text>
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.deleteButton,
-                  {
-                    backgroundColor: theme.danger,
-                    opacity: loading || isDeleting ? 0.6 : 1,
-                  },
-                ]}
-                onPress={handleDelete}
-                disabled={loading || isDeleting}
-              >
-                {isDeleting ? (
-                  <ActivityIndicator color={theme.buttonText} />
-                ) : (
-                  <Text style={[styles.buttonText, { color: theme.text }]}>
-                    Excluir Publicação
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
+          <View style={[styles.header, { backgroundColor: theme.background }]}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
+              disabled={loading || isDeleting}
+            >
+              <Ionicons name="arrow-back" size={24} color={theme.text} />
+            </TouchableOpacity>
+            <Text style={[styles.headerText, { color: theme.text }]}>
+              Editar Publicação
+            </Text>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+
+          <View style={styles.imageButtons}>
+            <TouchableOpacity
+              style={[styles.imageButton, { borderColor: theme.border }]}
+              onPress={() => handleImage("camera")}
+              disabled={loading || isDeleting}
+            >
+              <Ionicons name="camera" size={24} color={theme.text} />
+              <Text style={[styles.imageButtonText, { color: theme.text }]}>
+                Tirar Foto com a Câmera
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.imageButton, { borderColor: theme.border }]}
+              onPress={() => handleImage("library")}
+              disabled={loading || isDeleting}
+            >
+              <Ionicons name="image" size={24} color={theme.text} />
+              <Text style={[styles.imageButtonText, { color: theme.text }]}>
+                Selecionar Imagem da Biblioteca
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {image && (
+            <Image
+              source={{ uri: image.uri }}
+              style={styles.image}
+              resizeMode="cover"
+            />
+          )}
+
+          <InputField
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.inputBackground,
+                color: theme.text,
+                borderColor: theme.border,
+              },
+            ]}
+            label={"Título"}
+            placeholder="Título"
+            placeholderTextColor={theme.placeholder}
+            value={title}
+            onChangeText={setTitle}
+            maxLength={100}
+            editable={!loading && !isDeleting}
+          />
+
+          <InputField
+            style={[
+              styles.input,
+              styles.descriptionInput,
+              {
+                backgroundColor: theme.inputBackground,
+                color: theme.text,
+                borderColor: theme.border,
+              },
+            ]}
+            label={"Descrição"}
+            placeholder="Descrição (opcional)"
+            placeholderTextColor={theme.placeholder}
+            value={description}
+            onChangeText={setDescription}
+            multiline
+            numberOfLines={4}
+            editable={!loading && !isDeleting}
+          />
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[
+                styles.saveButton,
+                {
+                  backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
+                  opacity: loading || isDeleting ? 0.6 : 1,
+                },
+              ]}
+              onPress={handleUpdate}
+              disabled={loading || isDeleting}
+              activeOpacity={0.7}
+            >
+              {loading ? (
+                <ActivityIndicator color={theme.mode === "dark" ? "#000" : "#fff"} />
+              ) : (
+                <Text style={[styles.buttonText, { color: theme.mode === "dark" ? "#000" : "#fff" }]}>
+                  Salvar Alterações
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.deleteButton,
+                {
+                  backgroundColor: theme.danger || "#FF0000",
+                  opacity: loading || isDeleting ? 0.6 : 1,
+                },
+              ]}
+              onPress={handleDelete}
+              disabled={loading || isDeleting}
+              activeOpacity={0.7}
+            >
+              {isDeleting ? (
+                <ActivityIndicator color={theme.mode === "dark" ? "#000" : "#fff"} />
+              ) : (
+                <Text style={[styles.buttonText, { color: theme.mode === "dark" ? "#000" : "#fff" }]}>
+                  Excluir Publicação
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
   },
   scrollContainer: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    flexGrow: 1,
+    paddingBottom: 100,
+  },
+  container: {
+    flex: 1,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     padding: 15,
+    zIndex: 1,
   },
   backButton: {
     padding: 5,
@@ -295,9 +302,9 @@ const styles = StyleSheet.create({
   headerText: {
     flex: 1,
     textAlign: "center",
-    right: "5%",
     fontSize: 20,
     fontWeight: "bold",
+    marginRight: 30,
   },
   input: {
     width: "100%",
@@ -312,18 +319,21 @@ const styles = StyleSheet.create({
     height: 120,
     paddingTop: 15,
     textAlignVertical: "top",
+    marginBottom: 20,
   },
   image: {
-    width: "100%",
-    height: 280,
+    width: 350,
+    height: 350,
     borderRadius: 8,
     marginBottom: 15,
+    alignSelf: "center",
   },
   imageButtons: {
     width: "100%",
     marginBottom: 15,
     flexDirection: "row",
     justifyContent: "space-between",
+    flexWrap: "wrap",
   },
   imageButton: {
     flex: 1,
@@ -333,6 +343,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+    minWidth: 140,
   },
   imageButtonText: {
     fontSize: 14,
@@ -345,6 +356,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 20,
+    marginBottom: 30,
   },
   saveButton: {
     flex: 1,
@@ -353,6 +365,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
+    elevation: 5,
   },
   deleteButton: {
     flex: 1,
@@ -361,9 +374,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
+    elevation: 5,
   },
-    buttonText: {
-        fontSize: 16,
-        fontWeight: "bold",
-    },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
 });
