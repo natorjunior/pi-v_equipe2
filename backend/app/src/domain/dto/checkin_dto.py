@@ -10,7 +10,9 @@ from app.src.domain.model.checkin import Checkin
 
 
 def get_checkin_data_instance(checkin:Checkin, user:UserData):
-    photo = get_file_from_minio(bucket_name="checkin-photos", file_name=checkin.photo)
+    photo = None
+    if checkin.photo:
+        photo = get_file_from_minio(bucket_name="checkin-photos", file_name=checkin.photo)
     
     tz_fortaleza = ZoneInfo("America/Fortaleza")
 
@@ -74,6 +76,3 @@ class CheckinData(BaseModel):
     photo: Optional[str] = None
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        orm_mode = True

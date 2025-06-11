@@ -11,6 +11,8 @@ services:
       - database
     networks:
       - pi-network
+    volumes:
+      - ./logs-homolog:/app/logs
 
   database:
     image: mysql/mysql-server:latest

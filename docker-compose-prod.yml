@@ -9,6 +9,8 @@ services:
       - ./backend/environments/.env
     depends_on:
       - database
+    volumes:
+      - ./logs-prod:/app/logs
 
   database:
     image: mysql/mysql-server:latest
