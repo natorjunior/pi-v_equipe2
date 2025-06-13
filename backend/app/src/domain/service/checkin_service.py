@@ -151,7 +151,7 @@ class CheckinService:
             })
             
         return ranking_with_positions
-    
+
     def like_checkin(self, user_id: int, checkin_id: int):
         if not self.checkin_repository.exists(checkin_id):
             raise HTTPException(
