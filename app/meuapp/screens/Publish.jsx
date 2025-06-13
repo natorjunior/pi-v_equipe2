@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import ImagePicker from "react-native-image-crop-picker";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../service/themeService";
 import { createCheckin } from "../service/checkinService";
@@ -23,26 +23,31 @@ import { AndroidPermissions } from "../util/AndroidPermissions";
 export default function Publish() {
   const { theme } = useTheme();
   const navigation = useNavigation();
+  const route = useRoute();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
+  const [selectedGroupName, setSelectedGroupName] = useState(null);
   const scrollViewRef = useRef(null);
 
   useEffect(() => {
-    (async () => {
-      const groupId = await SecureStore.getItemAsync("selectedGroupId");
-      if (!groupId) {
-        navigation.navigate("Groups", {
-          isSelectingGroup: true,
-          onSelectGroup: (groupId) => setSelectedGroupId(groupId),
-        });
-        return;
-      }
+    const { groupId, groupName } = route.params || {};
+    if (groupId && groupName) {
       setSelectedGroupId(groupId);
-    })();
-  }, []);
+      setSelectedGroupName(groupName);
+      SecureStore.setItemAsync("selectedGroupId", groupId.toString());
+      SecureStore.setItemAsync("selectedGroupName", groupName);
+    } else {
+      SecureStore.getItemAsync("selectedGroupId").then((id) =>
+        setSelectedGroupId(id)
+      );
+      SecureStore.getItemAsync("selectedGroupName").then((name) =>
+        setSelectedGroupName(name)
+      );
+    }
+  }, [route.params]);
 
   const handleImage = async (type) => {
     try {
@@ -90,19 +95,14 @@ export default function Publish() {
     } catch (error) {
       if (error.message?.includes("cancel")) {
         console.log("Usuário cancelou a seleção");
-      } else {
-        console.error("Erro ao selecionar ou recortar imagem:", error);
-        Alert.alert("Erro", "Ocorreu um erro ao processar a imagem");
       }
     }
   };
 
   const handlePublish = async () => {
     if (!selectedGroupId) {
-      navigation.navigate("Groups", {
-        isSelectingGroup: true,
-        onSelectGroup: (groupId) => setSelectedGroupId(groupId),
-      });
+      Alert.alert("Atenção", "Por favor, selecione um grupo antes de publicar.");
+      navigation.navigate("SelectGroup");
       return;
     }
 
@@ -111,24 +111,33 @@ export default function Publish() {
       return;
     }
 
-    if (!image || !image.uri) {
-      Alert.alert("Atenção", "Por favor, selecione uma imagem antes de publicar.");
-      return;
-    }
-
     try {
       setLoading(true);
-      await createCheckin(selectedGroupId, title, description, image.uri);
+      await createCheckin(selectedGroupId, title, description, image ? image.uri : null);
+      
       navigation.navigate("AppDrawer", {
-        refresh: true,
-        selectedGroupId: selectedGroupId,
+        screen: "Tabs",
+        params: {
+          screen: "Home",
+          params: {
+            selectedGroupId,
+            selectedGroupName,
+            refreshPosts: true,
+          },
+        },
       });
+
       setTitle("");
       setDescription("");
       setImage(null);
     } catch (error) {
-      console.error("Publish error:", error);
-      Alert.alert("Erro", error.message || "Não foi possível publicar o check-in.");
+      if (error.response && error.response.data && error.response.data.detail === "Not authenticated") {
+        await SecureStore.deleteItemAsync("token");
+        Alert.alert("Sessão Expirada", "Faça login novamente.");
+        navigation.navigate("Login");
+      } else {
+        Alert.alert("Erro", error.message || "Erro ao publicar.");
+      }
     } finally {
       setLoading(false);
     }
@@ -152,7 +161,7 @@ export default function Publish() {
               <Ionicons name="arrow-back" size={24} color={theme.text} />
             </TouchableOpacity>
             <Text style={[styles.headerText, { color: theme.text }]}>
-              Nova Publicação
+              Nova Publicação {selectedGroupName ? `em ${selectedGroupName}` : ""}
             </Text>
           </View>
 
@@ -229,7 +238,7 @@ export default function Publish() {
             style={[
               styles.publishButton,
               {
-                backgroundColor: "#DFBA69",
+                backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
                 opacity: loading ? 0.6 : 1,
               },
             ]}

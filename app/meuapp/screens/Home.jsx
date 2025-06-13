@@ -15,22 +15,23 @@ import * as SecureStore from "expo-secure-store";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../service/themeService";
 import { getUser } from "../service/userService";
-import { getCheckinsByGroup } from "../service/checkinService";
+import { getFeedByUser } from "../service/checkinService";
 import { LinearGradient } from "expo-linear-gradient";
+import { GroupRankingCarousel } from "../components/Carrossel";
 
-export default function Home({ route }) {
+export default function Home() {
     const { theme } = useTheme();
     const navigation = useNavigation();
     const [loading, setLoading] = useState(false);
     const [checkins, setCheckins] = useState([]);
-    const [groupName, setGroupName] = useState(null);
-    const [selectedGroupId, setSelectedGroupId] = useState(null);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState(null);
 
-    const fetchData = async () => {
+    const fetchData = async (pageNum = 1, isRefresh = false) => {
         try {
-            if (!refreshing) setLoading(true);
+            if (!isRefresh && pageNum === 1) setLoading(true);
 
             const token = await SecureStore.getItemAsync("token");
             if (!token) {
@@ -38,34 +39,21 @@ export default function Home({ route }) {
                 return;
             }
 
-            let storedGroupId = await SecureStore.getItemAsync("selectedGroupId");
-            let storedGroupName = await SecureStore.getItemAsync("selectedGroupName");
+            const checkinsData = await getFeedByUser(pageNum);
+            // Handle null or empty array
+            const sortedCheckins = Array.isArray(checkinsData) && checkinsData.length > 0
+                ? checkinsData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                : [];
 
-            if (route?.params?.groupId) {
-                storedGroupId = route.params.groupId.toString();
-                await SecureStore.setItemAsync("selectedGroupId", storedGroupId);
-            }
-
-            if (route?.params?.groupName) {
-                storedGroupName = route.params.groupName;
-                await SecureStore.setItemAsync("selectedGroupName", storedGroupName);
-            }
-
-            setSelectedGroupId(storedGroupId);
-            setGroupName(storedGroupName);
-
-            if (storedGroupId) {
-                const checkinsData = await getCheckinsByGroup(storedGroupId);
-                const sortedCheckins = checkinsData.sort(
-                    (a, b) => new Date(b.created_at) - new Date(a.created_at)
-                );
+            if (isRefresh) {
                 setCheckins(sortedCheckins);
             } else {
-                setCheckins([]);
+                setCheckins((prev) => [...prev, ...sortedCheckins]);
             }
 
-            await getUser(token);
+            setHasMore(checkinsData !== null && checkinsData.length > 0);
             setError(null);
+            await getUser(token);
         } catch (error) {
             const status =
                 error?.response?.status ||
@@ -73,66 +61,70 @@ export default function Home({ route }) {
                 (error.message?.includes("401") ? 401 :
                 error.message?.includes("404") ? 404 : null);
 
-            if (status === 404 || status === 401) {
-                await SecureStore.deleteItemAsync("selectedGroupId");
-                await SecureStore.deleteItemAsync("selectedGroupName");
-                setSelectedGroupId(null);
-                setGroupName(null);
-                setCheckins([]);
-                setError("Você não faz mais parte deste grupo.");
+            if (status === 401) {
+                navigation.navigate("Login");
                 return;
             }
 
-            setError(error.message || "Erro ao carregar dados.");
+            setError(error.message || "Erro ao carregar o feed.");
         } finally {
-            if (!refreshing) setLoading(false);
+            setLoading(false);
         }
     };
 
-
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await fetchData();
+        setPage(1);
+        setHasMore(true);
+        await fetchData(1, true);
         setRefreshing(false);
-    }, [route?.params?.groupId]);
+    }, []);
+
+    const loadMore = useCallback(() => {
+        if (!loading && hasMore) {
+            setLoading(true);
+            const nextPage = page + 1;
+            setPage(nextPage);
+            fetchData(nextPage);
+        }
+    }, [loading, hasMore, page]);
 
     useFocusEffect(
         useCallback(() => {
-            fetchData();
-        }, [route?.params?.groupId])
+            setPage(1);
+            setHasMore(true);
+            setCheckins([]);
+            fetchData(1, true);
+        }, [])
     );
 
-    const renderEmptyComponent = () => {
-        if (!selectedGroupId) {
+    const renderFooter = () => {
+        if (loading && !refreshing) {
+            return (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="small" color={theme.text} />
+                </View>
+            );
+        }
+        if (!hasMore && !loading && checkins.length > 0) {
             return (
                 <View style={styles.messageContainer}>
+                    <View style={[styles.line, { borderColor: theme.border }]} />
+                    <Ionicons name="sparkles-outline" size={32} color={theme.text} style={styles.icon} />
                     <Text style={[styles.text, { color: theme.text }]}>
-                        Selecione um grupo na aba de grupos.{"\n"} Se não tiver nenhum grupo você pode criar ou entrar em um.
+                        Você chegou ao fim ✨
                     </Text>
-                    <TouchableOpacity
-                        style={[styles.actionButton, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#fff" }]}
-                        onPress={() => navigation.navigate("CreateGroup")}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={[styles.buttonText, { color: theme.text }]}>
-                            Criar um grupo
-                        </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.actionButton, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#fff" }]}
-                        onPress={() => navigation.navigate("JoinGroup")}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={[styles.buttonText, { color: theme.text }]}>
-                            Entrar em um grupo
-                        </Text>
-                    </TouchableOpacity>
+                    <Text style={[styles.subtext, { color: theme.text }]}>
+                        Novas publicações aparecerão lá em cima!
+                    </Text>
                 </View>
-                );
+            );
         }
+        return null;
+    };
 
-        if (loading) {
+        const renderEmptyComponent = () => {
+        if (loading && !refreshing) {
             return (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={theme.text} />
@@ -151,8 +143,36 @@ export default function Home({ route }) {
         return (
             <View style={styles.messageContainer}>
                 <Text style={[styles.text, { color: theme.text }]}>
-                    Nenhuma publicação encontrada neste grupo
+                    Nenhuma publicação encontrada no seu feed.{"\n"}
+                    Faça um check-in ou junte-se a um grupo!
                 </Text>
+                <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#fff" }]}
+                    onPress={() => navigation.navigate("CreateGroup")}
+                    activeOpacity={0.8}
+                >
+                    <Text style={[styles.buttonText, { color: theme.text }]}>
+                        Criar um grupo
+                    </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#fff" }]}
+                    onPress={() => navigation.navigate("JoinGroup")}
+                    activeOpacity={0.8}
+                >
+                    <Text style={[styles.buttonText, { color: theme.text }]}>
+                        Entrar em um grupo
+                    </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: theme.mode === "dark" ? "#fff" : "#000" }]}
+                    onPress={() => navigation.navigate("SuggestedGroups")}
+                    activeOpacity={0.8}
+                >
+                    <Text style={[styles.buttonText, { color: theme.mode === "dark" ? "#000" : "#fff" }]}>
+                        Grupos oficiais
+                    </Text>
+                </TouchableOpacity>
             </View>
         );
     };
@@ -173,39 +193,17 @@ export default function Home({ route }) {
                     >
                         <Ionicons name="menu" size={30} color={theme.text} />
                     </TouchableOpacity>
-
-                    {selectedGroupId && (
-                        <TouchableOpacity
-                            onPress={() => navigation.navigate("GroupDetails", { groupId: selectedGroupId })}
-                            style={[styles.groupButton, { padding: 5, borderRadius: 100 }]}
-                        >
-                            <Text style={[styles.grupname, { color: theme.text }]}>
-                                {groupName || `Grupo ${selectedGroupId}`}
-                            </Text>
-                        </TouchableOpacity>
-                    )}
-
+                    <Text style={[styles.headerTitle, { color: theme.text }]}>
+                        Feed
+                    </Text>
                     <TouchableOpacity
-                        onPress={async () => {
-                            if (selectedGroupId) {
-                                await SecureStore.deleteItemAsync("selectedGroupId");
-                                await SecureStore.deleteItemAsync("selectedGroupName");
-                                setSelectedGroupId(null);
-                                setGroupName(null);
-                                navigation.navigate("Home");
-                            } else {
-                                navigation.navigate("InfoPage");
-                            }
-                        }}
-                        style={[styles.leaveButton, { padding: 5, borderRadius: 100 }]}
+                        onPress={() => navigation.navigate("InfoPage")}
+                        style={[styles.infoButton, { padding: 5, borderRadius: 100 }]}
                     >
-                        <Ionicons
-                            name={selectedGroupId ? "exit-outline" : "information-circle-outline"}
-                            size={30}
-                            color={theme.text}
-                        />
+                        <Ionicons name="information-circle-outline" size={30} color={theme.text} />
                     </TouchableOpacity>
                 </View>
+
 
                 <FlatList
                     style={styles.list}
@@ -215,38 +213,24 @@ export default function Home({ route }) {
                     contentContainerStyle={{ padding: 20 }}
                     renderItem={({ item }) => (
                         <TouchableOpacity
-                            onPress={() =>
-                                navigation.navigate("PostDetails", { checkin: item })
-                            }
+                            onPress={() => navigation.navigate("PostDetails", { checkin: item })}
                         >
-                            <View
-                                style={[styles.post, {  borderColor: theme.mode === "dark" ? "#fff" : "#000"}]}
-                            >
+                            <View style={[styles.post, { borderColor: theme.mode === "dark" ? "#fff" : "#000" }]}>
                                 <View style={styles.postHeader}>
                                     {item.user.avatar && (
-                                        <Image
-                                            source={{ uri: item.user.avatar }}
-                                            style={styles.avatar}
-                                        />
+                                        <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
                                     )}
-                                    <Text
-                                        style={[styles.postTitle, { color: theme.text }]}
-                                    >
+                                    <Text style={[styles.postTitle, { color: theme.text }]}>
                                         @{item.user.name}
                                     </Text>
                                 </View>
-
                                 {item.photo && (
-                                    <Image
-                                        source={{ uri: item.photo }}
-                                        style={styles.postImage}
-                                    />
+                                    <Image source={{ uri: item.photo }} style={styles.postImage} />
                                 )}
-
                                 <Text style={[styles.postText, { color: theme.text }]}>
                                     {item.title}
                                 </Text>
-                                <Text style={[styles.postText, { color: theme.text }]}>
+                                <Text style={[styles.postDescription, { color: theme.text }]}>
                                     {item.description}
                                 </Text>
                                 <Text style={[styles.postDate, { color: theme.text }]}>
@@ -259,7 +243,7 @@ export default function Home({ route }) {
                             </View>
                         </TouchableOpacity>
                     )}
-                    ListEmptyComponent={renderEmptyComponent()}
+                    ListEmptyComponent={renderEmptyComponent}
                     refreshControl={
                         <RefreshControl
                             refreshing={refreshing}
@@ -267,21 +251,22 @@ export default function Home({ route }) {
                             tintColor={theme.text}
                         />
                     }
+                    onEndReached={loadMore}
+                    onEndReachedThreshold={0.5}
+                    ListFooterComponent={renderFooter}
                 />
-                {selectedGroupId && (
-                    <TouchableOpacity
-                        style={[
-                            styles.fab,
-                            {
-                                backgroundColor:
-                                    theme.mode === "dark" ? "#DFBA69" : "#003366",
-                            },
-                        ]}
-                        onPress={() => navigation.navigate("Publish")}
-                    >
-                        <Ionicons name="add" size={28} color="#fff" />
-                    </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                    style={[
+                        styles.fab,
+                        {
+                            backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
+                        },
+                    ]}
+                    onPress={() =>
+                        navigation.navigate("SelectGroup")}
+                >
+                    <Ionicons name="add" size={28} color="#fff" />
+                </TouchableOpacity>
             </LinearGradient>
         </SafeAreaView>
     );
@@ -295,11 +280,12 @@ const styles = StyleSheet.create({
         marginTop: 1,
     },
     header: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingTop: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingTop: 15,
         paddingBottom: 10,
+        position: 'relative',
     },
     hamburgerButton: {
         position: "absolute",
@@ -307,11 +293,18 @@ const styles = StyleSheet.create({
         left: 15,
         zIndex: 10,
     },
-    leaveButton: {
+    infoButton: {
         position: "absolute",
         top: 10,
         right: 15,
         zIndex: 10,
+    },
+    headerTitle: {
+        fontSize: 22,
+        fontWeight: "700",
+        flex: 1,
+        textAlign: "center",
+        letterSpacing: 1,
     },
     messageContainer: {
         flex: 1,
@@ -320,42 +313,57 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     post: {
-        borderRadius: 10,
-        padding: 15,
-        marginBottom: 15,
+        backgroundColor: "rgba(255,255,255,0.02)",
+        borderRadius: 20,
+        padding: 16,
+        marginBottom: 20,
         borderWidth: 1,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
+        elevation: 3,
     },
     postHeader: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: 8,
+        marginBottom: 12,
     },
     avatar: {
-        width: 30,
-        height: 30,
+        width: 40,
+        height: 40,
         borderRadius: 20,
         backgroundColor: "#ccc",
-        marginRight: 10,
+        marginRight: 12,
+        borderWidth: 1,
+        borderColor: "#888",
     },
     postTitle: {
-        fontSize: 16,
-        fontWeight: "bold",
+        fontSize: 17,
+        fontWeight: "600",
     },
     postText: {
-        fontSize: 14,
+        fontSize: 18,
+        fontWeight: "700",
         marginBottom: 8,
+        lineHeight: 24,
+    },
+    postDescription: {
+        fontSize: 15,
+        marginBottom: 8,
+        lineHeight: 20,
     },
     postDate: {
-        fontSize: 12,
+        fontSize: 13,
         fontStyle: "italic",
+        color: "#888",
     },
     postImage: {
-        width: 330,
-        height: 330,
+        width: "100%",
+        aspectRatio: 1,
         alignSelf: "center",
-        resizeMode: "cover",
-        borderRadius: 10,
-        marginBottom: 10,
+        borderRadius: 15,
+        marginBottom: 12,
     },
     text: {
         fontSize: 16,
@@ -367,36 +375,26 @@ const styles = StyleSheet.create({
         textAlign: "center",
     },
     loadingContainer: {
-        flex: 1,
+        padding: 20,
         justifyContent: "center",
         alignItems: "center",
-    },
-    icon: {
-        right: 1,
-        top: 1,
     },
     fab: {
         position: "absolute",
         bottom: 25,
         right: 25,
-        width: 55,
-        height: 55,
+        width: 60,
+        height: 60,
         borderRadius: 30,
         justifyContent: "center",
         alignItems: "center",
         elevation: 5,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
     },
-    groupButton: {
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        marginBottom: 7,
-    },
-    grupname: {
-        fontSize: 20,
-        fontWeight: "bold",
-    },
-        actionButton: {
+    actionButton: {
         width: "80%",
         marginTop: 20,
         paddingVertical: 14,
@@ -404,14 +402,27 @@ const styles = StyleSheet.create({
         borderRadius: 30,
         alignItems: "center",
         justifyContent: "center",
+        backgroundColor: "#fff",
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-        elevation: 5,
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 4,
     },
     buttonText: {
         fontSize: 16,
         fontWeight: "600",
+    },
+    line: {
+        width: "100%",
+        borderTopWidth: 1,
+        marginVertical: 12,
+    },
+    icon: {
+        marginBottom: 8,
+    },
+    subtext: {
+        fontSize: 14,
+        textAlign: "center",
     },
 });

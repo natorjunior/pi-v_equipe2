@@ -133,7 +133,10 @@ export default function Question4({ navigation, route }) {
                 <Checkbox
                 value={isPrivacyChecked}
                 onValueChange={setIsPrivacyChecked}
-                color={theme.mode === "dark" ? "#000" : "#fff"}
+                style={{
+                backgroundColor: theme.mode === "dark" ? "#000" : "#fff",
+                borderColor: theme.mode === "dark" ? "#fff" : "#000",
+                }}
                 />
                 </View>
                 <Text style={[styles.privacyText, { color: theme.text }]}>

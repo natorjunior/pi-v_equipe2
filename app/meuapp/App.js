@@ -36,6 +36,8 @@ import PostDetails from "./screens/PostDetails";
 import EditPost from "./screens/EditPost";
 import OtherProfile from "./screens/OtherProfile";
 import InfoPage from "./screens/InfoPage";
+import SelectGroup from "./screens/SelectGroup";
+import SuggestedGroups from "./screens/SuggestedGroups";
 
 import Top from "./components/Top";
 
@@ -59,15 +61,23 @@ function Tabs() {
         if (token) {
           const userData = await getUser(token);
           setUser(userData);
+        } else {
+          navigation.navigate("Login");
         }
       } catch (error) {
         console.error("Erro ao carregar dados do usuário:", error);
+        // Check if the error indicates an authentication issue
+        if (error.response && error.response.data && error.response.data.detail === "Not authenticated") {
+          // Clear the token and navigate to the login screen
+          await SecureStore.deleteItemAsync("token");
+          navigation.navigate("Login");
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchUser();
-  }, []);
+  }, [navigation]);
 
   useEffect(() => {
     const backAction = () => {
@@ -252,6 +262,8 @@ function App() {
           <Stack.Screen name="Publish" component={Publish} />
           <Stack.Screen name="OtherProfile" component={OtherProfile} />
           <Stack.Screen name="InfoPage" component={InfoPage} />
+          <Stack.Screen name="SelectGroup" component={SelectGroup} />
+          <Stack.Screen name="SuggestedGroups" component={SuggestedGroups} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaView>

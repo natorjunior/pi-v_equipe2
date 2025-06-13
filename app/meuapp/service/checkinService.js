@@ -43,6 +43,17 @@ export const getCheckinsByGroup = async (groupId) => {
   }
 };
 
+export const getFeedByUser = async (Page) => {
+  try {
+    const response = await api.get(`/check-in/feed/${Page}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error?.response?.data?.message || "Erro ao buscar Feed"
+    );
+  }
+};
+
 export const createCheckin = async (groupId, title, description, photo) => {
   try {
     const formData = new FormData();
