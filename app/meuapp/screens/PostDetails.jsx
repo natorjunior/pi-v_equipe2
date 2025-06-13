@@ -9,7 +9,8 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     Alert,
-    Modal
+    Modal,
+    Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Menu, Provider } from 'react-native-paper';
@@ -45,17 +46,35 @@ export default function PostDetails({ route, navigation }) {
     const [deleting, setDeleting] = useState(false);
 
     const scale = useSharedValue(1);
+    const translateX = useSharedValue(0);
+    const translateY = useSharedValue(0);
+    const focalX = useSharedValue(0);
+    const focalY = useSharedValue(0);
+
+    const { width: screenWidth } = Dimensions.get('window');
 
     const pinchGesture = Gesture.Pinch()
         .onUpdate((event) => {
-            scale.value = event.scale;
+            scale.value = Math.max(1, Math.min(event.scale, 3));
+            focalX.value = event.focalX;
+            focalY.value = event.focalY;
+            const scaledTranslateX = (focalX.value - screenWidth / 2) * (scale.value - 1) / scale.value;
+            const scaledTranslateY = (focalY.value - 200) * (scale.value - 1) / scale.value;
+            translateX.value = scaledTranslateX;
+            translateY.value = scaledTranslateY;
         })
         .onEnd(() => {
             scale.value = withTiming(1);
+            translateX.value = withTiming(0);
+            translateY.value = withTiming(0);
         });
 
     const animatedStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: scale.value }],
+        transform: [
+            { translateX: translateX.value },
+            { translateY: translateY.value },
+            { scale: scale.value },
+        ],
     }));
 
     useEffect(() => {
@@ -176,21 +195,21 @@ export default function PostDetails({ route, navigation }) {
                                 <Text style={[styles.postTitle, { color: theme.text, flex: 1 }]}>@{checkin.user.name}</Text>
                             </TouchableOpacity>
 
-                        {isOwner && (
-                            <Menu
-                            visible={menuVisible}
-                            onDismiss={() => setMenuVisible(false)}
-                            anchor={
-                            <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.menuButton}>
-                                <Ionicons name="ellipsis-vertical" size={24} color={theme.text} />
-                            </TouchableOpacity>
-                            }
-                            >
-                            <Menu.Item onPress={handleEditPost} title="Editar post" />
-                            <Menu.Item onPress={handleDeletePost} title="Apagar post" />
-                            </Menu>
-                        )}
-                </View>
+                            {isOwner && (
+                                <Menu
+                                    visible={menuVisible}
+                                    onDismiss={() => setMenuVisible(false)}
+                                    anchor={
+                                        <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.menuButton}>
+                                            <Ionicons name="ellipsis-vertical" size={24} color={theme.text} />
+                                        </TouchableOpacity>
+                                    }
+                                >
+                                    <Menu.Item onPress={handleEditPost} title="Editar post" />
+                                    <Menu.Item onPress={handleDeletePost} title="Apagar post" />
+                                </Menu>
+                            )}
+                        </View>
 
                         {checkin.photo && (
                             <GestureDetector gesture={pinchGesture}>
@@ -224,7 +243,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     container: {
-        flex: 1,
+        padding: 15,
     },
     header: {
         flexDirection: "row",
@@ -274,7 +293,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     postText: {
-        fontSize: 14,
+        fontSize: 16,
         marginVertical: 8,
         fontWeight: 'bold',
     },
@@ -292,6 +311,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 10,
+        overflow: 'hidden',
     },
     menuButton: {
         paddingHorizontal: 8,

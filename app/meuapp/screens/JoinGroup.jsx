@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,64 +11,76 @@ import {
   TextInput,
 } from "react-native";
 import { useTheme } from "../service/themeService";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { joinGroup } from "../service/groupService";
 
 export default function JoinGroup() {
   const { theme } = useTheme();
   const navigation = useNavigation();
-
-  const [alias, setAlias] = useState("");
+  const route = useRoute();
+  const [alias, setAlias] = useState(route.params?.prefilledAlias || "");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-const handleJoinGroup = async () => {
-  setError(null);
-
-  if (!alias.trim()) {
-    setError("Por favor, informe o apelido do grupo.");
-    return;
-  }
-
-  try {
-    setLoading(true);
-
-    const groupAlias = alias.trim().replace(/^@+/, "");
-    const response = await joinGroup(groupAlias);
-
-    if (response == null) {
-      setAlias("");
-      navigation.navigate("Tabs", { screen: "Groups", params: { refresh: true } });
+  useEffect(() => {
+    if (route.params?.prefilledAlias) {
+      setAlias(route.params.prefilledAlias);
     }
-  } catch (error) {
-    console.log("Erro ao entrar no grupo:", error);
+  }, [route.params?.prefilledAlias]);
 
-    if (error.response) {
-      const status = error.response.status;
+  const handleJoinGroup = async () => {
+    setError(null);
 
-      switch (status) {
-        case 401:
-          setError("Você já está no grupo digitado.");
-          break;
-        case 404:
-          setError("Grupo não encontrado. Verifique a tag e tente novamente.");
-          break;
-        case 422:
-          setError("Dados inválidos. Verifique o apelido informado.");
-          break;
-        default:
-          setError("Erro ao entrar no grupo. Tente novamente mais tarde.");
-          break;
+    if (!alias.trim()) {
+      setError("Por favor, informe o apelido do grupo.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const groupAlias = alias.trim().replace(/^@+/, "");
+      const response = await joinGroup(groupAlias);
+
+      if (response == null) {
+        setAlias("");
+        navigation.navigate("AppDrawer", {
+          screen: "Tabs",
+          params: {
+            screen: "Groups",
+            params: {
+              refresh: true,
+            },
+          },
+        });
       }
-    } else {
-      setError("Erro ao entrar no grupo. Tente novamente mais tarde.");
-    }
-  } finally {
-    setLoading(false);
-  }
-};
+    } catch (error) {
+      console.log("Erro ao entrar no grupo:", error);
 
+      if (error.response) {
+        const status = error.response.status;
+
+        switch (status) {
+          case 401:
+            setError("Você já está no grupo digitado.");
+            break;
+          case 404:
+            setError("Grupo não encontrado. Verifique a tag e tente novamente.");
+            break;
+          case 422:
+            setError("Dados inválidos. Verifique o apelido informado.");
+            break;
+          default:
+            setError("Erro ao entrar no grupo. Tente novamente mais tarde.");
+            break;
+        }
+      } else {
+        setError("Erro ao entrar no grupo. Tente novamente mais tarde.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
@@ -243,10 +255,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     fontSize: 20,
-  },
-  iconContainer: {
-    position: "absolute",
-    right: 20,
   },
   inputPrefix: {
     borderWidth: 1,

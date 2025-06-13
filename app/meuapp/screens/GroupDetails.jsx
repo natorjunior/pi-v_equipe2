@@ -125,10 +125,14 @@ export default function GroupDetails() {
             await deleteGroup(groupId);
             await SecureStore.deleteItemAsync("selectedGroupId");
             Alert.alert("Sucesso", "Grupo excluído com sucesso!", [
-              { text: "OK", onPress: () => navigation.navigate("AppDrawer", { refresh: true })},
+              {
+                text: "OK",
+                onPress: () =>
+                  navigation.navigate("AppDrawer", { refresh: true }),
+              },
             ]);
           } catch (err) {
-            console.log("Erro ao excluir grupo", err);
+            console.log("Error deleting group:", err);
             Alert.alert("Erro", "Não foi possível excluir o grupo.");
           } finally {
             setLoading(false);
@@ -150,9 +154,12 @@ export default function GroupDetails() {
             await leaveGroup(groupAlias);
             await SecureStore.deleteItemAsync("selectedGroupId");
             Alert.alert("Você saiu do grupo.");
-            navigation.navigate("AppDrawer", { refresh: true, selectedGroupId: null });
+            navigation.navigate("AppDrawer", {
+              refresh: true,
+              selectedGroupId: null,
+            });
           } catch (err) {
-            console.log("Erro ao sair do grupo", err);
+            console.log("Error leaving group:", err);
             Alert.alert("Erro", "Não foi possível sair do grupo.");
           } finally {
             setLoading(false);
@@ -372,6 +379,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     marginHorizontal: 12,
+    backgroundColor: "#ccc",
   },
   nameWrapper: {
     flex: 1,

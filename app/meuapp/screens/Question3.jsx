@@ -28,16 +28,22 @@ export default function Question3({ navigation, route }) {
         "Biografia",
         "Literatura",
         "Poesia",
-        "Teatro",
-        "Ensaio",
-        "Autobiografia"
+        "Autobiografia",
+        "Aventura",
+        "Distopia",
+        "Mistério",
+        "Chick-lit",
+        "Gótico",
+        "Histórico",
+        "Realismo mágico",
+        "Contos"
     ];
 
     const academicGenres = [
         "Matematica",
         "História",
         "Geografia",
-        "Biológia",
+        "Biologia",
         "Fisica",
         "Química",
         "Filosofia",
@@ -65,7 +71,10 @@ export default function Question3({ navigation, route }) {
     return (
         <SafeAreaView style={{ flex: 1 }}>
             <View style={[styles.container, { backgroundColor: theme.background }]}>
-                <ScrollView contentContainerStyle={styles.scrollContainer}>
+                <ScrollView
+                    contentContainerStyle={[styles.scrollContainer, { alignItems: "center" }]}
+                    showsVerticalScrollIndicator={false}
+                >
                     <Text style={[styles.text, { color: theme.text }]}>Selecione seus gêneros literarios ou acadêmicos favoritos{"\n"} (essa opção aparecera no seu perfil):</Text>
                     {genresToShow.map((genre, index) => (
                         <TouchableOpacity

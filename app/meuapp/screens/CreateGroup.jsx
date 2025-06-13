@@ -45,7 +45,15 @@ const handleCreateGroup = async () => {
       setGroupAlias("");
       setDescription("");
 
-      navigation.navigate("Tabs", { screen: "Groups", params: { refresh: true } });
+      navigation.navigate("AppDrawer", {
+        screen: "Tabs",
+        params: {
+          screen: "Groups",
+          params: {
+            refresh: true,
+          },
+        },
+      });
     } else {
       throw new Error("ID do grupo não encontrado na resposta.");
     }
