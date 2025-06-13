@@ -87,3 +87,8 @@ class CheckinRepository:
             .order_by(func.count(Checkin.id).desc())
             .all()
         )
+    
+    def exists(self, checkin_id: int) -> bool:
+        return self.session.query(
+            self.session.query(Checkin).filter(Checkin.id == checkin_id).exists()
+        ).scalar()
