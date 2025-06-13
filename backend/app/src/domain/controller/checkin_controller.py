@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
+from app.src.domain.repository.like_repository import LikeRepository
 from app.src.domain.service.checkin_service import CheckinService
 from app.src.domain.dto.checkin_dto import CheckinCreate, CheckinUpdate
 from app.src.infra.database.database import get_session
@@ -40,7 +41,6 @@ def update_checkin_by_id(checkin_changes: CheckinUpdate = Depends(CheckinUpdate.
                          user_id: int = Depends(jwt_auth),
                          session: Session = Depends(get_session)):
     return CheckinService(session).update_checkin_by_id(user_id, checkin_changes, checkin_photo)
-
 
 @router.delete("/{checkin_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_checkin_by_id(checkin_id: int,
