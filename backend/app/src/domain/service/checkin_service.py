@@ -139,3 +139,21 @@ class CheckinService:
             })
             
         return ranking_with_positions
+
+    def like_checkin(self, user_id: int, checkin_id: int):
+        if not self.checkin_repository.exists(checkin_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Publicação nao encontrada"
+            )
+
+        if not self.like_repository.has_user_liked(user_id, checkin_id):
+            return self.like_repository.like_checkin(user_id, checkin_id)
+
+        return None
+
+    def unlike_checkin(self, user_id: int, checkin_id: int):
+        self.like_repository.unlike_checkin(user_id, checkin_id)
+
+    def get_like_for_checkin(self, checkin_id: int) -> int:
+        return self.like_repository.count_likes_for_checkin(checkin_id) 
