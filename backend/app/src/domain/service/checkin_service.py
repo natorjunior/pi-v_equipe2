@@ -7,6 +7,7 @@ from app.src.domain.dto.checkin_dto import CheckinCreate, CheckinUpdate, get_che
 from fastapi import HTTPException, UploadFile
 
 from app.src.domain.repository.checkin_repository import CheckinRepository
+from app.src.domain.repository.like_repository import LikeRepository
 from app.src.domain.service.group_service import GroupService
 from app.src.domain.service.user_service import UserService
 
@@ -16,18 +17,29 @@ class CheckinService:
         self.checkin_repository = CheckinRepository(session)
         self.group_service = GroupService(session)
         self.user_service = UserService(session)
+        self.like_repository = LikeRepository(session)
 
 
-    def __return_checkin_instances(self, raw_checkins:[Checkin]):
+    def __return_checkin_instances(self, raw_checkins: [Checkin], current_user_id: int = None):
         checkins = []
         for checkin in raw_checkins:
             user = self.user_service.get_user_by_id(checkin.user_id)
-            checkins.append(get_checkin_data_instance(checkin, user))
+            likes_count = self.like_repository.count_likes_for_checkin(checkin.id)
+            liked_by_user = self.like_repository.has_user_liked(current_user_id, checkin.id) if current_user_id else False
+
+            print(f"[DEBUG] Checkin ID: {checkin.id}, Likes count: {likes_count}, Liked by user: {liked_by_user}")
+
+            checkins.append(get_checkin_data_instance(
+                checkin=checkin,
+                user=user,
+                likes_count=likes_count,
+                liked_by_user=liked_by_user
+            ))
         return checkins
 
     def get_checkins_by_user_id(self, user_id: int):
         checkins = self.checkin_repository.get_checkin_by_user_id(user_id)
-        return self.__return_checkin_instances(checkins)
+        return self.__return_checkin_instances(checkins, current_user_id=user_id)
 
     def get_checkins_by_group_id(self, user_id, group_id: int):
         group = self.group_service.get_group_by_id(group_id)
@@ -48,11 +60,11 @@ class CheckinService:
 
         checkins = self.checkin_repository.get_checkin_by_group_id(group_id)
 
-        return self.__return_checkin_instances(checkins)
+        return self.__return_checkin_instances(checkins, current_user_id=user_id)
 
     def get_feed_checkins_by_user_id(self, user_id: int, page: int):
         checkins = self.checkin_repository.get_feed_checkins_by_user_id(user_id, page)
-        return self.__return_checkin_instances(checkins)
+        return self.__return_checkin_instances(checkins, current_user_id=user_id)
 
     def create_checkin(self, user_id, checkin_data: CheckinCreate, checkin_photo: UploadFile = None):
         checkin_photo_url = None
@@ -139,3 +151,21 @@ class CheckinService:
             })
             
         return ranking_with_positions
+    
+    def like_checkin(self, user_id: int, checkin_id: int):
+        if not self.checkin_repository.exists(checkin_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Publicação nao encontrada"
+            )
+
+        if not self.like_repository.has_user_liked(user_id, checkin_id):
+            return self.like_repository.like_checkin(user_id, checkin_id)
+
+        return None
+
+    def unlike_checkin(self, user_id: int, checkin_id: int):
+        self.like_repository.unlike_checkin(user_id, checkin_id)
+
+    def get_like_for_checkin(self, checkin_id: int) -> int:
+        return self.like_repository.count_likes_for_checkin(checkin_id) 

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
+from app.src.domain.repository.like_repository import LikeRepository
 from app.src.domain.service.checkin_service import CheckinService
 from app.src.domain.dto.checkin_dto import CheckinCreate, CheckinUpdate
 from app.src.infra.database.database import get_session
@@ -41,7 +42,6 @@ def update_checkin_by_id(checkin_changes: CheckinUpdate = Depends(CheckinUpdate.
                          session: Session = Depends(get_session)):
     return CheckinService(session).update_checkin_by_id(user_id, checkin_changes, checkin_photo)
 
-
 @router.delete("/{checkin_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_checkin_by_id(checkin_id: int,
                          user_id:int = Depends(jwt_auth),
@@ -53,3 +53,22 @@ def get_group_ranking(group_id: int,
                       user_id: int = Depends(jwt_auth),
                       session: Session = Depends(get_session)):
     return CheckinService(session).get_group_ranking(user_id, group_id)
+
+@router.post("/{checkin_id}/like")
+def like_checkin(checkin_id: int,
+                 user_id: int = Depends(jwt_auth),
+                 session: Session = Depends(get_session)):
+    return CheckinService(session).like_checkin(user_id, checkin_id)
+
+@router.delete("/{checkin_id}/like")
+def unlike_checkin(checkin_id: int,
+                   user_id: int = Depends(jwt_auth),
+                   session: Session = Depends(get_session)):
+    print(f"[DEBUG] Chamando unlike_checkin com user_id={user_id}, checkin_id={checkin_id}")
+    return CheckinService(session).unlike_checkin(user_id, checkin_id)
+
+@router.get("/{checkin_id}/like")
+def get_like_for_checkin(checkin_id: int,
+                        user_id: int = Depends(jwt_auth),
+                        session: Session = Depends(get_session)):
+    return CheckinService(session).get_like_for_checkin(checkin_id)
