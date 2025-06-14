@@ -18,13 +18,12 @@ export default function SeggestedGroups() {
     const navigation = useNavigation();
     const [refreshing, setRefreshing] = useState(false);
 
-    // Dados atualizados com nome e descrição
     const groups = [
         { id: "1", name: "Comunidade SAL", description: "Comunidade #oficial do Stay and Learn! Aqui você pode compartilhar seus estudos...", alias: "sal" },
-        { id: "2", name: "Estudos ADS", description: "Grupo de estudos para os alunos de ADS do Senac!", alias: "senac_ads" },
-        { id: "3", name: "Estudos", description: "Comunidade pra quem quer dar aquele gás nos estudos e compartilhar seu...", alias: "estudos" },
-        { id: "4", name: "Amantes do Terror", description: "Comunidade para aqueles que amam ler livros de terror e/ou suspense!", alias: "terror" },
-        { id: "5", name: "Hora de Aventura", description: "Comunidade pra quem curte fantasia, ação e aventura!", alias: "aventura" },
+        { id: "2", name: "Estudos", description: "Comunidade pra quem quer dar aquele gás nos estudos e compartilhar seu...", alias: "estudos" },
+        { id: "3", name: "Amantes do Terror", description: "Comunidade para aqueles que amam ler livros de terror e/ou suspense!", alias: "terror" },
+        { id: "4", name: "Hora de Aventura", description: "Comunidade pra quem curte fantasia, ação e aventura!", alias: "aventura" },
+        { id : "5", name: "Star-Wars-Brasil", description: "Bem-vindos ao grupo de starwars", alias: "starwars" },
     ];
 
     const onRefresh = async () => {

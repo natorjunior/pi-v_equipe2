@@ -92,7 +92,7 @@ const handleDeleteUser = () => {
             onPress={() => setThemeMode(option.id)}
           >
             <Text style={[styles.optionText, { color: theme.mode }]}>{option.title}</Text>
-            <Text style={[styles.optionDescription, { color: theme.placeholder }]}>
+            <Text style={[styles.optionDescription, { color: theme.text }]}>
               {option.description}
             </Text>
           </TouchableOpacity>

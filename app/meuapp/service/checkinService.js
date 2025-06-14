@@ -133,3 +133,36 @@ export const getGroupRanking = async (groupId) => {
     );
   }
 };
+
+export const postLikeById = async (checkinId) => {
+  try {
+    const response = await api.post(`/check-in/${checkinId}/like`);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error?.response?.data?.message || "Erro ao dar like no check-in"
+    );
+  }
+};
+
+export const deleteLikeById = async (checkinId) => {
+  try {
+    const response = await api.delete(`/check-in/${checkinId}/like`);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error?.response?.data?.message || "Erro ao remover like do check-in"
+    );
+  }
+};
+
+export const getLikesById = async (checkinId) => {
+  try {
+    const response = await api.get(`/check-in/${checkinId}/like`);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error?.response?.data?.message || "Erro ao buscar likes do check-in"
+    );
+  }
+};

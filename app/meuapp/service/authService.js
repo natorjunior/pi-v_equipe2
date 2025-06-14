@@ -13,7 +13,6 @@ export const checkAuth = async () => {
 export const logoutUser = async () => {
     try {
         await SecureStore.deleteItemAsync("token");
-        console.log("Token de autenticação apagado com sucesso.");
         return true;
     } catch (error) {
         console.log("Erro ao fazer logout:", error);

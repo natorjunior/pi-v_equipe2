@@ -56,27 +56,7 @@ export default function JoinGroup() {
       }
     } catch (error) {
       console.log("Erro ao entrar no grupo:", error);
-
-      if (error.response) {
-        const status = error.response.status;
-
-        switch (status) {
-          case 401:
-            setError("Você já está no grupo digitado.");
-            break;
-          case 404:
-            setError("Grupo não encontrado. Verifique a tag e tente novamente.");
-            break;
-          case 422:
-            setError("Dados inválidos. Verifique o apelido informado.");
-            break;
-          default:
-            setError("Erro ao entrar no grupo. Tente novamente mais tarde.");
-            break;
-        }
-      } else {
-        setError("Erro ao entrar no grupo. Tente novamente mais tarde.");
-      }
+      setError(error.message);
     } finally {
       setLoading(false);
     }
