@@ -72,16 +72,22 @@ export default function ChangeGenres() {
         "Biografia",
         "Literatura",
         "Poesia",
-        "Teatro",
-        "Ensaio",
-        "Autobiografia"
+        "Autobiografia",
+        "Aventura",
+        "Distopia",
+        "Mistério",
+        "Chick-lit",
+        "Gótico",
+        "Histórico",
+        "Realismo mágico",
+        "Contos"
     ];
 
     const academicGenres = [
         "Matematica",
         "História",
         "Geografia",
-        "Biológia",
+        "Biologia",
         "Fisica",
         "Química",
         "Filosofia",

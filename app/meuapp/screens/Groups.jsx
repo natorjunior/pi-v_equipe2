@@ -17,7 +17,7 @@ import { useTheme } from "../service/themeService";
 import { useNavigation, DrawerActions, useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { getGroup } from "../service/groupService";
-import { getGroupRanking, getCheckinsByGroup } from "../service/checkinService";
+import { getGroupRanking, getCheckinsByGroup, postLikeById, deleteLikeById } from "../service/checkinService";
 import { getUser } from "../service/userService";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -221,6 +221,34 @@ export default function Groups() {
     fetchGroupsAndRankings();
   };
 
+const handleLike = async (checkinId) => {
+  try {
+    const checkin = checkins.find((item) => item.id === checkinId);
+    if (!checkin) return;
+
+    const updatedCheckins = checkins.map((item) => {
+      if (item.id === checkinId) {
+        return {
+          ...item,
+          liked_by_user: !item.liked_by_user,
+          likes_count: item.liked_by_user ? item.likes_count - 1 : item.likes_count + 1,
+        };
+      }
+      return item;
+    });
+    setCheckins(updatedCheckins);
+
+    if (checkin.liked_by_user) {
+      await deleteLikeById(checkinId);
+    } else {
+      await postLikeById(checkinId);
+    }
+  } catch (error) {
+    setError(error.message || "Erro ao curtir/descurtir a publicação.");
+    await fetchData();
+  }
+};
+
   const renderEmptyComponent = () => {
     if (!selectedGroupId) {
       return (
@@ -371,7 +399,10 @@ export default function Groups() {
           onPress={() => navigation.navigate("PostDetails", { checkin: item })}
         >
           <View
-            style={[styles.post, { borderColor: theme.mode === "dark" ? "#fff" : "#000" }]}
+            style={[
+              styles.post,
+              { backgroundColor: theme.background, borderColor: theme.text },
+            ]}
           >
             <View style={styles.postHeader}>
               {item.user.avatar && (
@@ -384,6 +415,21 @@ export default function Groups() {
             {item.photo && (
               <Image source={{ uri: item.photo }} style={styles.postImage} />
             )}
+            <View style={styles.likeContainer}>
+              <TouchableOpacity
+                onPress={() => handleLike(item.id)}
+                style={styles.likeButton}
+              >
+                <Ionicons
+                  name={item.liked_by_user ? "heart" : "heart-outline"}
+                  size={24}
+                  color={item.liked_by_user ? theme.error || "red" : theme.text}
+                />
+              </TouchableOpacity>
+              <Text style={[styles.likeCount, { color: theme.text }]}>
+                {item.likes_count}
+              </Text>
+            </View>
             <Text style={[styles.postText, { color: theme.text }]}>{item.title}</Text>
             <Text style={[styles.postDescription, { color: theme.text }]}>
               {item.description}
@@ -444,13 +490,13 @@ export default function Groups() {
               if (selectedGroupId) {
                 await handleBackToGroups();
               } else {
-                navigation.navigate("InfoPage");
+                navigation.navigate("SuggestedGroups");
               }
             }}
             style={styles.leaveButton}
           >
             <Ionicons
-              name={selectedGroupId ? "exit-outline" : "information-circle-outline"}
+              name={selectedGroupId ? "exit-outline" : "checkmark-circle-outline"}
               size={30}
               color={theme.text}
             />
@@ -493,6 +539,7 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
   },
   postListContainer: {
+    
     flex: isLargeScreen ? 0.6 : 1,
   },
   list: {
@@ -510,7 +557,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     textAlign: "center",
-    flex: 1,
     marginHorizontal: 50,
   },
   hamburgerButton: {
@@ -551,18 +597,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 2,
-    maxHeight: 200,
   },
   groupContent: {
     flex: 1,
   },
   groupName: {
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 18,
+    fontWeight: "600",
   },
   groupDescription: {
     fontSize: 14,
-    marginTop: 4,
+    marginTop: 6,
     flexShrink: 1,
   },
   groupMembers: {
@@ -581,11 +626,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 10,
-  },
-  noGroupsText: {
-    textAlign: "center",
-    marginTop: 50,
-    fontSize: 16,
   },
   errorContainer: {
     marginTop: 10,
@@ -631,11 +671,11 @@ const styles = StyleSheet.create({
   postHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 10,
   },
   avatar: {
-    width: 30,
-    height: 30,
+    width: 40,
+    height: 40,
     borderRadius: 20,
     backgroundColor: "#ccc",
     marginRight: 10,
@@ -652,7 +692,22 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 10,
   },
+  likeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  likeButton: {
+    borderRadius: 100,
+    transform: [{ scale: 1 }],
+    activeOpacity: 0.7,
+  },
+  likeCount: {
+    fontSize: 14,
+    marginLeft: 5,
+    fontWeight: "bold",
+  },
   postText: {
+    marginTop: 10,
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 8,

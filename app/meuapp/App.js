@@ -52,6 +52,11 @@ function Tabs() {
   const [loading, setLoading] = useState(true);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [backPressedOnce, setBackPressedOnce] = useState(false);
+  const [reloadKey, setReloadKey] = useState({
+    Home: Date.now(),
+    Groups: Date.now(),
+    Profile: Date.now()
+  });
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -66,9 +71,7 @@ function Tabs() {
         }
       } catch (error) {
         console.error("Erro ao carregar dados do usuário:", error);
-        // Check if the error indicates an authentication issue
         if (error.response && error.response.data && error.response.data.detail === "Not authenticated") {
-          // Clear the token and navigate to the login screen
           await SecureStore.deleteItemAsync("token");
           navigation.navigate("Login");
         }
@@ -103,6 +106,13 @@ function Tabs() {
     return () => backHandler.remove();
   }, [backPressedOnce, navigation]);
 
+  const handleTabPress = (tabName) => {
+    setReloadKey(prev => ({
+      ...prev,
+      [tabName]: Date.now()
+    }));
+  };
+
   return (
     <Tab.Navigator
       initialRouteName="Home"
@@ -121,7 +131,8 @@ function Tabs() {
     >
       <Tab.Screen
         name="Groups"
-        component={Groups}
+        key={reloadKey.Groups}
+        children={() => <Groups key={reloadKey.Groups} />}
         options={{
           tabBarIcon: () => (
             <Ionicons
@@ -132,10 +143,14 @@ function Tabs() {
             />
           ),
         }}
+        listeners={() => ({
+          tabPress: () => handleTabPress("Groups")
+        })}
       />
       <Tab.Screen
         name="Home"
-        component={Home}
+        key={reloadKey.Home}
+        children={() => <Home key={reloadKey.Home} />}
         options={{
           tabBarIcon: () => (
             <Ionicons
@@ -146,10 +161,14 @@ function Tabs() {
             />
           ),
         }}
+        listeners={() => ({
+          tabPress: () => handleTabPress("Home")
+        })}
       />
       <Tab.Screen
         name="Profile"
-        component={Profile}
+        key={reloadKey.Profile}
+        children={() => <Profile key={reloadKey.Profile} />}
         options={{
           tabBarIcon: () => (
             <View style={{ alignItems: "center", justifyContent: "center", marginTop: 7 }}>
@@ -181,6 +200,9 @@ function Tabs() {
             </View>
           ),
         }}
+        listeners={() => ({
+          tabPress: () => handleTabPress("Profile")
+        })}
       />
     </Tab.Navigator>
   );

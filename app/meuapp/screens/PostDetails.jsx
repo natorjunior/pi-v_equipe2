@@ -17,7 +17,7 @@ import { Menu, Provider } from 'react-native-paper';
 import * as SecureStore from 'expo-secure-store';
 import { useTheme } from '../service/themeService';
 import { getGroup } from '../service/groupService';
-import { deleteCheckin } from '../service/checkinService';
+import { deleteCheckin, postLikeById, deleteLikeById } from '../service/checkinService';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -35,7 +35,7 @@ dayjs.locale('pt-br');
 
 export default function PostDetails({ route, navigation }) {
     const { theme } = useTheme();
-    const { checkin } = route.params;
+    const { checkin: initialCheckin } = route.params;
 
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -44,6 +44,7 @@ export default function PostDetails({ route, navigation }) {
     const [modalVisible, setModalVisible] = useState(false);
     const [menuVisible, setMenuVisible] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [checkin, setCheckin] = useState(initialCheckin);
 
     const scale = useSharedValue(1);
     const translateX = useSharedValue(0);
@@ -98,6 +99,29 @@ export default function PostDetails({ route, navigation }) {
 
     const group = groups.find(g => String(g.id) === String(checkin.group_id));
     const isOwner = currentUser?.name && checkin.user?.name && String(currentUser.name) === String(checkin.user.name);
+
+    const handleLike = async () => {
+        try {
+            const updatedCheckin = {
+                ...checkin,
+                liked_by_user: !checkin.liked_by_user,
+                likes_count: checkin.liked_by_user 
+                    ? checkin.likes_count - 1 
+                    : checkin.likes_count + 1
+            };
+            setCheckin(updatedCheckin);
+
+            if (checkin.liked_by_user) {
+                await deleteLikeById(checkin.id);
+            } else {
+                await postLikeById(checkin.id);
+            }
+        } catch (error) {
+            setCheckin(initialCheckin);
+            Alert.alert("Erro", "Não foi possível atualizar a curtida.");
+            console.log("Erro ao curtir/descurtir:", error);
+        }
+    };
 
     const handleDeletePost = () => {
         Alert.alert("Apagar post", "Deseja apagar esta publicação?", [
@@ -212,25 +236,40 @@ export default function PostDetails({ route, navigation }) {
                         </View>
 
                         {checkin.photo && (
+                        <View>
                             <GestureDetector gesture={pinchGesture}>
-                                <Animated.View style={[styles.imageContainer, animatedStyle]}>
-                                    <Image source={{ uri: checkin.photo }} style={styles.postImage} resizeMode="cover" />
-                                </Animated.View>
+                            <Animated.View style={[styles.imageContainer, animatedStyle]}>
+                                <Image source={{ uri: checkin.photo }} style={styles.postImage} resizeMode="cover" />
+                            </Animated.View>
                             </GestureDetector>
-                        )}
+                            
+                            <View style={styles.textContent}>
+                            <View style={styles.likeContainer}>
+                                <TouchableOpacity onPress={handleLike} style={styles.likeButton}>
+                                <Ionicons
+                                    name={checkin.liked_by_user ? "heart" : "heart-outline"}
+                                    size={24}
+                                    color={checkin.liked_by_user ? theme.error || "red" : theme.text}
+                                />
+                                </TouchableOpacity>
+                                <Text style={[styles.likeCount, { color: theme.text }]}>{checkin.likes_count}</Text>
+                            </View>
 
-                        <Text style={[styles.postText, { color: theme.text }]}>{checkin.title}</Text>
-                        {checkin.description ? (
-                            <Text style={[styles.postText, { color: theme.text }]}>Descrição: {checkin.description}</Text>
-                        ) : null}
-                        <Text style={[styles.postGroup, { color: theme.text }]}>
-                            Postado no grupo {group ? group.group_name : 'Grupo não encontrado'}
-                        </Text>
-                        <Text style={[styles.postDate, { color: theme.text }]}>
-                            Postado dia {dayjs(checkin.created_at)
+                            <Text style={[styles.postText, { color: theme.text }]}>{checkin.title}</Text>
+                            {checkin.description ? (
+                                <Text style={[styles.postText, { color: theme.text }]}>Descrição: {checkin.description}</Text>
+                            ) : null}
+                            <Text style={[styles.postGroup, { color: theme.text }]}>
+                                Postado no grupo {group ? group.group_name : 'Grupo não encontrado'}
+                            </Text>
+                            <Text style={[styles.postDate, { color: theme.text }]}>
+                                Postado dia {dayjs(checkin.created_at)
                                 .tz('America/Fortaleza')
                                 .format('DD [de] MMMM [de] YYYY')}
-                        </Text>
+                            </Text>
+                            </View>
+                        </View>
+                        )}
                     </View>
                 </ScrollView>
             </SafeAreaView>
@@ -264,6 +303,10 @@ const styles = StyleSheet.create({
         textAlign: "center",
         fontSize: 18,
         fontWeight: 'bold',
+    },
+    textContent: {
+        zIndex: -1,
+        marginTop: 10,
     },
     post: {
         borderRadius: 10,
@@ -305,6 +348,7 @@ const styles = StyleSheet.create({
         width: '100%',
         aspectRatio: 1,
         borderRadius: 10,
+        zIndex: 0,
     },
     imageContainer: {
         width: '100%',
@@ -327,6 +371,7 @@ const styles = StyleSheet.create({
     fullscreenImage: {
         width: "90%",
         aspectRatio: 1,
+        zIndex: 1,
     },
     modalCloseArea: {
         position: "absolute",
@@ -334,5 +379,16 @@ const styles = StyleSheet.create({
         right: 30,
         zIndex: 2,
         padding: 10,
+    },
+    likeContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    likeButton: {
+        marginRight: 5,
+    },
+    likeCount: {
+        fontSize: 16,
     },
 });

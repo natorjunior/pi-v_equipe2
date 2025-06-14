@@ -16,7 +16,7 @@ import { useTheme } from "../service/themeService";
 import { useNavigation, useFocusEffect, DrawerActions } from "@react-navigation/native";
 import * as SecureStore from "expo-secure-store";
 import { getUser } from "../service/userService";
-import { getCheckinsByUser } from "../service/checkinService";
+import { getCheckinsByUser, postLikeById, deleteLikeById } from "../service/checkinService";
 import { Ionicons } from "@expo/vector-icons";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -66,6 +66,34 @@ export default function Profile() {
       fetchUser();
     }, [])
   );
+
+  const handleLike = async (checkinId) => {
+    try {
+      const checkin = checkins.find((item) => item.id === checkinId);
+      if (!checkin) return;
+
+      const updatedCheckins = checkins.map((item) => {
+        if (item.id === checkinId) {
+          return {
+            ...item,
+            liked_by_user: !item.liked_by_user,
+            likes_count: item.liked_by_user ? item.likes_count - 1 : item.likes_count + 1,
+          };
+        }
+        return item;
+      });
+      setUserCheckins(updatedCheckins);
+
+      if (checkin.liked_by_user) {
+        await deleteLikeById(checkinId);
+      } else {
+        await postLikeById(checkinId);
+      }
+    } catch (error) {
+      console.error("Erro ao curtir/descurtir:", error);
+      await fetchUser();
+    }
+  };
 
   const formatDate = (dateString) => {
     return dayjs(dateString).tz("America/Fortaleza").format("D [de] MMMM [de] YYYY");
@@ -265,6 +293,22 @@ export default function Profile() {
                       </View>
                     )}
 
+                    <View style={styles.likeContainer}>
+                      <TouchableOpacity 
+                        onPress={() => handleLike(checkin.id)} 
+                        style={styles.likeButton}
+                      >
+                        <Ionicons
+                          name={checkin.liked_by_user ? "heart" : "heart-outline"}
+                          size={24}
+                          color={checkin.liked_by_user ? theme.error || "red" : theme.text}
+                        />
+                      </TouchableOpacity>
+                      <Text style={[styles.likeCount, { color: theme.text }]}>
+                        {checkin.likes_count}
+                      </Text>
+                    </View>
+
                     <Text style={[styles.postText, { color: theme.text }]}>
                       {checkin.title}
                     </Text>
@@ -462,6 +506,20 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+  },
+  likeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  likeButton: {
+    borderRadius: 100,
+    transform: [{ scale: 1 }],
+  },
+  likeCount: {
+    fontSize: 14,
+    marginLeft: 5,
+    fontWeight: "bold",
   },
   genresContainer: {
     flexDirection: "row",

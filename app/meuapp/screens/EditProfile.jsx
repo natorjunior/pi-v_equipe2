@@ -129,7 +129,7 @@ export default function EditProfile() {
         const uploadedUrl = await uploadAvatar(avatarPreview, token);
         payload.avatar = uploadedUrl;
       } else if (!avatarPreview) {
-        payload.avatar = ""; // Reset to default avatar
+        payload.avatar = "";
       }
 
       await updateUser(payload);

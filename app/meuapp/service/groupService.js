@@ -60,7 +60,7 @@ export const joinGroup = async (group_alias) => {
     return response.data;
   } catch (error) {
     const message =
-      error?.response?.data?.message ||
+      error?.response?.data?.detail ||
       error.message ||
       "Erro ao entrar no grupo";
     throw new Error(message);
