@@ -1,4 +1,3 @@
-//opçõa tirar o avatar e voltar a ser o padrão
 import { useState, useEffect } from "react";
 import {
   View,
@@ -12,7 +11,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { launchCamera, launchImageLibrary } from "react-native-image-picker";
+import ImagePicker from "react-native-image-crop-picker";
 import * as SecureStore from "expo-secure-store";
 import { useTheme } from "../service/themeService";
 import InputField from "../components/InputField";
@@ -58,44 +57,62 @@ export default function EditProfile() {
       const hasAllPermissions = await AndroidPermissions();
       if (!hasAllPermissions) {
         Alert.alert(
-          "Permissões negadas",
+          "Permissões Negadas",
           "O aplicativo precisa de permissões para acessar a câmera e a galeria."
         );
         return;
       }
 
-      const options = {
-        mediaType: "photo",
-        quality: 0.8,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        includeBase64: false,
+      let selectedImage;
+      if (type === "camera") {
+        selectedImage = await ImagePicker.openCamera({
+          width: 1024,
+          height: 1024,
+          cropping: true,
+          compressImageQuality: 0.8,
+          mediaType: "photo",
+          forceJpg: true,
+        });
+      } else {
+        selectedImage = await ImagePicker.openPicker({
+          width: 1024,
+          height: 1024,
+          cropping: true,
+          compressImageQuality: 0.8,
+          mediaType: "photo",
+          forceJpg: true,
+        });
+      }
+
+      const imageData = {
+        uri: selectedImage.path,
+        width: selectedImage.width,
+        height: selectedImage.height,
+        fileName: selectedImage.filename || `avatar_${Date.now()}.jpg`,
+        type: selectedImage.mime || "image/jpeg",
       };
 
-      let result;
-      if (type === "camera") {
-        result = await launchCamera(options);
-      } else {
-        result = await launchImageLibrary(options);
-      }
-
-      if (result.didCancel) {
-        console.log("Usuário cancelou a seleção");
-      } else if (result.errorCode) {
-        console.log("ImagePicker Error: ", result.errorMessage);
-        Alert.alert("Erro", "Não foi possível acessar a imagem");
-      } else if (result.assets && result.assets.length > 0) {
-        const selectedImage = result.assets[0];
-        setAvatarPreview(selectedImage.uri);
-        setFormData((prev) => ({
-          ...prev,
-          avatar: selectedImage.uri,
-        }));
-      }
+      setAvatarPreview(imageData.uri);
+      setFormData((prev) => ({
+        ...prev,
+        avatar: imageData.uri,
+      }));
     } catch (error) {
-      console.log("Erro ao selecionar imagem:", error);
-      Alert.alert("Erro", "Ocorreu um erro ao processar a imagem");
+      if (error.message?.includes("cancel")) {
+        console.log("Usuário cancelou a seleção");
+      } else {
+        console.error("Erro ao selecionar ou recortar imagem:", error);
+        Alert.alert("Erro", "Ocorreu um erro ao processar a imagem");
+      }
     }
+  };
+
+  const handleResetAvatar = () => {
+    setAvatarPreview(null);
+    setFormData((prev) => ({
+      ...prev,
+      avatar: "",
+    }));
   };
 
   const handleUpdate = async () => {
@@ -111,6 +128,8 @@ export default function EditProfile() {
       if (avatarPreview && avatarPreview.startsWith("file://")) {
         const uploadedUrl = await uploadAvatar(avatarPreview, token);
         payload.avatar = uploadedUrl;
+      } else if (!avatarPreview) {
+        payload.avatar = "";
       }
 
       await updateUser(payload);
@@ -199,6 +218,17 @@ export default function EditProfile() {
                 Galeria
               </Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.imageButton, { borderColor: theme.border }]}
+              onPress={handleResetAvatar}
+              disabled={uploading || !avatarPreview}
+            >
+              <Ionicons name="refresh" size={20} color={theme.text} />
+              <Text style={[styles.buttonText, { color: theme.text }]}>
+                Remover Avatar
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -223,9 +253,7 @@ export default function EditProfile() {
           style={[styles.secondaryButton, { borderColor: theme.border }]}
           onPress={() => navigation.navigate("ChangeMotivation")}
         >
-          <Text
-            style={[styles.secondaryButtonText, { color: theme.text }]}
-          >
+          <Text style={[styles.secondaryButtonText, { color: theme.text }]}>
             Alterar Motivação
           </Text>
         </TouchableOpacity>
@@ -234,9 +262,7 @@ export default function EditProfile() {
           style={[styles.secondaryButton, { borderColor: theme.border }]}
           onPress={() => navigation.navigate("ChangeGenres")}
         >
-          <Text
-            style={[styles.secondaryButtonText, { color: theme.text }]}
-          >
+          <Text style={[styles.secondaryButtonText, { color: theme.text }]}>
             Alterar Gêneros
           </Text>
         </TouchableOpacity>
@@ -336,6 +362,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     gap: 5,
+  },
+  buttonText: {
+    fontSize: 14,
+    fontWeight: "500",
   },
   primaryButton: {
     padding: 15,

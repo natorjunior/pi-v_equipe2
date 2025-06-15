@@ -13,7 +13,6 @@ const lightTheme = {
     checkbox: "#fff",
     statusBar: "#f0f0f0",
     error: "#ff0000",
-    
 };
 
 const darkTheme = {

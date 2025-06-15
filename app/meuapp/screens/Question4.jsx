@@ -7,8 +7,9 @@ import {
     TouchableOpacity,
     KeyboardAvoidingView,
     Platform,
+    Linking,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../service/themeService";
 import { createUser } from "../service/userService";
 import InputField from "../components/InputField";
@@ -22,6 +23,7 @@ export default function Question4({ navigation, route }) {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+    const [isPrivacyChecked, setIsPrivacyChecked] = useState(false);
 
     const name = route.params?.name || "Usuário";
     const motivation = route.params?.motivation || "";
@@ -32,7 +34,8 @@ export default function Question4({ navigation, route }) {
             email.trim().length === 0 ||
             password.trim().length === 0 ||
             confirmPassword.trim().length === 0 ||
-            password !== confirmPassword
+            password !== confirmPassword ||
+            !isPrivacyChecked
         );
     };
 
@@ -75,7 +78,8 @@ export default function Question4({ navigation, route }) {
             >
                 <View style={[styles.container, { backgroundColor: theme.background }]}>
                     <Text style={[styles.text, { color: theme.text }]}>
-                        Para salvar suas informações precisamos do seu email e uma senha para sua segurança.
+                        Para salvar suas informações precisamos do seu email e uma senha
+                        para sua segurança.
                     </Text>
 
                     <InputField
@@ -111,7 +115,9 @@ export default function Question4({ navigation, route }) {
                         onChangeText={setConfirmPassword}
                         secureTextEntry={!showConfirmPassword}
                         icon={
-                            <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                            <TouchableOpacity
+                                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                            >
                                 <Feather
                                     name={showConfirmPassword ? "eye" : "eye-off"}
                                     size={24}
@@ -123,13 +129,50 @@ export default function Question4({ navigation, route }) {
 
                     <TouchableOpacity
                         style={[
+                            styles.privacyContainer,
+                            {
+                                backgroundColor: isPrivacyChecked
+                                    ? theme.mode === "dark"
+                                        ? "#1E90FF"
+                                        : "#ADD8E6"
+                                    : theme.mode === "dark"
+                                    ? "#050024"
+                                    : "#f0f0f0",
+                            },
+                        ]}
+                        onPress={() => setIsPrivacyChecked(!isPrivacyChecked)}
+                    >
+                        <View style={styles.buttonContent}>
+                            <Ionicons
+                                name={isPrivacyChecked ? "checkbox" : "square-outline"}
+                                size={24}
+                                color={theme.text}
+                            />
+                            <Text style={[styles.privacyText, { color: theme.mode === "dark" ? "#fff" : "#000" }]}>
+                                Eu aceito a{" "}
+                                <Text
+                                    style={styles.linkText}
+                                    onPress={() =>
+                                        Linking.openURL(
+                                            "https://regis-rafael.github.io/stay-and-learn-privacy-policy.github.io/"
+                                        )
+                                    }
+                                >
+                                    Política de Privacidade
+                                </Text>
+                            </Text>
+                        </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[
                             styles.button,
                             {
                                 backgroundColor: isButtonDisabled()
                                     ? "#DFBA69"
                                     : theme.mode === "dark"
-                                        ? "#DFBA69"
-                                        : "#003366",
+                                    ? "#DFBA69"
+                                    : "#003366",
                                 opacity: isButtonDisabled() ? 0.5 : 1,
                             },
                         ]}
@@ -143,8 +186,8 @@ export default function Question4({ navigation, route }) {
                                     color: isButtonDisabled()
                                         ? "#888"
                                         : theme.mode === "dark"
-                                            ? "#000"
-                                            : "#fff",
+                                        ? "#000"
+                                        : "#fff",
                                 },
                             ]}
                         >
@@ -191,5 +234,31 @@ const styles = StyleSheet.create({
         color: "red",
         fontSize: 14,
         textAlign: "center",
+    },
+    privacyContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: 20,
+        paddingHorizontal: 10,
+        borderRadius: 10,
+        width: "90%",
+        height: 50,
+        justifyContent: "center",
+    },
+    buttonContent: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "flex-start",
+        width: "100%",
+        paddingHorizontal: 10,
+    },
+    privacyText: {
+        marginLeft: 10,
+        fontSize: 14,
+        flex: 1,
+        flexWrap: "wrap",
+    },
+    linkText: {
+        textDecorationLine: "underline",
     },
 });

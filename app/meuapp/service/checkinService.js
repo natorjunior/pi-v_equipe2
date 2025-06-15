@@ -1,33 +1,34 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
+import { API_URL } from "@env";
 
-const BASE_URL = "https://api.homolog.sal.acilab.com.br";
+if (!API_URL) {
+  throw new Error("API_URL não definida no .env");
+}
 
 const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_URL,
 });
 
-api.interceptors.request.use(async (config) => {
-  try {
+api.interceptors.request.use(
+  async (config) => {
     const token = await SecureStore.getItemAsync("token");
-
-    if (!token) {
-      throw new Error("Sessão expirada. Faça login novamente.");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
-
-    config.headers.Authorization = `Bearer ${token}`;
     return config;
-  } catch (error) {
-    throw error;
-  }
-});
+  },
+  (error) => Promise.reject(error)
+);
 
 export const getCheckinsByUser = async () => {
   try {
     const response = await api.get("/check-in/user");
     return response.data;
   } catch (error) {
-    throw error;
+    throw new Error(
+      error?.response?.data?.message || "Erro ao buscar seus check-ins"
+    );
   }
 };
 
@@ -36,7 +37,20 @@ export const getCheckinsByGroup = async (groupId) => {
     const response = await api.get(`/check-in/group/${groupId}`);
     return response.data;
   } catch (error) {
-    throw error;
+    throw new Error(
+      error?.response?.data?.message || "Erro ao buscar check-ins do grupo"
+    );
+  }
+};
+
+export const getFeedByUser = async (Page) => {
+  try {
+    const response = await api.get(`/check-in/feed/${Page}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error?.response?.data?.message || "Erro ao buscar Feed"
+    );
   }
 };
 
@@ -63,7 +77,9 @@ export const createCheckin = async (groupId, title, description, photo) => {
 
     return response.data;
   } catch (error) {
-    throw error;
+    throw new Error(
+      error?.response?.data?.message || "Erro ao criar check-in"
+    );
   }
 };
 
@@ -90,7 +106,9 @@ export const updateCheckin = async (checkinId, title, description, photo) => {
 
     return response.data;
   } catch (error) {
-    throw error;
+    throw new Error(
+      error?.response?.data?.message || "Erro ao atualizar check-in"
+    );
   }
 };
 
@@ -99,7 +117,9 @@ export const deleteCheckin = async (checkinId) => {
     const response = await api.delete(`/check-in/${checkinId}`);
     return response.data;
   } catch (error) {
-    throw error;
+    throw new Error(
+      error?.response?.data?.message || "Erro ao excluir check-in"
+    );
   }
 };
 
@@ -108,7 +128,41 @@ export const getGroupRanking = async (groupId) => {
     const response = await api.get(`/check-in/group/${groupId}/ranking`);
     return response.data;
   } catch (error) {
-    throw error;
+    throw new Error(
+      error?.response?.data?.message || "Erro ao buscar ranking do grupo"
+    );
   }
 };
 
+export const postLikeById = async (checkinId) => {
+  try {
+    const response = await api.post(`/check-in/${checkinId}/like`);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error?.response?.data?.message || "Erro ao dar like no check-in"
+    );
+  }
+};
+
+export const deleteLikeById = async (checkinId) => {
+  try {
+    const response = await api.delete(`/check-in/${checkinId}/like`);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error?.response?.data?.message || "Erro ao remover like do check-in"
+    );
+  }
+};
+
+export const getLikesById = async (checkinId) => {
+  try {
+    const response = await api.get(`/check-in/${checkinId}/like`);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error?.response?.data?.message || "Erro ao buscar likes do check-in"
+    );
+  }
+};

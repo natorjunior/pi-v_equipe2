@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Text,
   View,
@@ -41,16 +41,38 @@ export default function Login({ navigation }) {
       if (typeof response === "string") {
         await AsyncStorage.setItem("token", response);
 
-        const user = await fetchUser(response);
-        await SecureStore.setItemAsync("user", JSON.stringify(user));
-        await SecureStore.deleteItemAsync("selectedGroupId");
-        navigation.navigate("AppDrawer", { selectedGroupId: null });
+        const isFirstTime = await AsyncStorage.getItem("isFirstTime");
+
+        if (!isFirstTime) {
+          await AsyncStorage.setItem("isFirstTime", "false");
+          navigation.reset({ index: 0, routes: [{ name: "InfoPage" }] });
+        } else {
+          const user = await fetchUser(response);
+          if (user) {
+            await SecureStore.setItemAsync("user", JSON.stringify(user));
+          }
+          await SecureStore.deleteItemAsync("selectedGroupId");
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "AppDrawer", params: { selectedGroupId: null } }],
+          });
+        }
       } else {
-        setError("E-mail ou senha inválidos!");
+        setError("E-mail ou senha incorretos.");
       }
     } catch (error) {
-      console.log("Erro:", error);
-      setError("Falha ao fazer login. Verifique sua conexão.");
+      console.log("Erro ao fazer login:", error);
+
+      const message =
+        error?.response?.data?.detail?.toLowerCase?.() || error.message || "";
+
+      if (message.includes("credenciais inválidas")) {
+        setError("E-mail ou senha incorretos.");
+      } else if (message.includes("network error")) {
+        setError("Não foi possível conectar. Verifique sua conexão com a internet.");
+      } else {
+        setError("Falha ao fazer login. Tente novamente mais tarde.");
+      }
     } finally {
       setLoading(false);
     }
@@ -102,7 +124,10 @@ export default function Login({ navigation }) {
           <TouchableOpacity
             style={[
               styles.button,
-              { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366" },
+              {
+                backgroundColor:
+                  theme.mode === "dark" ? "#DFBA69" : "#003366",
+              },
             ]}
             onPress={handleLoginButton}
             disabled={loading}

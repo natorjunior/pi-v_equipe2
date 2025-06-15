@@ -1,19 +1,16 @@
-//Esperar o backend pro join, montar os rankings, ajeitar o editprofile e publicação
-
 import { useEffect, useState } from "react";
 import { BackHandler, ToastAndroid, Platform, Alert } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
-import { useNavigation } from "@react-navigation/native";
+import { NavigationContainer, useNavigation } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createDrawerNavigator } from "@react-navigation/drawer";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import { ThemeProvider, useTheme } from "./service/themeService";
 import { ActivityIndicator, View, StyleSheet, Image } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 import { getUser } from "./service/userService";
-
 
 import Config from "./screens/Config";
 import Entrace from "./screens/Entrance";
@@ -38,21 +35,28 @@ import ForgotPassword from "./screens/ForgotPassword";
 import PostDetails from "./screens/PostDetails";
 import EditPost from "./screens/EditPost";
 import OtherProfile from "./screens/OtherProfile";
+import InfoPage from "./screens/InfoPage";
+import SelectGroup from "./screens/SelectGroup";
+import SuggestedGroups from "./screens/SuggestedGroups";
 
 import Top from "./components/Top";
 
-import { Ionicons } from "@expo/vector-icons";
-
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
-const Tab = createBottomTabNavigator();
+const Tab = createMaterialTopTabNavigator();
 
 function Tabs() {
   const { theme } = useTheme();
-  const navigation = useNavigation(); 
+  const navigation = useNavigation();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [avatarLoading, setAvatarLoading] = useState(false);
+  const [backPressedOnce, setBackPressedOnce] = useState(false);
+  const [reloadKey, setReloadKey] = useState({
+    Home: Date.now(),
+    Groups: Date.now(),
+    Profile: Date.now()
+  });
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -62,17 +66,21 @@ function Tabs() {
         if (token) {
           const userData = await getUser(token);
           setUser(userData);
+        } else {
+          navigation.navigate("Login");
         }
       } catch (error) {
         console.error("Erro ao carregar dados do usuário:", error);
+        if (error.response && error.response.data && error.response.data.detail === "Not authenticated") {
+          await SecureStore.deleteItemAsync("token");
+          navigation.navigate("Login");
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchUser();
-  }, []);
-
-    const [backPressedOnce, setBackPressedOnce] = useState(false);
+  }, [navigation]);
 
   useEffect(() => {
     const backAction = () => {
@@ -87,10 +95,7 @@ function Tabs() {
           } else {
             Alert.alert("Sair", "Pressione voltar novamente para sair.");
           }
-
-          setTimeout(() => {
-            setBackPressedOnce(false);
-          }, 2000);
+          setTimeout(() => setBackPressedOnce(false), 2000);
           return true;
         }
       }
@@ -101,65 +106,109 @@ function Tabs() {
     return () => backHandler.remove();
   }, [backPressedOnce, navigation]);
 
+  const handleTabPress = (tabName) => {
+    setReloadKey(prev => ({
+      ...prev,
+      [tabName]: Date.now()
+    }));
+  };
 
   return (
     <Tab.Navigator
       initialRouteName="Home"
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ color, size }) => {
-          let iconName;
-
-          if (route.name === "Home") {
-            iconName = "home";
-          } else if (route.name === "Groups") {
-            iconName = "people";
-          } else if (route.name === "Profile") {
-            iconName = "person-circle";
-            return (
-                <View style={{ alignItems: "center", justifyContent: "center", marginTop: 7 }}>
-                  {avatarLoading && (
-                    <ActivityIndicator size="large" color={theme.mode === "dark" ? "#fff" : "#000"} style={styles.avatarLoader} />
-                  )}
-                  {user?.avatar ? (
-                    <Image
-                      source={{ uri: user.avatar }}
-                      style={[styles.avatar , { borderColor: theme.mode === "dark" ? "#fff" : "#000"}]}
-                      onLoadStart={() => setAvatarLoading(true)}
-                      onLoadEnd={() => setAvatarLoading(false)}
-                    />
-                  ) : (
-                    <View style={[styles.defaultAvatar, { borderColor: theme.mode === "dark" ? "#fff" : "#000"}]}>
-                    </View>
-                  )}
-                </View>
-            );
-          }
-
-          return (
-            <View style={{ alignItems: "center", justifyContent: "center", marginTop: 5 }}>
-              <Ionicons name={iconName} size={size} color={color} />
-            </View>
-          );
-        },
+      tabBarPosition="bottom"
+      swipeEnabled={true}
+      screenOptions={{
+        tabBarShowLabel: false,
         tabBarActiveTintColor: theme.mode === "dark" ? "#fff" : "#000",
-        tabBarInactiveTintColor: "gray",
-        headerShown: false,
+        tabBarInactiveTintColor: theme.mode === "dark" ? "#fff" : "#000",
         tabBarStyle: {
           backgroundColor: theme.mode === "dark" ? "#0D0058" : "#fff",
           height: 65,
         },
-        tabBarLabel: () => null,
-      })}
+        tabBarIndicatorStyle: { height: 0 },
+      }}
     >
-      <Tab.Screen name="Groups" component={Groups} />
-      <Tab.Screen name="Home" component={Home} />
-      <Tab.Screen name="Profile" component={Profile} />
+      <Tab.Screen
+        name="Groups"
+        key={reloadKey.Groups}
+        children={() => <Groups key={reloadKey.Groups} />}
+        options={{
+          tabBarIcon: () => (
+            <Ionicons
+              name="people"
+              size={24}
+              color={theme.mode === "dark" ? "#fff" : "#000"}
+              style={{ marginTop: 10 }}
+            />
+          ),
+        }}
+        listeners={() => ({
+          tabPress: () => handleTabPress("Groups")
+        })}
+      />
+      <Tab.Screen
+        name="Home"
+        key={reloadKey.Home}
+        children={() => <Home key={reloadKey.Home} />}
+        options={{
+          tabBarIcon: () => (
+            <Ionicons
+              name="home"
+              size={24}
+              color={theme.mode === "dark" ? "#fff" : "#000"}
+              style={{ marginTop: 10 }}
+            />
+          ),
+        }}
+        listeners={() => ({
+          tabPress: () => handleTabPress("Home")
+        })}
+      />
+      <Tab.Screen
+        name="Profile"
+        key={reloadKey.Profile}
+        children={() => <Profile key={reloadKey.Profile} />}
+        options={{
+          tabBarIcon: () => (
+            <View style={{ alignItems: "center", justifyContent: "center", marginTop: 7 }}>
+              {avatarLoading && (
+                <ActivityIndicator
+                  size="large"
+                  color={theme.mode === "dark" ? "#fff" : "#000"}
+                  style={styles.avatarLoader}
+                />
+              )}
+              {user?.avatar ? (
+                <Image
+                  source={{ uri: user.avatar }}
+                  style={[
+                    styles.avatar,
+                    { borderColor: theme.mode === "dark" ? "#fff" : "#000" },
+                  ]}
+                  onLoadStart={() => setAvatarLoading(true)}
+                  onLoadEnd={() => setAvatarLoading(false)}
+                />
+              ) : (
+                <View
+                  style={[
+                    styles.defaultAvatar,
+                    { borderColor: theme.mode === "dark" ? "#fff" : "#000" },
+                  ]}
+                />
+              )}
+            </View>
+          ),
+        }}
+        listeners={() => ({
+          tabPress: () => handleTabPress("Profile")
+        })}
+      />
     </Tab.Navigator>
   );
 }
 
-function AppDrawer({ navigation }) {
-
+function AppDrawer() {
   return (
     <Drawer.Navigator
       drawerContent={(props) => <Top {...props} />}
@@ -174,7 +223,6 @@ function AppDrawer({ navigation }) {
     </Drawer.Navigator>
   );
 }
-
 
 function AppLoadingScreen({ navigation }) {
   const { theme } = useTheme();
@@ -229,12 +277,15 @@ function App() {
           <Stack.Screen name="GroupDetails" component={GroupDetails} />
           <Stack.Screen name="PostDetails" component={PostDetails} />
           <Stack.Screen name="EditPost" component={EditPost} />
-          <Stack.Screen name="EditProfile" component={EditProfile}/>
+          <Stack.Screen name="EditProfile" component={EditProfile} />
           <Stack.Screen name="ChangeMotivation" component={ChangeMotivation} />
           <Stack.Screen name="ChangeGenres" component={ChangeGenres} />
           <Stack.Screen name="AppDrawer" component={AppDrawer} />
           <Stack.Screen name="Publish" component={Publish} />
           <Stack.Screen name="OtherProfile" component={OtherProfile} />
+          <Stack.Screen name="InfoPage" component={InfoPage} />
+          <Stack.Screen name="SelectGroup" component={SelectGroup} />
+          <Stack.Screen name="SuggestedGroups" component={SuggestedGroups} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaView>
@@ -286,4 +337,3 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 });
-

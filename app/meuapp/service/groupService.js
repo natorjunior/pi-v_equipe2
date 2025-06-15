@@ -1,24 +1,25 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
+import { API_URL } from "@env";
 
-const BASE_URL = "https://api.homolog.sal.acilab.com.br";
+if (!API_URL) {
+  throw new Error("API_URL não definida no .env");
+}
 
 const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_URL,
 });
 
-api.interceptors.request.use(async (config) => {
-  try {
+api.interceptors.request.use(
+  async (config) => {
     const token = await SecureStore.getItemAsync("token");
-    if (!token) {
-      throw new Error("Sessão expirada. Faça login novamente.");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
-    config.headers.Authorization = `Bearer ${token}`;
     return config;
-  } catch (error) {
-    throw error;
-  }
-});
+  },
+  (error) => Promise.reject(error)
+);
 
 export const createGroup = async (newGroup) => {
   try {
@@ -59,13 +60,12 @@ export const joinGroup = async (group_alias) => {
     return response.data;
   } catch (error) {
     const message =
-      error?.response?.data?.message ||
+      error?.response?.data?.detail ||
       error.message ||
       "Erro ao entrar no grupo";
     throw new Error(message);
   }
 };
-
 
 export const leaveGroup = async (group_alias) => {
   try {

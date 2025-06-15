@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView } from "react-native";
 import { useTheme } from "../service/themeService";
-import { Checkbox } from "expo-checkbox";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function Question3({ navigation, route }) {
     const { theme } = useTheme();
@@ -28,16 +28,22 @@ export default function Question3({ navigation, route }) {
         "Biografia",
         "Literatura",
         "Poesia",
-        "Teatro",
-        "Ensaio",
-        "Autobiografia"
+        "Autobiografia",
+        "Aventura",
+        "Distopia",
+        "Mistério",
+        "Chick-lit",
+        "Gótico",
+        "Histórico",
+        "Realismo mágico",
+        "Contos"
     ];
 
     const academicGenres = [
         "Matematica",
         "História",
         "Geografia",
-        "Biológia",
+        "Biologia",
         "Fisica",
         "Química",
         "Filosofia",
@@ -65,26 +71,27 @@ export default function Question3({ navigation, route }) {
     return (
         <SafeAreaView style={{ flex: 1 }}>
             <View style={[styles.container, { backgroundColor: theme.background }]}>
-                <ScrollView contentContainerStyle={styles.scrollContainer}>
-                    <Text style={[styles.text, { color: theme.text }]}>Selecione seus gêneros literarios ou acadêmicos favoritos{"\n"} (essa opção aparecera no seu perfil):</Text>
+                <ScrollView
+                    contentContainerStyle={[styles.scrollContainer, { alignItems: "center" }]}
+                    showsVerticalScrollIndicator={false}
+                >
+                    <Text style={[styles.text, { color: theme.text }]}>Selecione seus gêneros literários ou acadêmicos favoritos{"\n"} (essa opção aparecerá no seu perfil):</Text>
                     {genresToShow.map((genre, index) => (
                         <TouchableOpacity
                             key={index}
                             style={[
                                 styles.button,
-                                { backgroundColor: theme.mode === "dark" ? "#0D0058" : "#fff" },
+                                { backgroundColor: selectedGenres[genre] ? (theme.mode === "dark" ? "#1E90FF" : "#ADD8E6") : (theme.mode === "dark" ? "#0D0058" : "#fff") }
                             ]}
                             onPress={() => toggleGenre(genre)}
                         >
                             <View style={styles.buttonContent}>
-                                <Checkbox
-                                    value={selectedGenres[genre] || false}
-                                    onValueChange={() => toggleGenre(genre)}
-                                    color={theme.mode === "dark" ? "#000" : "#000"}
+                                <Ionicons
+                                    name={selectedGenres[genre] ? "checkbox" : "square-outline"}
+                                    size={24}
+                                    color={theme.text}
                                 />
-                                <Text style={[styles.buttonText, { color: theme.mode === "dark" ? "#fff" : "#000" }]}>
-                                    {genre}
-                                </Text>
+                                <Text style={[styles.buttonText, { color: theme.mode === "dark" ? "#fff" : "#000" }]}>{genre}</Text>
                             </View>
                         </TouchableOpacity>
                     ))}
@@ -157,3 +164,4 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
     },
 });
+

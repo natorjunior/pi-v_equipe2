@@ -23,35 +23,48 @@ export default function CreateGroup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleCreateGroup = async () => {
-    if (!groupName || !groupAlias) {
-      setError("Por favor, informe todos os campos obrigatórios.");
-      return;
+const handleCreateGroup = async () => {
+  if (!groupName || !groupAlias) {
+    setError("Por favor, informe todos os campos obrigatórios.");
+    return;
+  }
+
+  try {
+    setLoading(true);
+    setError(null);
+
+    const newGroup = {
+      name: groupName.trim(),
+      alias: groupAlias.replace("@", "").trim(),
+      description: description.trim(),
+    };
+
+    const response = await createGroup(newGroup);
+    if (response) {
+      setGroupName("");
+      setGroupAlias("");
+      setDescription("");
+
+      navigation.navigate("AppDrawer", {
+        screen: "Tabs",
+        params: {
+          screen: "Groups",
+          params: {
+            refresh: true,
+          },
+        },
+      });
+    } else {
+      throw new Error("ID do grupo não encontrado na resposta.");
     }
+  } catch (error) {
+    console.log("Erro ao criar ou entrar no grupo", error);
+    setError("Erro ao criar ou entrar no grupo. Tente novamente.");
+  } finally {
+    setLoading(false);
+  }
+};
 
-    try {
-      setLoading(true);
-      setError(null);
-
-      const newGroup = {
-        name: groupName.trim(),
-        alias: groupAlias.replace("@", "").trim(),
-        description: description.trim(),
-      };
-
-      const response = await createGroup(newGroup);
-      if (response) {
-        navigation.navigate("Tabs", { screen: "Groups" });
-      } else {
-        throw new Error("ID do grupo não encontrado na resposta.");
-      }
-    } catch (error) {
-      console.log("Erro ao criar ou entrar no grupo", error);
-      setError("Erro ao criar ou entrar no grupo. Tente novamente.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
