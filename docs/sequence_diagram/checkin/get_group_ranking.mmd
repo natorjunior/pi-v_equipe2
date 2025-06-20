@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant Client
+    participant Controller as CheckinController
+    participant Service as CheckinService
+    participant Repository as CheckinRepository
+    participant GroupService
+    participant UserService
+    Client->>Controller: GET /check-in/group/{group_id}/ranking
+    Controller->>Service: get_group_ranking(user_id, group_id)
+    Service->>Repository: get_ranking_by_group_id(group_id)
+    alt grupo não existe
+        Service-->>Controller: HTTP 404
+        Controller-->>Client: erro
+    else
+        Service->>GroupService: get_group_participant_by_user_id_and_group_id(user_id, group_id)
+        alt não participa
+            Service-->>Controller: HTTP 404
+            Controller-->>Client: erro
+        else
+            loop para cada row no ranking
+                Service->>UserService: get_user_by_id(row.user_id)
+            end
+            Service-->>Controller: ranking_with_positions
+            Controller-->>Client: ranking_with_positions
+        end
+    end

@@ -1,0 +1,8 @@
+graph TD
+    A[API REST] -->|Recebe requisições| B[Controladores]
+    B -->|Processa lógica| C[Serviços]
+    C -->|Acessa dados| D[Repositórios]
+    D -->|Consulta/Atualiza| E[(Banco de Dados)]
+    C -->|Comunica| F[Serviços Externos]
+    B -->|Valida| G[Middleware]
+    A -->|Autentica| H[Autenticação]

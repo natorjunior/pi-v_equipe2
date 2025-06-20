@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Client
+    participant Controller as GroupController
+    participant Service as GroupService
+    participant Repository as GroupRepository
+    participant ParticipantRepo as GroupParticipantRepository
+    Client->>Controller: DELETE /group/{group_id}
+    Controller->>Service: delete_group(user_id, group_id)
+    Service->>Repository: get_group_by_id(group_id)
+    alt grupo não existe
+        Service-->>Controller: HTTP 404
+        Controller-->>Client: erro
+    else
+        alt user é dono
+            Service->>ParticipantRepo: remove_all_participants(group_id)
+            Service->>Repository: delete_group(group_id)
+            Repository-->>Service: True
+            Service-->>Controller: True
+            Controller-->>Client: True
+        else
+            Service-->>Controller: HTTP 401
+            Controller-->>Client: erro
+        end
+    end

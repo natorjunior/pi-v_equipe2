@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant Client
+    participant Controller as AuthenticationController
+    participant Service as AuthenticationService
+    participant UserService
+    participant Encryption as EncryptionService
+    participant Jwt as JwtService
+
+    Client->>Controller: POST /authentication/login (login_data)
+    Controller->>Service: authenticate_user(login_data)
+    Service->>UserService: get_user_by_email(login_data.email)
+    UserService-->>Service: user
+    alt usuário não encontrado
+        Service-->>Controller: HTTP 403
+        Controller-->>Client: erro
+    else
+        Service->>Encryption: verify_password(login_data.password, user.password_hash)
+        Encryption-->>Service: bool
+        alt senha inválida
+            Service-->>Controller: HTTP 403
+            Controller-->>Client: erro
+        else
+            Service->>Jwt: generate_jwt(user.id)
+            Jwt-->>Service: jwt_token
+            Service-->>Controller: jwt_token
+            Controller-->>Client: jwt_token
+        end
+    end

@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Client
+    participant Controller as CheckinController
+    participant Service as CheckinService
+    participant Repository as CheckinRepository
+    participant UserService
+    participant LikeRepository
+    Client->>Controller: GET /check-in/user
+    Controller->>Service: get_checkins_by_user_id(user_id)
+    Service->>Repository: get_checkin_by_user_id(user_id)
+    Repository-->>Service: checkins
+    loop para cada checkin
+        Service->>UserService: get_user_by_id(checkin.user_id)
+        Service->>LikeRepository: count_likes_for_checkin(checkin.id)
+        Service->>LikeRepository: has_user_liked(user_id, checkin.id)
+    end
+    Service-->>Controller: checkin_data_list
+    Controller-->>Client: checkin_data_list

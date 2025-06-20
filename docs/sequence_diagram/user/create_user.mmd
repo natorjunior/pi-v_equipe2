@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Client
+    participant Controller as UserController
+    participant Service as UserService
+    participant Validation as ValidationUser
+    participant Encryption as EncryptionService
+    participant Repository as UserRepository
+    Client->>Controller: POST /user (new_user)
+    Controller->>Service: create_user(new_user)
+    Service->>Validation: email_validator(new_user.email)
+    Service->>Validation: password_validator(new_user.password)
+    Service->>Encryption: generate_hash(new_user.password)
+    Service->>Repository: create_user(...)
+    Repository-->>Service: created_user
+    Service-->>Controller: created_user
+    Controller-->>Client: created_user

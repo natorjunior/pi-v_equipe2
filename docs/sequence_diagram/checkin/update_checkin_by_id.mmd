@@ -1,0 +1,27 @@
+sequenceDiagram
+    participant Client
+    participant Controller as CheckinController
+    participant Service as CheckinService
+    participant Minio as MinioAdapter
+    participant Repository as CheckinRepository
+    Client->>Controller: PUT /check-in (checkin_changes, checkin_photo)
+    Controller->>Service: update_checkin_by_id(user_id, checkin_changes, checkin_photo)
+    Service->>Repository: get_checkin_by_id(checkin_changes.checkin_id)
+    alt checkin não existe
+        Service-->>Controller: HTTP 404
+        Controller-->>Client: erro
+    else
+        alt user não é dono
+            Service-->>Controller: HTTP 401
+            Controller-->>Client: erro
+        else
+            alt checkin_photo enviado
+                Service->>Minio: upload_file_to_minio(checkin_photo, "checkin-photos")
+                Minio-->>Service: photo_url
+            end
+            Service->>Repository: update_checkin(checkin_changes, photo_url)
+            Repository-->>Service: updated_checkin
+            Service-->>Controller: None
+            Controller-->>Client: None
+        end
+    end

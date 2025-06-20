@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant Client
+    participant Controller as CheckinController
+    participant Service as CheckinService
+    participant GroupService
+    participant Repository as CheckinRepository
+    participant UserService
+    participant LikeRepository
+    Client->>Controller: GET /check-in/group/{group_id}
+    Controller->>Service: get_checkins_by_group_id(user_id, group_id)
+    Service->>GroupService: get_group_by_id(group_id)
+    alt grupo não existe
+        Service-->>Controller: HTTP 404
+        Controller-->>Client: erro
+    else
+        Service->>GroupService: get_group_participant_by_user_id_and_group_id(user_id, group_id)
+        alt não participa
+            Service-->>Controller: HTTP 401
+            Controller-->>Client: erro
+        else
+            Service->>Repository: get_checkin_by_group_id(group_id)
+            Repository-->>Service: checkins
+            loop para cada checkin
+                Service->>UserService: get_user_by_id(checkin.user_id)
+                Service->>LikeRepository: count_likes_for_checkin(checkin.id)
+                Service->>LikeRepository: has_user_liked(user_id, checkin.id)
+            end
+            Service-->>Controller: checkin_data_list
+            Controller-->>Client: checkin_data_list
+        end
+    end

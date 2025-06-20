@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Client
+    participant Controller as CheckinController
+    participant Service as CheckinService
+    participant LikeRepository
+    Client->>Controller: GET /check-in/{checkin_id}/like
+    Controller->>Service: get_like_for_checkin(checkin_id)
+    Service->>LikeRepository: count_likes_for_checkin(checkin_id)
+    LikeRepository-->>Service: like_count
+    Service-->>Controller: like_count
+    Controller-->>Client: like_count

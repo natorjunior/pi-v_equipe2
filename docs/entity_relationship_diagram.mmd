@@ -1,0 +1,49 @@
+erDiagram
+    USER {
+        INTEGER id PK
+        STRING name
+        STRING email
+        STRING password_hash
+        TEXT avatar
+        TIMESTAMP created_at
+        TEXT motivation
+        TEXT genres
+    }
+    GROUP {
+        INTEGER id PK
+        STRING group_alias
+        STRING group_name
+        TEXT description
+        INTEGER created_by FK
+        TIMESTAMP created_at
+    }
+    GROUP_PARTICIPANT {
+        INTEGER id PK
+        INTEGER group_id FK
+        INTEGER user_id FK
+        TIMESTAMP entry_date
+    }
+    CHECKIN {
+        INTEGER id PK
+        INTEGER group_id FK
+        INTEGER user_id FK
+        STRING title
+        TEXT description
+        TEXT photo
+        DATETIME created_at
+        DATETIME updated_at
+    }
+    LIKE_CHECKIN {
+        INTEGER id PK
+        INTEGER checkin_id FK
+        INTEGER user_id FK
+        DATETIME created_at
+    }
+
+    USER ||--o{ CHECKIN : "has"
+    USER ||--o{ GROUP_PARTICIPANT : "participates"
+    USER ||--o{ LIKE_CHECKIN : "likes"
+    USER ||--o{ GROUP : "creates"
+    GROUP ||--o{ CHECKIN : "has"
+    GROUP ||--o{ GROUP_PARTICIPANT : "has"
+    CHECKIN ||--o{ LIKE_CHECKIN : "receives"

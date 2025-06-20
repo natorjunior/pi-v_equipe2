@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Client
+    participant Controller as UserController
+    participant Service as UserService
+    participant Repository as UserRepository
+    Client->>Controller: GET /user
+    Controller->>Service: get_user_by_id(user_id)
+    Service->>Repository: get_user_by_id(user_id)
+    Repository-->>Service: user
+    Service-->>Controller: user_data_instance
+    Controller-->>Client: user_data_instance

@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Client
+    participant Controller as UserController
+    participant Service as UserService
+    participant Repository as UserRepository
+    Client->>Controller: DELETE /user
+    Controller->>Service: delete_user(user_id)
+    Service->>Repository: get_user_by_id(user_id)
+    Repository-->>Service: user
+    Service->>Repository: delete_user(user_id)
+    Repository-->>Service: success
+    Service-->>Controller: {"detail": "Usuário deletado com sucesso"}
+    Controller-->>Client: {"detail": "Usuário deletado com sucesso"}

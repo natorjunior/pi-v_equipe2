@@ -1,0 +1,61 @@
+graph LR
+    A[API Root /] --> B[Authentication]
+    A --> C[User]
+    A --> D[Group]
+    A --> E[Check-in]
+
+    %% Authentication Controller
+    B --> B1[POST /authentication/login]
+    B1:::post --> B1desc[Autentica usuário e retorna token]
+
+    %% User Controller
+    C --> C1[GET /user]
+    C1:::get --> C1desc[Obtém dados do usuário autenticado]
+    C --> C2[POST /user]
+    C2:::post --> C2desc[Cria um novo usuário]
+    C --> C3[PUT /user]
+    C3:::put --> C3desc[Atualiza dados do usuário]
+    C --> C4[PUT /user/avatar]
+    C4:::put --> C4desc[Atualiza avatar do usuário]
+    C --> C5[DELETE /user]
+    C5:::delete --> C5desc[Remove o usuário]
+
+    %% Group Controller
+    D --> D1[GET /group]
+    D1:::get --> D1desc[Listar grupos do usuário]
+    D --> D2[POST /group]
+    D2:::post --> D2desc[Criar novo grupo]
+    D --> D3[DELETE /group/id]
+    D3:::delete --> D3desc[Excluir grupo]
+    D --> D4[GET /group/join/alias]
+    D4:::get --> D4desc[Entrar em grupo pelo alias]
+    D --> D5[GET /group/leave/alias]
+    D5:::get --> D5desc[Sair do grupo pelo alias]
+
+    %% Check-in Controller
+    E --> E1[GET /check-in/user]
+    E1:::get --> E1desc[Listar check-ins do usuário]
+    E --> E2[GET /check-in/group/id]
+    E2:::get --> E2desc[Listar check-ins do grupo]
+    E --> E3[GET /check-in/feed/page]
+    E3:::get --> E3desc[Feed de check-ins dos grupos do usuário]
+    E --> E4[POST /check-in]
+    E4:::post --> E4desc[Cria um novo check-in]
+    E --> E5[PUT /check-in]
+    E5:::put --> E5desc[Atualiza um check-in]
+    E --> E6[DELETE /check-in/id]
+    E6:::delete --> E6desc[Remove um check-in]
+    E --> E7[GET /check-in/group/id/ranking]
+    E7:::get --> E7desc[Ranking de check-ins do grupo]
+    E --> E8[POST /check-in/id/like]
+    E8:::post --> E8desc[Curtir um check-in]
+    E --> E9[DELETE /check-in/id/like]
+    E9:::delete --> E9desc[Remover curtida do check-in]
+    E --> E10[GET /check-in/id/like]
+    E10:::get --> E10desc[Verificar se usuário curtiu o check-in]
+
+    %% Cores dos métodos
+    classDef get fill:#2196f3,color:#fff;
+    classDef post fill:#4caf50,color:#fff;
+    classDef delete fill:#f44336,color:#fff;
+    classDef put fill:#ff9800,color:#fff;
