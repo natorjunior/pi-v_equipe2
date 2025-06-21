@@ -18,9 +18,9 @@ export default function ChangeMotivation() {
 
 const handleUpdate = async (motivation) => {
     try {
-        await updateUser({ motivation });
         Alert.alert("Sucesso", "Motivação atualizada!");
         navigation.navigate("AppDrawer", { refresh: true });
+        await updateUser({ motivation });
     } catch (error) {
         Alert.alert("Erro", error.message || "Não foi possível atualizar");
     }

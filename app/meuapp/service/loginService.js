@@ -15,7 +15,6 @@ export const setupAxiosInterceptors = (navigation) => {
         error.response.status === 403 &&
         error.response.data?.detail === "Not authenticated"
       ) {
-        // Limpar o token
         await SecureStore.deleteItemAsync("token");
         console.log("Token expirado ou inválido. Redirecionando para Login...");
 

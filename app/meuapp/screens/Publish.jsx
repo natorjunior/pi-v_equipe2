@@ -113,12 +113,14 @@ export default function Publish() {
 
     try {
       setLoading(true);
+      await SecureStore.setItemAsync("selectedGroupId", selectedGroupId.toString());
+      await SecureStore.setItemAsync("selectedGroupName", selectedGroupName || "");
       await createCheckin(selectedGroupId, title, description, image ? image.uri : null);
-      
+
       navigation.navigate("AppDrawer", {
         screen: "Tabs",
         params: {
-          screen: "Home",
+          screen: "Groups",
           params: {
             selectedGroupId,
             selectedGroupName,
@@ -131,7 +133,8 @@ export default function Publish() {
       setDescription("");
       setImage(null);
     } catch (error) {
-      if (error.response && error.response.data && error.response.data.detail === "Not authenticated") {
+      console.error("Publish error:", error);
+      if (error.response?.data?.detail === "Not authenticated") {
         await SecureStore.deleteItemAsync("token");
         Alert.alert("Sessão Expirada", "Faça login novamente.");
         navigation.navigate("Login");
@@ -145,7 +148,7 @@ export default function Publish() {
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      <StatusBar barStyle={theme.text === "#000" ? "dark-content" : "light-content"} />
+      <StatusBar barStyle={theme.text === "#000000" ? "dark-content" : "light-content"} />
       <ScrollView
         ref={scrollViewRef}
         contentContainerStyle={styles.scrollContainer}
@@ -178,12 +181,12 @@ export default function Publish() {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.imageButton, { borderColor: theme.border }]}
-              onPress={() => handleImage("library")}
+              onPress={() => handleImage("hero")}
               disabled={loading}
             >
               <Ionicons name="image" size={24} color={theme.text} />
               <Text style={[styles.imageButtonText, { color: theme.text }]}>
-                Selecionar Imagem da Biblioteca
+                Selecionar Imagem da Galeria
               </Text>
             </TouchableOpacity>
           </View>
@@ -205,9 +208,9 @@ export default function Publish() {
                 borderColor: theme.border,
               },
             ]}
-            label={"Título"}
+            label="Título"
             placeholder="Título"
-            placeholderTextColor={theme.placeholder}
+            placeholderTextColor={theme.placeholderTextColor || "#757575"}
             value={title}
             onChangeText={setTitle}
             maxLength={100}
@@ -217,16 +220,16 @@ export default function Publish() {
           <InputField
             style={[
               styles.input,
-              styles.descriptionInput,
+              styles.textarea,
               {
                 backgroundColor: theme.inputBackground,
                 color: theme.text,
                 borderColor: theme.border,
               },
             ]}
-            label={"Descrição"}
+            label="Descrição"
             placeholder="Descrição (opcional)"
-            placeholderTextColor={theme.placeholder}
+            placeholderTextColor={theme.placeholderTextColor || "#757575"}
             value={description}
             onChangeText={setDescription}
             multiline
@@ -244,12 +247,11 @@ export default function Publish() {
             ]}
             onPress={handlePublish}
             disabled={loading || !selectedGroupId}
-            activeOpacity={0.7}
           >
             {loading ? (
-              <ActivityIndicator color={theme.mode === "dark" ? "#000" : "#fff"} />
+              <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={[styles.publishButtonText, { color: theme.mode === "dark" ? "#000" : "#fff" }]}>
+              <Text style={[styles.buttonText, { color: "#FFFFFF" }]}>
                 Publicar no Grupo
               </Text>
             )}
@@ -265,10 +267,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 100,
     flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
   },
   container: {
     flex: 1,
@@ -276,73 +277,59 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 15,
-    zIndex: 1,
+    paddingVertical: 15,
   },
   backButton: {
     padding: 5,
   },
   headerText: {
     flex: 1,
-    textAlign: "center",
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: "600",
+    textAlign: "center",
     marginRight: 30,
   },
-  input: {
-    width: "100%",
-    height: 50,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    marginBottom: 15,
-    fontSize: 16,
-  },
-  descriptionInput: {
-    height: 120,
-    paddingTop: 15,
-    textAlignVertical: "top",
-    marginBottom: 20,
-  },
-  image: {
-    width: 350,
-    height: 350,
-    borderRadius: 8,
-    marginBottom: 15,
-    alignSelf: "center",
-  },
   imageButtons: {
-    width: "100%",
-    marginBottom: 15,
     flexDirection: "row",
     justifyContent: "space-between",
+    marginVertical: 15,
   },
   imageButton: {
     flex: 1,
     marginHorizontal: 5,
     padding: 15,
-    borderRadius: 8,
     borderWidth: 1,
+    borderRadius: 8,
     alignItems: "center",
-    justifyContent: "center",
   },
   imageButtonText: {
     fontSize: 14,
-    fontWeight: "500",
-    textAlign: "center",
     marginTop: 5,
-    flexShrink: 1,
+  },
+  image: {
+    width: "100%",
+    height: 350,
+    borderRadius: 10,
+    marginVertical: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 15,
+    fontSize: 16,
+    marginVertical: 10,
+  },
+  textarea: {
+    height: 120,
+    textAlignVertical: "top",
   },
   publishButton: {
-    width: "100%",
     padding: 15,
     borderRadius: 8,
     alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 30,
-    elevation: 5,
+    marginVertical: 20,
   },
-  publishButtonText: {
+  buttonText: {
     fontSize: 16,
     fontWeight: "bold",
   },

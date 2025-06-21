@@ -11,6 +11,7 @@ import {
     Alert,
     Modal,
     Dimensions,
+    Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Menu, Provider } from 'react-native-paper';
@@ -45,6 +46,8 @@ export default function PostDetails({ route, navigation }) {
     const [menuVisible, setMenuVisible] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [checkin, setCheckin] = useState(initialCheckin);
+    const [reportModalVisible, setReportModalVisible] = useState(false);
+    const [selectedReason, setSelectedReason] = useState(null);
 
     const scale = useSharedValue(1);
     const translateX = useSharedValue(0);
@@ -134,7 +137,7 @@ export default function PostDetails({ route, navigation }) {
                     try {
                         await deleteCheckin(checkin.id);
                         Alert.alert("Sucesso", "Publicação apagada com sucesso.");
-                        navigation.goBack();
+                        navigation.navigate("AppDrawer", { refresh: true });
                     } catch (error) {
                         Alert.alert("Erro", "Não foi possível apagar a publicação.");
                         console.log("Erro ao apagar post:", error);
@@ -148,6 +151,54 @@ export default function PostDetails({ route, navigation }) {
 
     const handleEditPost = () => {
         navigation.navigate("EditPost", { checkin });
+    };
+
+    const handleReportPost = () => {
+        setReportModalVisible(true);
+        setMenuVisible(false);
+    };
+
+    const handleSendReport = async () => {
+        if (!selectedReason) {
+            Alert.alert("Erro", "Por favor, selecione um motivo para a denúncia.");
+            return;
+        }
+
+        try {
+            const subject = encodeURIComponent(`Denúncia de Publicação - ID ${checkin.id}`);
+            const body = encodeURIComponent(
+                `Motivo da denúncia: ${selectedReason}\n` +
+                `ID da Publicação: ${checkin.id}\n` +
+                `Usuário: ${checkin.user.name}\n` +
+                `Título: ${checkin.title}\n` +
+                `Data: ${dayjs(checkin.created_at).tz('America/Fortaleza').format('DD/MM/YYYY, HH:mm')}`
+            );
+            const mailtoUrl = `mailto:stayandlearnfeedbacks@gmail.com?subject=${subject}&body=${body}`;
+            await Linking.openURL(mailtoUrl);
+            setReportModalVisible(false);
+            setSelectedReason(null);
+            Alert.alert("Sucesso", "Denúncia enviada com sucesso.");
+        } catch (error) {
+            Alert.alert("Erro", "Não foi possível enviar a denúncia.");
+            console.log("Erro ao enviar denúncia:", error);
+        }
+    };
+
+    const reportReasons = [
+        "Nudez ou conteúdo sexual",
+        "Conteúdo impróprio",
+        "Discurso de ódio",
+        "Spam",
+        "Assédio ou bullying",
+        "Informação falsa",
+        "Outro"
+    ];
+
+    const truncateUsername = (username) => {
+        if (username.length > 40) {
+            return username.slice(0, 40) + "...";
+        }
+        return username;
     };
 
     if (loading || deleting) {
@@ -188,7 +239,50 @@ export default function PostDetails({ route, navigation }) {
                         </View>
                     </Modal>
 
-                    <View style={[styles.post, { backgroundColor: theme.cardBackground }]}>
+                    <Modal
+                        animationType="slide"
+                        transparent={true}
+                        visible={reportModalVisible}
+                        onRequestClose={() => setReportModalVisible(false)}
+                    >
+                        <View style={styles.modalBackground}>
+                            <View style={[styles.reportModalContainer, { backgroundColor: theme.background }]}>
+                                <Text style={[styles.reportModalTitle, { color: theme.text }]}>Denunciar Publicação</Text>
+                                <Text style={[styles.reportModalSubtitle, { color: theme.text }]}>Selecione o motivo da denúncia:</Text>
+                                {reportReasons.map((reason, index) => (
+                                    <TouchableOpacity
+                                        key={index}
+                                        style={[
+                                            styles.reportOption,
+                                            selectedReason === reason && { backgroundColor: theme.mode === 'dark' ? '#333' : '#e0e0e0' }
+                                        ]}
+                                        onPress={() => setSelectedReason(reason)}
+                                    >
+                                        <Text style={[styles.reportOptionText, { color: theme.text }]}>{reason}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                                <View style={styles.reportModalButtons}>
+                                    <TouchableOpacity
+                                        style={[styles.reportButton, { backgroundColor: theme.mode === 'dark' ? '#555' : '#ccc' }]}
+                                        onPress={() => {
+                                            setReportModalVisible(false);
+                                            setSelectedReason(null);
+                                        }}
+                                    >
+                                        <Text style={styles.reportButtonText}>Cancelar</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.reportButton, { backgroundColor: theme.error || '#ff2d55' }]}
+                                        onPress={handleSendReport}
+                                    >
+                                        <Text style={[styles.reportButtonText, { color: '#fff' }]}>Enviar</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    </Modal>
+
+                    <View style={[styles.post, { backgroundColor: theme.background}]}>
                         <View style={styles.postHeader}>
                             <TouchableOpacity onPress={() => setModalVisible(true)}>
                                 {avatarLoading && (
@@ -203,73 +297,74 @@ export default function PostDetails({ route, navigation }) {
                                     />
                                 )}
                             </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={[styles.postTitle, { color: theme.text, flex: 1 }]}
-                                onPress={() => {
-                                    if (currentUser && checkin.user.email === currentUser.email) {
-                                        navigation.navigate("AppDrawer", {
-                                            screen: "Tabs",
-                                            params: { screen: "Profile" }
-                                        });
-                                    } else {
-                                        navigation.navigate("OtherProfile", { member: checkin.user })
-                                    }
-                                }}>
-                                <Text style={[styles.postTitle, { color: theme.text, flex: 1 }]}>@{checkin.user.name}</Text>
-                            </TouchableOpacity>
-
-                            {isOwner && (
-                                <Menu
-                                    visible={menuVisible}
-                                    onDismiss={() => setMenuVisible(false)}
-                                    anchor={
-                                        <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.menuButton}>
-                                            <Ionicons name="ellipsis-vertical" size={24} color={theme.text} />
-                                        </TouchableOpacity>
-                                    }
-                                >
-                                    <Menu.Item onPress={handleEditPost} title="Editar post" />
-                                    <Menu.Item onPress={handleDeletePost} title="Apagar post" />
-                                </Menu>
-                            )}
+                            <View style={styles.headerTextContainer}>
+                                <View style={styles.headerNameRow}>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            if (currentUser && checkin.user.email === currentUser.email) {
+                                                navigation.navigate("AppDrawer", {
+                                                    screen: "Tabs",
+                                                    params: { screen: "Profile" }
+                                                });
+                                            } else {
+                                                navigation.navigate("OtherProfile", { member: checkin.user })
+                                            }
+                                        }}
+                                    >
+                                        <Text style={[styles.postTitle, { color: theme.text }]}>@{truncateUsername(checkin.user.name)}</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                            <Menu
+                                visible={menuVisible}
+                                onDismiss={() => setMenuVisible(false)}
+                                anchor={
+                                    <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.menuButton}>
+                                        <Ionicons name="ellipsis-vertical" size={20} color={theme.text} />
+                                    </TouchableOpacity>
+                                }
+                            >
+                                {isOwner ? (
+                                    <>
+                                        <Menu.Item onPress={handleEditPost} title="Editar post" />
+                                        <Menu.Item onPress={handleDeletePost} title="Apagar post" />
+                                    </>
+                                ) : (
+                                    <Menu.Item onPress={handleReportPost} title="Denunciar post" />
+                                )}
+                            </Menu>
                         </View>
-
                         {checkin.photo && (
-                        <View>
                             <GestureDetector gesture={pinchGesture}>
-                            <Animated.View style={[styles.imageContainer, animatedStyle]}>
-                                <Image source={{ uri: checkin.photo }} style={styles.postImage} resizeMode="cover" />
-                            </Animated.View>
+                                <Animated.View style={[styles.imageContainer, animatedStyle]}>
+                                    <Image source={{ uri: checkin.photo }} style={styles.postImage} resizeMode="cover" />
+                                </Animated.View>
                             </GestureDetector>
-                            
-                            <View style={styles.textContent}>
+                        )}
+                        <View style={styles.textContent}>
+                            <Text style={[styles.postText, { color: theme.text }]}>{checkin.title}</Text>
+                            {checkin.description && (
+                                <Text style={[styles.postDescription, { color: theme.text }]}>{checkin.description}</Text>
+                            )}
+                            <Text style={[styles.postGroup, { color: theme.text }]}>
+                                Postado no grupo {group ? group.group_name : 'carregando...'}
+                            </Text>
+                            <Text style={[styles.postTimestamp, { color: theme.text }]}>
+                                {dayjs(checkin.created_at)
+                                .tz('America/Fortaleza')
+                                .format('DD/MM/YYYY, HH:mm')}
+                            </Text>
                             <View style={styles.likeContainer}>
                                 <TouchableOpacity onPress={handleLike} style={styles.likeButton}>
-                                <Ionicons
-                                    name={checkin.liked_by_user ? "heart" : "heart-outline"}
-                                    size={24}
-                                    color={checkin.liked_by_user ? theme.error || "red" : theme.text}
-                                />
+                                    <Ionicons
+                                        name={checkin.liked_by_user ? "heart" : "heart-outline"}
+                                        size={20}
+                                        color={checkin.liked_by_user ? theme.error || "red" : theme.text}
+                                    />
                                 </TouchableOpacity>
-                                <Text style={[styles.likeCount, { color: theme.text }]}>{checkin.likes_count}</Text>
-                            </View>
-
-                            <Text style={[styles.postText, { color: theme.text }]}>{checkin.title}</Text>
-                            {checkin.description ? (
-                                <Text style={[styles.postText, { color: theme.text }]}>Descrição: {checkin.description}</Text>
-                            ) : null}
-                            <Text style={[styles.postGroup, { color: theme.text }]}>
-                                Postado no grupo {group ? group.group_name : 'Grupo não encontrado'}
-                            </Text>
-                            <Text style={[styles.postDate, { color: theme.text }]}>
-                                Postado dia {dayjs(checkin.created_at)
-                                .tz('America/Fortaleza')
-                                .format('DD [de] MMMM [de] YYYY')}
-                            </Text>
+                                <Text style={[styles.likeCount, { color: theme.text }]}>{checkin.likes_count} {checkin.likes_count === 1 ? 'curtida' : 'curtidas'}</Text>
                             </View>
                         </View>
-                        )}
                     </View>
                 </ScrollView>
             </SafeAreaView>
@@ -304,58 +399,100 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
     },
-    textContent: {
-        zIndex: -1,
-        marginTop: 10,
-    },
     post: {
-        borderRadius: 10,
-        padding: 15,
-        marginBottom: 15,
+        borderRadius: 8,
+        padding: 12,
+        marginBottom: 12,
+        borderWidth: 0,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+        elevation: 2,
     },
     postHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 8,
     },
+    headerTextContainer: {
+        flexDirection: 'column',
+        flex: 1,
+    },
+    headerNameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
     avatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        marginRight: 10,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        marginRight: 8,
+    },
+    avatarLoader: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        marginRight: 8,
     },
     postTitle: {
-        paddingVertical: 3,
-        flex: 1,
-        marginRight: 10,
-        fontSize: 16,
-        fontWeight: 'bold',
+        fontSize: 15,
+        fontWeight: '600',
     },
-    postGroup: {
-        fontSize: 14,
-        marginBottom: 8,
+    separatorDot: {
+        width: 4,
+        height: 4,
+        borderRadius: 2,
+        marginHorizontal: 6,
+        opacity: 0.6,
     },
-    postText: {
-        fontSize: 16,
-        marginVertical: 8,
-        fontWeight: 'bold',
-    },
-    postDate: {
+    postTimestamp: {
         fontSize: 12,
-        fontStyle: 'italic',
+        opacity: 0.6,
     },
     postImage: {
         width: '100%',
         aspectRatio: 1,
-        borderRadius: 10,
+        borderRadius: 5,
         zIndex: 0,
     },
     imageContainer: {
         width: '100%',
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 10,
+        marginBottom: 8,
         overflow: 'hidden',
+    },
+    textContent: {
+        zIndex: -1,
+    },
+    postText: {
+        fontSize: 16,
+        fontWeight: "bold",
+        marginBottom: 4,
+    },
+    postDescription: {
+        fontSize: 14,
+        lineHeight: 20,
+        marginBottom: 4,
+    },
+    postGroup: {
+        fontSize: 13,
+        marginBottom: 4,
+        opacity: 0.6,
+    },
+    likeContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 8,
+    },
+    likeButton: {
+        padding: 4,
+    },
+    likeCount: {
+        fontSize: 13,
+        marginLeft: 4,
+        fontWeight: '500',
     },
     menuButton: {
         paddingHorizontal: 8,
@@ -380,15 +517,45 @@ const styles = StyleSheet.create({
         zIndex: 2,
         padding: 10,
     },
-    likeContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
+    reportModalContainer: {
+        width: '80%',
+        borderRadius: 10,
+        padding: 20,
+        elevation: 5,
+    },
+    reportModalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
         marginBottom: 10,
+        textAlign: 'center',
     },
-    likeButton: {
-        marginRight: 5,
+    reportModalSubtitle: {
+        fontSize: 14,
+        marginBottom: 15,
+        textAlign: 'center',
     },
-    likeCount: {
-        fontSize: 16,
+    reportOption: {
+        padding: 10,
+        borderRadius: 5,
+        marginVertical: 5,
+    },
+    reportOptionText: {
+        fontSize: 14,
+    },
+    reportModalButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 20,
+    },
+    reportButton: {
+        flex: 1,
+        padding: 10,
+        borderRadius: 5,
+        alignItems: 'center',
+        marginHorizontal: 5,
+    },
+    reportButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
     },
 });

@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import React from "react"; 
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import {
     View,
     Text,
@@ -14,13 +15,13 @@ import {
     Animated,
     CommonActions
 } from "react-native";
-import { DrawerActions, useFocusEffect, useNavigation } from "@react-navigation/native";
+import { DrawerActions, useNavigation } from "@react-navigation/native";
 import * as SecureStore from "expo-secure-store";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../service/themeService";
 import { getUser } from "../service/userService";
 import { getGroup } from "../service/groupService";
-import { getFeedByUser, postLikeById, deleteLikeById } from "../service/checkinService";
+import { getFeedByUser, getCheckinsByGroup, postLikeById, deleteLikeById } from "../service/checkinService";
 import { LinearGradient } from "expo-linear-gradient";
 
 const logolight = require("../assets/logolight.png");
@@ -39,6 +40,54 @@ function Logo() {
         </View>
     );
 }
+
+const PostItem = React.memo(({ item, theme, navigation, groups, truncateUsername, handleLike }) => {
+    const group = groups.find(g => String(g.id) === String(item.group_id));
+    return (
+        <TouchableOpacity onPress={() => navigation.navigate("PostDetails", { checkin: item })}>
+            <View style={[styles.post, { backgroundColor: theme.background, borderColor: theme.text }]}>
+                <View style={styles.postHeader}>
+                    {item.user.avatar && <Image source={{ uri: item.user.avatar }} style={styles.avatar} />}
+                    <View style={styles.headerTextContainer}>
+                        <View style={styles.headerNameRow}>
+                            <Text style={[styles.postTitle, { color: theme.text }]}>
+                                @{truncateUsername(item.user.name)}
+                            </Text>
+                            <View style={[styles.separatorDot, { backgroundColor: theme.text }]} />
+                            <Text style={[styles.postTimestamp, { color: theme.text }]}>
+                                {new Date(item.created_at).toLocaleString("pt-BR", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                })}
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+                {item.photo && <Image source={{ uri: item.photo }} style={styles.postImage} />}
+                <Text style={[styles.postText, { color: theme.text }]}>{item.title}</Text>
+                {item.description && (
+                    <Text style={[styles.postDescription, { color: theme.text }]}>{item.description}</Text>
+                )}
+                <Text style={[styles.postGroup, { color: theme.text }]}>
+                    Postado no grupo {group ? group.name : 'Grupo não encontrado'}
+                </Text>
+                <View style={styles.likeContainer}>
+                    <TouchableOpacity onPress={() => handleLike(item.id)} style={styles.likeButton}>
+                        <Ionicons
+                            name={item.liked_by_user ? "heart" : "heart-outline"}
+                            size={25}
+                            color={item.liked_by_user ? theme.error || "red" : theme.text}
+                        />
+                    </TouchableOpacity>
+                    <Text style={[styles.likeCount, { color: theme.text }]}>{item.likes_count}</Text>
+                </View>
+            </View>
+        </TouchableOpacity>
+    );
+});
 
 export default function Home() {
     const { theme } = useTheme();
@@ -68,43 +117,96 @@ export default function Home() {
         { useNativeDriver: true }
     );
 
-const fetchGroups = useCallback(async () => {
-    try {
-        const groupsData = await getGroup();
-        const groupMap = new Map(groupsData.map((g) => [g.id, g.group_name]));
-        const uniqueGroups = [...new Set(checkins.map((checkin) => checkin.group_id))]
-            .map((group_id) => ({
-                id: group_id,
-                name: groupMap.get(group_id) || `Group ${group_id}`,
-            }))
-            .filter((group) => group.name);
-        setGroups(uniqueGroups);
-    } catch (error) {
-        console.error("Error fetching groups:", error);
-        const uniqueGroups = [...new Set(checkins.map((checkin) => checkin.group_id))].map((group_id) => ({
-            id: group_id,
-            name: `Group ${group_id}`,
-        }));
-        setGroups(uniqueGroups);
-    }
-}, [checkins]);
-useEffect(() => {
+    const fetchGroups = useCallback(async () => {
+        try {
+            const token = await SecureStore.getItemAsync("token");
+            if (!token) {
+                await SecureStore.deleteItemAsync("token");
+                navigation.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: "Login" }],
+                    })
+                );
+                return;
+            }
+            const groupsData = await getGroup();
+            const allGroups = groupsData
+                .map((group) => ({
+                    id: group.id,
+                    name: group.group_name || `Group ${group.id}`,
+                }))
+                .filter((group) => group.name);
+            setGroups(allGroups.sort((a, b) => a.name.localeCompare(b.name)));
+        } catch (error) {
+            console.error("Error fetching groups:", error);
+            const status =
+                error?.response?.status ||
+                error?.status ||
+                (error.message?.includes("401") ? 401 : error.message?.includes("403") ? 403 : null);
+            const errorDetail = error?.response?.data?.detail;
+
+            if (status === 401 || status === 403 || errorDetail === "Session expired") {
+                await SecureStore.deleteItemAsync("token");
+                navigation.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: "Login" }],
+                    })
+                );
+                return;
+            }
+            setGroups([]);
+        }
+    }, [navigation]);
+
+    useEffect(() => {
         const loadGroups = async () => {
             await fetchGroups();
         };
         loadGroups();
-    }, [checkins, fetchGroups]);
+    }, [fetchGroups]);
 
     const fetchData = async (pageNum = 1, isRefresh = false) => {
         try {
             if (!isRefresh && pageNum === 1) setLoading(true);
             const token = await SecureStore.getItemAsync("token");
             if (!token) {
-                navigation.navigate("Login");
+                await SecureStore.deleteItemAsync("token");
+                navigation.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: "Login" }],
+                    })
+                );
                 return;
             }
 
-            const checkinsData = await getFeedByUser(pageNum);
+            let checkinsData = [];
+            if (selectedGroups.length > 0) {
+                const uniqueCheckins = new Map();
+                for (const groupId of selectedGroups) {
+                    const groupCheckins = await getCheckinsByGroup(groupId);
+                    if (Array.isArray(groupCheckins)) {
+                        groupCheckins.forEach((checkin) => {
+                            const checkinId = `${String(checkin.id)}-${String(checkin.group_id || 'no-group')}`;
+                            if (String(checkin.id).includes('.$')) {
+                                console.warn(`Problematic checkin ID detected: ${checkin.id} in group ${groupId}`);
+                            }
+                            uniqueCheckins.set(checkinId, checkin);
+                        });
+                    }
+                }
+                checkinsData = Array.from(uniqueCheckins.values());
+            } else {
+                checkinsData = await getFeedByUser(pageNum);
+                checkinsData.forEach((checkin) => {
+                    if (String(checkin.id).includes('.$')) {
+                        console.warn(`Problematic checkin ID detected in feed: ${checkin.id}`);
+                    }
+                });
+            }
+
             const sortedCheckins =
                 Array.isArray(checkinsData) && checkinsData.length > 0
                     ? checkinsData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
@@ -114,21 +216,31 @@ useEffect(() => {
                 setCheckins(sortedCheckins);
                 setFilteredCheckins(sortedCheckins);
             } else {
-                setCheckins((prev) => [...prev, ...sortedCheckins]);
-                setFilteredCheckins((prev) => [...prev, ...sortedCheckins]);
+                const uniqueCheckins = sortedCheckins.filter(
+                    (newCheckin) => !checkins.some((existing) => String(existing.id) === String(newCheckin.id) && String(existing.group_id) === String(newCheckin.group_id))
+                );
+                setCheckins((prev) => [...prev, ...uniqueCheckins]);
+                setFilteredCheckins((prev) => [...prev, ...uniqueCheckins]);
             }
 
-            setHasMore(checkinsData !== null && checkinsData.length > 0);
+            setHasMore(checkinsData.length > 0);
             setError(null);
             await getUser(token);
         } catch (error) {
             const status =
                 error?.response?.status ||
                 error?.status ||
-                (error.message?.includes("401") ? 401 : error.message?.includes("404") ? 404 : null);
+                (error.message?.includes("401") ? 401 : error.message?.includes("403") ? 403 : error.message?.includes("404") ? 404 : null);
+            const errorDetail = error?.response?.data?.detail;
 
-            if (status === 401) {
-                navigation.navigate("Login");
+            if (status === 401 || status === 403 || errorDetail === "Session expired") {
+                await SecureStore.deleteItemAsync("token");
+                navigation.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [{ name: "Login" }],
+                    })
+                );
                 return;
             }
 
@@ -148,21 +260,21 @@ useEffect(() => {
     }, []);
 
     const loadMore = useCallback(() => {
-        if (!loading && hasMore) {
+        if (!loading && hasMore && selectedGroups.length === 0) {
             setLoading(true);
             const nextPage = page + 1;
             setPage(nextPage);
             fetchData(nextPage);
         }
-    }, [loading, hasMore, page]);
+    }, [loading, hasMore, page, selectedGroups]);
 
     const handleLike = async (checkinId) => {
         try {
-            const checkin = checkins.find((item) => item.id === checkinId);
+            const checkin = checkins.find((item) => String(item.id) === String(checkinId));
             if (!checkin) return;
 
             const updatedCheckins = checkins.map((item) => {
-                if (item.id === checkinId) {
+                if (String(item.id) === String(checkinId)) {
                     return {
                         ...item,
                         liked_by_user: !item.liked_by_user,
@@ -194,29 +306,42 @@ useEffect(() => {
     };
 
     const applyFilter = () => {
-        if (selectedGroups.length === 0) {
-            setFilteredCheckins(checkins);
-        } else {
-            setFilteredCheckins(checkins.filter((checkin) => selectedGroups.includes(checkin.group_id)));
-        }
+        setPage(1);
+        setHasMore(true);
+        setCheckins([]);
+        setFilteredCheckins([]);
+        fetchData(1, true);
         setFilterModalVisible(false);
     };
 
     const clearFilter = () => {
         setSelectedGroups([]);
-        setFilteredCheckins(checkins);
+        setPage(1);
+        setHasMore(true);
+        setCheckins([]);
+        setFilteredCheckins([]);
+        fetchData(1, true);
         setFilterModalVisible(false);
     };
 
-    useFocusEffect(
-        useCallback(() => {
-            setPage(1);
-            setHasMore(true);
-            setCheckins([]);
-            setFilteredCheckins([]);
-            fetchData(1, true);
-        }, [])
-    );
+    const closeModal = () => {
+        setFilterModalVisible(false);
+    };
+
+    useEffect(() => {
+        setPage(1);
+        setHasMore(true);
+        setCheckins([]);
+        setFilteredCheckins([]);
+        fetchData(1, true);
+    }, [selectedGroups]);
+
+    const truncateUsername = (username) => {
+        if (username.length > 20) {
+            return username.slice(0, 20) + "...";
+        }
+        return username;
+    };
 
     const renderFooter = () => {
         if (loading && !refreshing) {
@@ -228,28 +353,28 @@ useEffect(() => {
         }
         if (!hasMore && !loading && filteredCheckins.length > 0) {
             return (
-            <TouchableOpacity 
-                style={styles.messageContainer}
-                onPress={async () => {
-                    setPage(1);
-                    setHasMore(true);
-                    setRefreshing(true);
-                    try {
-                        await fetchData(1, true);
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
-                    } finally {
-                        setRefreshing(false);
-                    }
-                }}
-            >
-                <View style={[styles.line, { borderColor: theme.border }]} />
-                <Ionicons name="sparkles-outline" size={32} color={theme.text} style={styles.icon} />
-                <Text style={[styles.text, { color: theme.text }]}>Você chegou ao fim ✨</Text>
-                <Text style={[styles.subtext, { color: theme.text }]}>
-                    Toque para recarregar ou novas publicações aparecerão lá em cima!
-                </Text>
-            </TouchableOpacity>
+                <TouchableOpacity 
+                    style={styles.messageContainer}
+                    onPress={async () => {
+                        setPage(1);
+                        setHasMore(true);
+                        setRefreshing(true);
+                        try {
+                            await fetchData(1, true);
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                            flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+                        } finally {
+                            setRefreshing(false);
+                        }
+                    }}
+                >
+                    <View style={[styles.line, { borderColor: theme.border }]} />
+                    <Ionicons name="sparkles-outline" size={32} color={theme.text} style={styles.icon} />
+                    <Text style={[styles.text, { color: theme.text }]}>Você chegou ao fim ✨</Text>
+                    <Text style={[styles.subtext, { color: theme.text }]}>
+                        Toque aqui para retornar lá em cima!
+                    </Text>
+                </TouchableOpacity>
             );
         }
         return null;
@@ -272,11 +397,32 @@ useEffect(() => {
             );
         }
 
+        if (selectedGroups.length > 0) {
+            return (
+                <View style={styles.messageContainer}>
+                    <Ionicons name="sad-outline" size={32} color={theme.text} style={styles.icon} />
+                    <Text style={[styles.text, { color: theme.text }]}>
+                        Nenhum post encontrado nos grupos selecionados.
+                    </Text>
+                    <Text style={[styles.subtext, { color: theme.text }]}>
+                        Tente selecionar outros grupos ou limpar o filtro.
+                    </Text>
+                    <TouchableOpacity
+                        style={[styles.actionButton, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366" }]}
+                        onPress={() => setFilterModalVisible(true)}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={[styles.buttonText, { color: "#fff" }]}>Alterar Filtro</Text>
+                    </TouchableOpacity>
+                </View>
+            );
+        }
+
         return (
             <View style={styles.messageContainer}>
                 <Text style={[styles.text, { color: theme.text }]}>
                     Nenhuma publicação encontrada no seu feed.{"\n"}
-                    Faça um check-in ou junte-se a um grupo!
+                    Crie ou junte-se a um grupo!
                 </Text>
                 <TouchableOpacity
                     style={[styles.actionButton, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#fff" }]}
@@ -303,6 +449,15 @@ useEffect(() => {
                 </TouchableOpacity>
             </View>
         );
+    };
+
+    const getItemLayout = (data, index) => {
+        const itemHeight = 500;
+        return {
+            length: itemHeight,
+            offset: itemHeight * index,
+            index,
+        };
     };
 
     return (
@@ -357,41 +512,21 @@ useEffect(() => {
                     style={styles.list}
                     data={filteredCheckins}
                     ref={flatListRef}
-                    keyExtractor={(item) => item.id.toString()}
+                    keyExtractor={(item) => `${String(item.id)}-${String(item.group_id || 'no-group')}`}
                     contentContainerStyle={{ 
                         paddingTop: headerHeight + 20,
                         paddingHorizontal: 20,
                         paddingBottom: 20 
                     }}
                     renderItem={({ item }) => (
-                        <TouchableOpacity onPress={() => navigation.navigate("PostDetails", { checkin: item })}>
-                            <View style={[styles.post, { backgroundColor: theme.background, borderColor: theme.text }]}>
-                                <View style={styles.postHeader}>
-                                    {item.user.avatar && <Image source={{ uri: item.user.avatar }} style={styles.avatar} />}
-                                    <Text style={[styles.postTitle, { color: theme.text }]}>@{item.user.name}</Text>
-                                </View>
-                                {item.photo && <Image source={{ uri: item.photo }} style={styles.postImage} />}
-                                <View style={styles.likeContainer}>
-                                    <TouchableOpacity onPress={() => handleLike(item.id)} style={styles.likeButton}>
-                                        <Ionicons
-                                            name={item.liked_by_user ? "heart" : "heart-outline"}
-                                            size={24}
-                                            color={item.liked_by_user ? theme.error || "red" : theme.text}
-                                        />
-                                    </TouchableOpacity>
-                                    <Text style={[styles.likeCount, { color: theme.text }]}>{item.likes_count}</Text>
-                                </View>
-                                <Text style={[styles.postText, { color: theme.text }]}>{item.title}</Text>
-                                <Text style={[styles.postDescription, { color: theme.text }]}>{item.description}</Text>
-                                <Text style={[styles.postDate, { color: theme.text }]}>
-                                    {new Date(item.created_at).toLocaleDateString("pt-BR", {
-                                        day: "numeric",
-                                        month: "long",
-                                        year: "numeric",
-                                    })}
-                                </Text>
-                            </View>
-                        </TouchableOpacity>
+                        <PostItem
+                            item={item}
+                            theme={theme}
+                            navigation={navigation}
+                            groups={groups}
+                            truncateUsername={truncateUsername}
+                            handleLike={handleLike}
+                        />
                     )}
                     ListEmptyComponent={renderEmptyComponent}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.text} />}
@@ -400,32 +535,44 @@ useEffect(() => {
                     ListFooterComponent={renderFooter}
                     onScroll={handleScroll}
                     scrollEventThrottle={16}
+                    getItemLayout={getItemLayout}
                 />
 
                 <Modal
                     animationType="slide"
                     transparent={true}
                     visible={filterModalVisible}
-                    onRequestClose={() => setFilterModalVisible(false)}
+                    onRequestClose={closeModal}
                 >
                     <View style={styles.modalOverlay}>
                         <View style={[styles.modalContainer, { backgroundColor: theme.background }]}>
-                            <Text style={[styles.modalTitle, { color: theme.text }]}>Filtrar por Grupos</Text>
+                            <View style={styles.modalHeader}>
+                                <Text style={[styles.modalTitle, { color: theme.text }]}>Filtrar por Grupos</Text>
+                                <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
+                                    <Ionicons name="close" size={24} color={theme.text} />
+                                </TouchableOpacity>
+                            </View>
                             <ScrollView style={styles.modalContent}>
-                                {groups.map((group) => (
-                                    <TouchableOpacity
-                                        key={group.id}
-                                        style={styles.groupItem}
-                                        onPress={() => toggleGroupSelection(group.id)}
-                                    >
-                                        <Ionicons
-                                            name={selectedGroups.includes(group.id) ? "checkbox" : "square-outline"}
-                                            size={24}
-                                            color={theme.text}
-                                        />
-                                        <Text style={[styles.groupText, { color: theme.text }]}>{group.name}</Text>
-                                    </TouchableOpacity>
-                                ))}
+                                {groups.length > 0 ? (
+                                    groups.map((group) => (
+                                        <TouchableOpacity
+                                            key={group.id}
+                                            style={styles.groupItem}
+                                            onPress={() => toggleGroupSelection(group.id)}
+                                        >
+                                            <Ionicons
+                                                name={selectedGroups.includes(group.id) ? "checkbox" : "square-outline"}
+                                                size={24}
+                                                color={theme.text}
+                                            />
+                                            <Text style={[styles.groupText, { color: theme.text }]}>{group.name}</Text>
+                                        </TouchableOpacity>
+                                    ))
+                                ) : (
+                                    <Text style={[styles.groupText, { color: theme.text }]}>
+                                        Nenhum grupo disponível
+                                    </Text>
+                                )}
                             </ScrollView>
                             <View style={styles.modalButtons}>
                                 <TouchableOpacity
@@ -491,66 +638,88 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     post: {
-        borderRadius: 10,
-        padding: 15,
-        marginBottom: 15,
+        borderRadius: 8,
+        padding: 12,
+        marginBottom: 12,
         borderWidth: 1,
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 6,
-        elevation: 3,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+        elevation: 2,
     },
     postHeader: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: 10,
+        marginBottom: 8,
+    },
+    headerTextContainer: {
+        flexDirection: "column",
+        flex: 1,
+    },
+    headerNameRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        flexWrap: "nowrap",
     },
     avatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         backgroundColor: "#ccc",
-        marginRight: 10,
+        marginRight: 8,
     },
     postTitle: {
-        fontSize: 16,
-        fontWeight: "bold",
+        fontSize: 15,
+        fontWeight: "600",
+        maxWidth: "60%",
+    },
+    separatorDot: {
+        width: 4,
+        height: 4,
+        borderRadius: 2,
+        marginHorizontal: 6,
+        opacity: 0.6,
+    },
+    postTimestamp: {
+        fontSize: 12,
+        opacity: 0.6,
     },
     postImage: {
         width: "100%",
         height: 330,
         alignSelf: "center",
         resizeMode: "cover",
-        borderRadius: 10,
-        marginBottom: 10,
+        borderRadius: 8,
+        marginBottom: 8,
     },
     likeContainer: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: 10,
+        marginTop: 8,
     },
     likeButton: {
-        borderRadius: 100,
-        transform: [{ scale: 1 }],
+        padding: 4,
     },
     likeCount: {
-        fontSize: 14,
-        marginLeft: 5,
-        fontWeight: "bold",
+        fontSize: 13,
+        marginLeft: 4,
+        fontWeight: "500",
     },
     postText: {
-        fontSize: 16,
-        fontWeight: "bold",
-        marginBottom: 8,
+        fontSize: 15,
+        fontWeight: "600",
+        marginBottom: 4,
     },
     postDescription: {
         fontSize: 14,
-        marginBottom: 8,
+        lineHeight: 20,
+        marginBottom: 4,
     },
-    postDate: {
-        fontSize: 12,
-        fontStyle: "italic",
+    postGroup: {
+        fontSize: 13,
+        marginBottom: 4,
+        opacity: 0.6,
     },
     text: {
         fontSize: 16,
@@ -623,14 +792,23 @@ const styles = StyleSheet.create({
         padding: 20,
         maxHeight: "80%",
     },
+    modalHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 20,
+    },
     modalTitle: {
         fontSize: 20,
         fontWeight: "bold",
-        marginBottom: 20,
         textAlign: "center",
+        flex: 1,
+    },
+    closeButton: {
+        padding: 5,
     },
     modalContent: {
-        maxHeight: "70%",
+        maxHeight: "60%",
     },
     groupItem: {
         flexDirection: "row",
