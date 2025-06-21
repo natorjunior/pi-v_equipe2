@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { BackHandler, ToastAndroid, Platform, Alert } from "react-native";
 import { NavigationContainer, useNavigation } from "@react-navigation/native";
-import { createStackNavigator } from "@react-navigation/stack";
+import { createStackNavigator, StackActions } from "@react-navigation/stack";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import { ThemeProvider, useTheme } from "./service/themeService";
@@ -9,7 +9,6 @@ import { ActivityIndicator, View, StyleSheet, Image } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-
 import { getUser } from "./service/userService";
 
 import Config from "./screens/Config";
@@ -55,50 +54,49 @@ function Tabs() {
   const [reloadKey, setReloadKey] = useState({
     Home: Date.now(),
     Groups: Date.now(),
-    Profile: Date.now()
+    Profile: Date.now(),
   });
 
   useEffect(() => {
-      const fetchUser = async () => {
-          try {
-              setLoading(true);
-              const token = await SecureStore.getItemAsync("token");
-              if (token) {
-                  const userData = await getUser(token);
-                  setUser(userData);
-              } else {
-                  await SecureStore.deleteItemAsync("token");
-                  navigation.dispatch(
-                      CommonActions.reset({
-                          index: 0,
-                          routes: [{ name: "Login" }],
-                      })
-                  );
-              }
-          } catch (error) {
-              console.error("Erro ao carregar dados do usuário:", error);
-              const status =
-                  error?.response?.status ||
-                  error?.status ||
-                  (error.message?.includes("401") ? 401 : error.message?.includes("403") ? 403 : null);
-              const errorDetail = error?.response?.data?.detail;
+    const fetchUser = async () => {
+      try {
+        setLoading(true);
+        const token = await SecureStore.getItemAsync("token");
+        if (token) {
+          const userData = await getUser(token);
+          setUser(userData);
+        } else {
+          await SecureStore.deleteItemAsync("token");
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: "Login" }],
+            })
+          );
+        }
+      } catch (error) {
+        const status =
+          error?.response?.status ||
+          error?.status ||
+          (error.message?.includes("401") ? 401 : error.message?.includes("403") ? 403 : null);
+        const errorDetail = error?.response?.data?.detail;
 
-              if (status === 401 || status === 403 || errorDetail === "Session expired") {
-                  await SecureStore.deleteItemAsync("token");
-                  navigation.dispatch(
-                      CommonActions.reset({
-                          index: 0,
-                          routes: [{ name: "Login" }],
-                      })
-                  );
-              } else {
-                  navigation.navigate("Entrada");
-              }
-          } finally {
-              setLoading(false);
-          }
-      };
-      fetchUser();
+        if (status === 401 || status === 403 || errorDetail === "Session expired") {
+          await SecureStore.deleteItemAsync("token");
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: "Login" }],
+            })
+          );
+        } else {
+          navigation.navigate("Entrada");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUser();
   }, [navigation]);
 
   useEffect(() => {
@@ -125,12 +123,37 @@ function Tabs() {
     return () => backHandler.remove();
   }, [backPressedOnce, navigation]);
 
-  const handleTabPress = (tabName) => {
-    setReloadKey(prev => ({
+  const handleTabPress = useCallback((tabName, event, isFocused) => {
+    if (isFocused) {
+      event.preventDefault();
+      return;
+    }
+    setReloadKey((prev) => ({
       ...prev,
-      [tabName]: Date.now()
+      [tabName]: Date.now(),
     }));
-  };
+  }, []);
+
+  const groupTabListener = useCallback(
+    ({ navigation }) => ({
+      tabPress: (e) => handleTabPress("Groups", e, navigation.isFocused()),
+    }),
+    [handleTabPress]
+  );
+
+  const homeTabListener = useCallback(
+    ({ navigation }) => ({
+      tabPress: (e) => handleTabPress("Home", e, navigation.isFocused()),
+    }),
+    [handleTabPress]
+  );
+
+  const profileTabListener = useCallback(
+    ({ navigation }) => ({
+      tabPress: (e) => handleTabPress("Profile", e, navigation.isFocused()),
+    }),
+    [handleTabPress]
+  );
 
   return (
     <Tab.Navigator
@@ -162,9 +185,7 @@ function Tabs() {
             />
           ),
         }}
-        listeners={() => ({
-          tabPress: () => handleTabPress("Groups")
-        })}
+        listeners={groupTabListener}
       />
       <Tab.Screen
         name="Home"
@@ -180,9 +201,7 @@ function Tabs() {
             />
           ),
         }}
-        listeners={() => ({
-          tabPress: () => handleTabPress("Home")
-        })}
+        listeners={homeTabListener}
       />
       <Tab.Screen
         name="Profile"
@@ -219,9 +238,7 @@ function Tabs() {
             </View>
           ),
         }}
-        listeners={() => ({
-          tabPress: () => handleTabPress("Profile")
-        })}
+        listeners={profileTabListener}
       />
     </Tab.Navigator>
   );

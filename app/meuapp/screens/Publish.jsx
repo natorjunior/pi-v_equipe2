@@ -94,7 +94,7 @@ export default function Publish() {
       }, 100);
     } catch (error) {
       if (error.message?.includes("cancel")) {
-        console.log("Usuário cancelou a seleção");
+        return;
       }
     }
   };
@@ -133,7 +133,6 @@ export default function Publish() {
       setDescription("");
       setImage(null);
     } catch (error) {
-      console.error("Publish error:", error);
       if (error.response?.data?.detail === "Not authenticated") {
         await SecureStore.deleteItemAsync("token");
         Alert.alert("Sessão Expirada", "Faça login novamente.");

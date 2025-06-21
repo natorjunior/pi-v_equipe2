@@ -98,10 +98,7 @@ export default function EditProfile() {
         avatar: imageData.uri,
       }));
     } catch (error) {
-      if (error.message?.includes("cancel")) {
-        console.log("Usuário cancelou a seleção");
-      } else {
-        console.error("Erro ao selecionar ou recortar imagem:", error);
+      if (!error.message?.includes("cancel")) {
         Alert.alert("Erro", "Ocorreu um erro ao processar a imagem");
       }
     }

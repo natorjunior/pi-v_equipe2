@@ -91,8 +91,6 @@ export default function PostDetails({ route, navigation }) {
 
                 const response = await getGroup();
                 setGroups(response || []);
-            } catch (error) {
-                console.log("Erro ao carregar dados:", error);
             } finally {
                 setLoading(false);
             }
@@ -122,7 +120,6 @@ export default function PostDetails({ route, navigation }) {
         } catch (error) {
             setCheckin(initialCheckin);
             Alert.alert("Erro", "Não foi possível atualizar a curtida.");
-            console.log("Erro ao curtir/descurtir:", error);
         }
     };
 
@@ -140,7 +137,6 @@ export default function PostDetails({ route, navigation }) {
                         navigation.navigate("AppDrawer", { refresh: true });
                     } catch (error) {
                         Alert.alert("Erro", "Não foi possível apagar a publicação.");
-                        console.log("Erro ao apagar post:", error);
                     } finally {
                         setDeleting(false);
                     }
@@ -180,7 +176,6 @@ export default function PostDetails({ route, navigation }) {
             Alert.alert("Sucesso", "Denúncia enviada com sucesso.");
         } catch (error) {
             Alert.alert("Erro", "Não foi possível enviar a denúncia.");
-            console.log("Erro ao enviar denúncia:", error);
         }
     };
 

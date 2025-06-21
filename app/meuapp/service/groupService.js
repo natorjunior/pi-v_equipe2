@@ -56,7 +56,6 @@ export const getGroup = async () => {
 export const joinGroup = async (group_alias) => {
   try {
     const response = await api.get(`/group/join/${group_alias}`);
-    console.log("Resposta do joinGroup:", response.data);
     return response.data;
   } catch (error) {
     const message =

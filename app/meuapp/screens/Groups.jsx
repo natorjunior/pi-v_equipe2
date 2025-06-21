@@ -12,6 +12,7 @@ import {
   SafeAreaView,
   Dimensions,
   Animated,
+  BackHandler,
 } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { useTheme } from "../service/themeService";
@@ -233,32 +234,44 @@ export default function Groups() {
     initialize();
   }, []);
 
-useFocusEffect(
-  useCallback(() => {
-    const { selectedGroupId, selectedGroupName, refreshPosts, clearGroup, refresh } = route.params || {};
+  useFocusEffect(
+    useCallback(() => {
+      const { selectedGroupId, selectedGroupName, refreshPosts, clearGroup, refresh } = route.params || {};
 
-    if (clearGroup) {
-      handleBackToGroups();
-    } 
-    else if (selectedGroupId && refreshPosts) {
-      fetchData(selectedGroupId, selectedGroupName);
-    } 
-    else if (refresh) {
-      fetchGroupsAndRankings();
-    }
+      if (clearGroup) {
+        handleBackToGroups();
+      } else if (selectedGroupId && refreshPosts) {
+        fetchData(selectedGroupId, selectedGroupName);
+      } else if (refresh) {
+        fetchGroupsAndRankings();
+      }
 
-    return () => {
-      navigation.setParams({
-        selectedGroupId: undefined,
-        selectedGroupName: undefined,
-        refreshPosts: undefined,
-        clearGroup: undefined,
-        refresh: undefined,
-      });
-    };
-  }, [route.params])
-);
+      return () => {
+        navigation.setParams({
+          selectedGroupId: undefined,
+          selectedGroupName: undefined,
+          refreshPosts: undefined,
+          clearGroup: undefined,
+          refresh: undefined,
+        });
+      };
+    }, [route.params])
+  );
 
+  useFocusEffect(
+    useCallback(() => {
+      const backAction = () => {
+        if (selectedGroupId) {
+          handleBackToGroups();
+          return true;
+        }
+        return false;
+      };
+
+      const backHandler = BackHandler.addEventListener("hardwareBackPress", backAction);
+      return () => backHandler.remove();
+    }, [selectedGroupId])
+  );
 
   const handleSelectGroup = async (groupId, groupName) => {
     await fetchData(groupId, groupName);

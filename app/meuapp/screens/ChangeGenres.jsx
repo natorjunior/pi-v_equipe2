@@ -6,7 +6,6 @@ import {
     ScrollView,
     TouchableOpacity,
     SafeAreaView,
-    Alert,
 } from "react-native";
 import { useTheme } from "../service/themeService";
 import { Ionicons } from "@expo/vector-icons";
@@ -32,7 +31,6 @@ export default function ChangeGenres() {
                     setSelectedGenres(initialGenres);
                 }
             } catch (error) {
-                Alert.alert("Erro", "Não foi possível carregar os dados do usuário.");
             }
         };
         fetchMotivation();
@@ -52,10 +50,8 @@ export default function ChangeGenres() {
                 .map(([genre]) => genre);
 
             await updateUser({ genres: selectedArray });
-            Alert.alert("Sucesso", "Gêneros atualizados!");
             navigation.navigate("AppDrawer", { refresh: true });
         } catch (error) {
-            Alert.alert("Erro", error.message || "Não foi possível atualizar os gêneros");
         }
     };
 

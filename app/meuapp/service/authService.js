@@ -5,7 +5,6 @@ export const checkAuth = async () => {
         const token = await SecureStore.getItemAsync("token");
         return !!token;
     } catch (error) {
-        console.log("Erro ao verificar autenticação:", error);
         return false;
     }
 };
@@ -15,7 +14,6 @@ export const logoutUser = async () => {
         await SecureStore.deleteItemAsync("token");
         return true;
     } catch (error) {
-        console.log("Erro ao fazer logout:", error);
         return false;
     }
 };

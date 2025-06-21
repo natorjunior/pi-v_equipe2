@@ -102,7 +102,7 @@ Linking.openURL(
           <Text
             style={[
               styles.buttonText,
-              { color: theme.mode === "dark" ? "#000" : "#fff" },
+              { color: "#fff" },
             ]}
           >
             Denunciar

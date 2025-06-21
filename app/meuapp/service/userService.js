@@ -13,10 +13,8 @@ const api = axios.create({
 export const createUser = async (newUser) => {
   try {
     const response = await api.post("/user", newUser);
-    console.log("Usuário criado com sucesso:", response.data);
     return response.data;
   } catch (error) {
-    console.error("Erro ao criar usuário:", error.response?.data || error.message);
     throw error;
   }
 };
@@ -35,7 +33,6 @@ export const getUser = async () => {
 
     return response.data;
   } catch (error) {
-    console.error("Erro ao obter dados do usuário:", error.response?.data || error.message);
     throw error;
   }
 };
@@ -55,7 +52,6 @@ export const updateUser = async (userData) => {
 
     return response.data;
   } catch (error) {
-    console.error("Erro ao atualizar perfil:", error.response?.data || error.message);
     throw error;
   }
 };
@@ -72,10 +68,8 @@ export const deleteUser = async () => {
       },
     });
 
-    console.log("Usuário excluído com sucesso:", response.data);
     return response.data;
   } catch (error) {
-    console.error("Erro ao excluir usuário:", error.response?.data || error.message);
     throw error;
   }
 };
@@ -104,7 +98,7 @@ export const uploadAvatar = async (imageUri) => {
 
     return response.data;
   } catch (error) {
-    console.error("Erro no upload do avatar:", error.response?.data || error.message);
     throw new Error(error.response?.data?.detail || "Falha no upload do avatar");
   }
 };
+

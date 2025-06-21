@@ -77,7 +77,6 @@ export default function CreateGroup() {
         throw new Error("ID do grupo não encontrado na resposta.");
       }
     } catch (error) {
-      console.log("Erro ao criar ou entrar no grupo", error);
       setError("Erro ao criar ou entrar no grupo. Tente novamente.");
     } finally {
       setLoading(false);

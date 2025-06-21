@@ -16,7 +16,6 @@ export const setupAxiosInterceptors = (navigation) => {
         error.response.data?.detail === "Not authenticated"
       ) {
         await SecureStore.deleteItemAsync("token");
-        console.log("Token expirado ou inválido. Redirecionando para Login...");
 
         navigation.reset({
           index: 0,
@@ -39,7 +38,6 @@ export const loginUser = async (loginData) => {
       throw new Error("Login falhou, sem token recebido.");
     }
   } catch (error) {
-    console.log("Erro ao fazer login:", error.response?.data || error.message);
     throw error;
   }
 };

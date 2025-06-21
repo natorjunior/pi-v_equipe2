@@ -55,12 +55,9 @@ export default function Question4({ navigation, route }) {
                 genres: genresArray,
             };
 
-            const response = await createUser(userData);
-            console.log("Usuario criado com sucesso:", response);
-
+            await createUser(userData);
             navigation.navigate("Login");
         } catch (error) {
-            console.log("Erro ao criar usuario:", error);
             setErrorMessage(
                 error.response?.data?.message ||
                 error.response?.data?.detail ||

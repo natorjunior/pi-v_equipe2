@@ -69,12 +69,10 @@ export default function GroupDetails() {
       setDescription(selectedGroup.description || "");
       setMembers(selectedGroup.members || []);
       setGroupCreatedBy(selectedGroup.created_by);
-
     let rankingData = [];
     try {
       rankingData = await getGroupRanking(groupId);
     } catch (e) {
-      console.warn("Erro ao buscar ranking, fallback para membros com 0 pts");
     }
 
     const mapRanking = {};
@@ -89,7 +87,6 @@ export default function GroupDetails() {
     setRanking(fullRanking);
 
     } catch (err) {
-      console.log("Erro ao carregar grupo:", err);
       setError("Erro ao carregar informações do grupo.");
     } finally {
       setLoading(false);
@@ -132,7 +129,6 @@ export default function GroupDetails() {
               },
             ]);
           } catch (err) {
-            console.log("Error deleting group:", err);
             Alert.alert("Erro", "Não foi possível excluir o grupo.");
           } finally {
             setLoading(false);
@@ -159,7 +155,6 @@ export default function GroupDetails() {
               selectedGroupId: null,
             });
           } catch (err) {
-            console.log("Error leaving group:", err);
             Alert.alert("Erro", "Não foi possível sair do grupo.");
           } finally {
             setLoading(false);

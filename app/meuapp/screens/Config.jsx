@@ -21,11 +21,8 @@ const Config = () => {
           setToken(storedToken);
           const userData = await getUser(storedToken);
           setUser(userData);
-        } else {
-          console.warn("Token de autenticação não encontrado.");
         }
       } catch (error) {
-        console.error("Erro ao buscar usuário:", error.message);
       } finally {
         setLoading(false);
       }
@@ -49,13 +46,8 @@ const handleDeleteUser = () => {
             await deleteUser(token);
             await SecureStore.deleteItemAsync("token");
             navigation.navigate("Entrada");
-            console.log("Conta apagada com sucesso.");
-            Alert.alert("Sucesso", "Conta apagada com sucesso.");
           } catch (error) {
-            console.error("Erro ao apagar conta:", error);
-            Alert.alert("Erro", "Não foi possível apagar a conta.");
-          }
-        },
+          }},
       },
     ]
   );
