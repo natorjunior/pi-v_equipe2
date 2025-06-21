@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -11,10 +11,11 @@ import {
   Image,
   SafeAreaView,
   Dimensions,
+  Animated,
 } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { useTheme } from "../service/themeService";
-import { useNavigation, DrawerActions, useFocusEffect } from "@react-navigation/native";
+import { useNavigation, DrawerActions, useFocusEffect, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { getGroup } from "../service/groupService";
 import { getGroupRanking, getCheckinsByGroup, postLikeById, deleteLikeById } from "../service/checkinService";
@@ -24,9 +25,12 @@ import { LinearGradient } from "expo-linear-gradient";
 const { width } = Dimensions.get("window");
 const isLargeScreen = width > 768;
 
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
+
 export default function Groups() {
   const { theme } = useTheme();
   const navigation = useNavigation();
+  const route = useRoute();
   const [groups, setGroups] = useState([]);
   const [rankings, setRankings] = useState({});
   const [checkins, setCheckins] = useState([]);
@@ -37,6 +41,16 @@ export default function Groups() {
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
   const [selectedGroupName, setSelectedGroupName] = useState(null);
+  const flatListRef = useRef(null);
+  const isFetchingRef = useRef(false);
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const headerHeight = 0;
+  const hasInitialized = useRef(false);
+
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    { useNativeDriver: true }
+  );
 
   const fetchCurrentUser = async () => {
     try {
@@ -60,6 +74,8 @@ export default function Groups() {
     membersCount === 1 ? "membro" : "membros";
 
   const fetchGroupsAndRankings = async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
       setLoading(true);
       setRefreshing(true);
@@ -117,10 +133,13 @@ export default function Groups() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+      isFetchingRef.current = false;
     }
   };
 
-  const fetchData = async () => {
+  const fetchData = async (groupId, groupName) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
       if (!refreshing) setLoading(true);
 
@@ -130,20 +149,22 @@ export default function Groups() {
         return;
       }
 
-      let storedGroupId = await SecureStore.getItemAsync("selectedGroupId");
-      let storedGroupName = await SecureStore.getItemAsync("selectedGroupName");
-
-      setSelectedGroupId(storedGroupId);
-      setSelectedGroupName(storedGroupName);
-
-      if (storedGroupId) {
-        const checkinsData = await getCheckinsByGroup(storedGroupId);
+      if (groupId) {
+        setSelectedGroupId(groupId);
+        setSelectedGroupName(groupName);
+        await SecureStore.setItemAsync("selectedGroupId", groupId.toString());
+        await SecureStore.setItemAsync("selectedGroupName", groupName);
+        const checkinsData = await getCheckinsByGroup(groupId);
         const sortedCheckins = checkinsData.sort(
           (a, b) => new Date(b.created_at) - new Date(a.created_at)
         );
         setCheckins(sortedCheckins);
       } else {
+        setSelectedGroupId(null);
+        setSelectedGroupName(null);
         setCheckins([]);
+        await SecureStore.deleteItemAsync("selectedGroupId");
+        await SecureStore.deleteItemAsync("selectedGroupName");
       }
 
       await getUser(token);
@@ -171,83 +192,123 @@ export default function Groups() {
       setError(error.message || "Erro ao carregar dados.");
     } finally {
       if (!refreshing) setLoading(false);
+      isFetchingRef.current = false;
     }
   };
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     if (selectedGroupId) {
-      await fetchData();
+      await fetchData(selectedGroupId, selectedGroupName);
     } else {
       await fetchGroupsAndRankings();
     }
     setRefreshing(false);
-  }, [selectedGroupId]);
+  }, [selectedGroupId, selectedGroupName]);
 
   useEffect(() => {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
     fetchCurrentUser();
-    fetchGroupsAndRankings();
+    const { selectedGroupId, selectedGroupName, clearGroup } = route.params || {};
+    if (clearGroup) {
+      handleBackToGroups();
+      return;
+    }
+
+    const initialize = async () => {
+      if (selectedGroupId) {
+        await fetchData(selectedGroupId, selectedGroupName);
+      } else {
+        const storedGroupId = await SecureStore.getItemAsync("selectedGroupId");
+        const storedGroupName = await SecureStore.getItemAsync("selectedGroupName");
+        if (storedGroupId && storedGroupName) {
+          await fetchData(storedGroupId, storedGroupName);
+        } else {
+          await fetchGroupsAndRankings();
+        }
+      }
+    };
+
+    initialize();
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (selectedGroupId) {
-        fetchData();
-      }
-    }, [selectedGroupId])
-  );
+useFocusEffect(
+  useCallback(() => {
+    const { selectedGroupId, selectedGroupName, refreshPosts, clearGroup, refresh } = route.params || {};
 
-  useFocusEffect(
-    useCallback(() => {
+    if (clearGroup) {
+      handleBackToGroups();
+    } 
+    else if (selectedGroupId && refreshPosts) {
+      fetchData(selectedGroupId, selectedGroupName);
+    } 
+    else if (refresh) {
       fetchGroupsAndRankings();
-    }, [])
-  );
+    }
+
+    return () => {
+      navigation.setParams({
+        selectedGroupId: undefined,
+        selectedGroupName: undefined,
+        refreshPosts: undefined,
+        clearGroup: undefined,
+        refresh: undefined,
+      });
+    };
+  }, [route.params])
+);
+
 
   const handleSelectGroup = async (groupId, groupName) => {
-    await SecureStore.setItemAsync("selectedGroupId", groupId.toString());
-    await SecureStore.setItemAsync("selectedGroupName", groupName);
-    setSelectedGroupId(groupId);
-    setSelectedGroupName(groupName);
-    fetchData();
+    await fetchData(groupId, groupName);
   };
 
   const handleBackToGroups = async () => {
+    if (isFetchingRef.current) return;
     await SecureStore.deleteItemAsync("selectedGroupId");
     await SecureStore.deleteItemAsync("selectedGroupName");
     setSelectedGroupId(null);
     setSelectedGroupName(null);
     setCheckins([]);
     setError(null);
-    fetchGroupsAndRankings();
+    await fetchGroupsAndRankings();
   };
 
-const handleLike = async (checkinId) => {
-  try {
-    const checkin = checkins.find((item) => item.id === checkinId);
-    if (!checkin) return;
+  const handleLike = async (checkinId) => {
+    try {
+      const checkin = checkins.find((item) => String(item.id) === String(checkinId));
+      if (!checkin) return;
 
-    const updatedCheckins = checkins.map((item) => {
-      if (item.id === checkinId) {
-        return {
-          ...item,
-          liked_by_user: !item.liked_by_user,
-          likes_count: item.liked_by_user ? item.likes_count - 1 : item.likes_count + 1,
-        };
+      const updatedCheckins = checkins.map((item) => {
+        if (String(item.id) === String(checkinId)) {
+          return {
+            ...item,
+            liked_by_user: !item.liked_by_user,
+            likes_count: item.liked_by_user ? item.likes_count - 1 : item.likes_count + 1,
+          };
+        }
+        return item;
+      });
+      setCheckins(updatedCheckins);
+
+      if (checkin.liked_by_user) {
+        await deleteLikeById(checkinId);
+      } else {
+        await postLikeById(checkinId);
       }
-      return item;
-    });
-    setCheckins(updatedCheckins);
-
-    if (checkin.liked_by_user) {
-      await deleteLikeById(checkinId);
-    } else {
-      await postLikeById(checkinId);
+    } catch (error) {
+      setError(error.message || "Erro ao curtir/descurtir a publicação.");
+      await fetchData(selectedGroupId, selectedGroupName);
     }
-  } catch (error) {
-    setError(error.message || "Erro ao curtir/descurtir a publicação.");
-    await fetchData();
-  }
-};
+  };
+
+  const truncateUsername = (username) => {
+    if (username.length > 20) {
+      return username.slice(0, 20) + "...";
+    }
+    return username;
+  };
 
   const renderEmptyComponent = () => {
     if (!selectedGroupId) {
@@ -256,11 +317,34 @@ const handleLike = async (checkinId) => {
           <Text style={[styles.text, { color: theme.text }]}>
             Aqui aparecerá seus grupos caso você entre ou crie um
           </Text>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#fff" }]}
+            onPress={() => navigation.navigate("CreateGroup")}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.buttonText, { color: theme.text }]}>Criar um grupo</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#fff" }]}
+            onPress={() => navigation.navigate("JoinGroup")}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.buttonText, { color: theme.text }]}>Entrar em um grupo</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: theme.mode === "dark" ? "#fff" : "#000" }]}
+            onPress={() => navigation.navigate("SuggestedGroups")}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.buttonText, { color: theme.mode === "dark" ? "#000" : "#fff" }]}>
+              Grupos oficiais
+            </Text>
+          </TouchableOpacity>
         </View>
       );
     }
 
-    if (loading) {
+    if (loading && !refreshing) {
       return (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.text} />
@@ -281,8 +365,50 @@ const handleLike = async (checkinId) => {
         <Text style={[styles.text, { color: theme.text }]}>
           Nenhuma publicação encontrada neste grupo
         </Text>
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#fff" }]}
+          onPress={() => navigation.navigate("Publish", { groupId: selectedGroupId, groupName: selectedGroupName })}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.buttonText, { color: theme.text }]}>Criar uma publicação</Text>
+        </TouchableOpacity>
       </View>
     );
+  };
+
+  const renderFooter = () => {
+    if (loading && !refreshing) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color={theme.text} />
+        </View>
+      );
+    }
+    if (!loading && checkins.length > 0) {
+      return (
+        <TouchableOpacity 
+          style={styles.messageContainer}
+          onPress={async () => {
+            setRefreshing(true);
+            try {
+              await fetchData(selectedGroupId, selectedGroupName);
+              await new Promise(resolve => setTimeout(resolve, 100));
+              flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+            } finally {
+              setRefreshing(false);
+            }
+          }}
+        >
+          <View style={[styles.line, { borderColor: theme.border }]} />
+          <Ionicons name="sparkles-outline" size={32} color={theme.text} style={styles.icon} />
+          <Text style={[styles.text, { color: theme.text }]}>Você chegou ao fim ✨</Text>
+          <Text style={[styles.subtext, { color: theme.text }]}>
+            Toque aqui para retornar lá em cima!
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+    return null;
   };
 
   const renderGroupList = () => (
@@ -389,11 +515,16 @@ const handleLike = async (checkinId) => {
   );
 
   const renderPostList = () => (
-    <FlatList
+    <AnimatedFlatList
       style={styles.list}
       data={checkins}
-      keyExtractor={(item) => item.id.toString()}
-      contentContainerStyle={{ padding: 20 }}
+      ref={flatListRef}
+      keyExtractor={(item) => String(item.id).replace(/\.\$/g, '')}
+      contentContainerStyle={{
+        paddingTop: headerHeight + 20,
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+      }}
       renderItem={({ item }) => (
         <TouchableOpacity
           onPress={() => navigation.navigate("PostDetails", { checkin: item })}
@@ -408,12 +539,32 @@ const handleLike = async (checkinId) => {
               {item.user.avatar && (
                 <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
               )}
-              <Text style={[styles.postTitle, { color: theme.text }]}>
-                @{item.user.name}
-              </Text>
+              <View style={styles.headerTextContainer}>
+                <View style={styles.headerNameRow}>
+                  <Text style={[styles.postTitle, { color: theme.text }]}>
+                    @{truncateUsername(item.user.name)}
+                  </Text>
+                  <View style={[styles.separatorDot, { backgroundColor: theme.text }]} />
+                  <Text style={[styles.postTimestamp, { color: theme.text }]}>
+                    {new Date(item.created_at).toLocaleString("pt-BR", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </Text>
+                </View>
+              </View>
             </View>
             {item.photo && (
               <Image source={{ uri: item.photo }} style={styles.postImage} />
+            )}
+            <Text style={[styles.postText, { color: theme.text }]}>{item.title}</Text>
+            {item.description && (
+              <Text style={[styles.postDescription, { color: theme.text }]}>
+                {item.description}
+              </Text>
             )}
             <View style={styles.likeContainer}>
               <TouchableOpacity
@@ -422,7 +573,7 @@ const handleLike = async (checkinId) => {
               >
                 <Ionicons
                   name={item.liked_by_user ? "heart" : "heart-outline"}
-                  size={24}
+                  size={25}
                   color={item.liked_by_user ? theme.error || "red" : theme.text}
                 />
               </TouchableOpacity>
@@ -430,21 +581,11 @@ const handleLike = async (checkinId) => {
                 {item.likes_count}
               </Text>
             </View>
-            <Text style={[styles.postText, { color: theme.text }]}>{item.title}</Text>
-            <Text style={[styles.postDescription, { color: theme.text }]}>
-              {item.description}
-            </Text>
-            <Text style={[styles.postDate, { color: theme.text }]}>
-              {new Date(item.created_at).toLocaleDateString("pt-BR", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-            </Text>
           </View>
         </TouchableOpacity>
       )}
       ListEmptyComponent={renderEmptyComponent()}
+      ListFooterComponent={renderFooter()}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -452,6 +593,8 @@ const handleLike = async (checkinId) => {
           tintColor={theme.text}
         />
       }
+      onScroll={handleScroll}
+      scrollEventThrottle={16}
     />
   );
 
@@ -518,7 +661,7 @@ const handleLike = async (checkinId) => {
               styles.fab,
               { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366" },
             ]}
-            onPress={() => navigation.navigate("Publish")}
+            onPress={() => navigation.navigate("Publish", { groupId: selectedGroupId, groupName: selectedGroupName })}
           >
             <Ionicons name="add" size={28} color="#fff" />
           </TouchableOpacity>
@@ -539,7 +682,6 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
   },
   postListContainer: {
-    
     flex: isLargeScreen ? 0.6 : 1,
   },
   list: {
@@ -659,66 +801,87 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   podiumText: {
-    fontSize: 12,
-    fontWeight: "normal",
+    fontSize: 14,
+    fontWeight: "600",
   },
   post: {
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 15,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
     borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   postHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 8,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: "#ccc",
-    marginRight: 10,
+    marginRight: 8,
   },
   postTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 15,
+    fontWeight: "600",
+    maxWidth: "60%",
   },
   postImage: {
-    width: 330,
+    width: "100%",
     height: 330,
     alignSelf: "center",
     resizeMode: "cover",
-    borderRadius: 10,
-    marginBottom: 10,
+    borderRadius: 8,
+    marginBottom: 8,
   },
   likeContainer: {
     flexDirection: "row",
     alignItems: "center",
+    marginTop: 8,
   },
   likeButton: {
-    borderRadius: 100,
-    transform: [{ scale: 1 }],
-    activeOpacity: 0.7,
+    padding: 4,
   },
   likeCount: {
-    fontSize: 14,
-    marginLeft: 5,
-    fontWeight: "bold",
+    fontSize: 13,
+    marginLeft: 4,
+    fontWeight: "500",
   },
   postText: {
-    marginTop: 10,
     fontSize: 16,
     fontWeight: "bold",
-    marginBottom: 8,
+    marginBottom: 4,
   },
   postDescription: {
     fontSize: 14,
-    marginBottom: 8,
+    lineHeight: 20,
+    marginBottom: 4,
   },
-  postDate: {
+  headerTextContainer: {
+    flexDirection: "column",
+    flex: 1,
+  },
+  headerNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "nowrap",
+  },
+  separatorDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    marginHorizontal: 6,
+    opacity: 0.6,
+  },
+  postTimestamp: {
     fontSize: 12,
-    fontStyle: "italic",
+    opacity: 0.6,
   },
   messageContainer: {
     flex: 1,
@@ -768,5 +931,17 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  line: {
+    width: "100%",
+    borderTopWidth: 1,
+    marginVertical: 15,
+  },
+  icon: {
+    marginBottom: 10,
+  },
+  subtext: {
+    fontSize: 14,
+    textAlign: "center",
   },
 });

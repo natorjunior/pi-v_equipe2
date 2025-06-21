@@ -92,14 +92,14 @@ const handleDeleteUser = () => {
             onPress={() => setThemeMode(option.id)}
           >
             <Text style={[styles.optionText, { color: theme.mode }]}>{option.title}</Text>
-            <Text style={[styles.optionDescription, { color: theme.text }]}>
+            <Text style={[styles.optionDescription, { color: theme.text === "dark" ? "#fff" : "#000" }]}>
               {option.description}
             </Text>
           </TouchableOpacity>
         ))}
 
         <TouchableOpacity onPress={handleDeleteUser} style={[styles.deleteButton, { backgroundColor: theme.error }]}>
-          <Text style={[styles.deleteText, {color: theme.text}]}>Apagar Conta</Text>
+          <Text style={[styles.deleteText]}>Apagar Conta</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

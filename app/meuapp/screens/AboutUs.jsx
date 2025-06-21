@@ -1,4 +1,16 @@
-import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, Linking, SafeAreaView } from "react-native";
+import {
+    View,
+    Text,
+    Image,
+    FlatList,
+    TouchableOpacity,
+    StyleSheet,
+    Linking,
+    SafeAreaView,
+    Modal,
+    ActivityIndicator,
+} from "react-native";
+import { useState } from "react";
 import { useTheme } from "../service/themeService";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -27,19 +39,43 @@ const team = [
         image: require("../assets/fotoregis.jpg"),
         github: "https://github.com/Regis-Rafael",
     },
-];
+    {
+        name: "Nator Junior Carvalho da Costa",
+        role: "DevOps",
+        image: require("../assets/fotonator.jpeg"),
+        github: "https://github.com/natorjunior",
+    },
+    ];
 
 export default function AboutUs({ navigation }) {
     const { theme } = useTheme();
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [imageLoading, setImageLoading] = useState(false);
+
+    const openImageModal = (image) => {
+        setSelectedImage(image);
+        setImageLoading(true);
+        setModalVisible(true);
+    };
 
     return (
         <SafeAreaView style={{ flex: 1 }}>
-        <View style={[styles.container, { backgroundColor: theme.background }]}> 
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
             <View style={[styles.header, { backgroundColor: theme.background }]}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={theme.mode === "dark" ? "#fff" : "#000"} />
-                </TouchableOpacity>
-                <Text style={[styles.headerText, { color: theme.text }]}>Desenvolvedores</Text>
+            <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={styles.backButton}
+            >
+                <Ionicons
+                name="arrow-back"
+                size={24}
+                color={theme.mode === "dark" ? "#fff" : "#000"}
+                />
+            </TouchableOpacity>
+            <Text style={[styles.headerText, { color: theme.text }]}>
+                Desenvolvedores
+            </Text>
             </View>
             <FlatList
                 ListHeaderComponent={() => (
@@ -66,6 +102,39 @@ export default function AboutUs({ navigation }) {
                 )}
                 contentContainerStyle={styles.teamContainer}
             />
+            <Modal
+            animationType="fade"
+            transparent={true}
+            visible={modalVisible}
+            onRequestClose={() => setModalVisible(false)}
+            >
+            <View style={styles.modalBackground}>
+                <TouchableOpacity
+                style={styles.modalCloseArea}
+                onPress={() => setModalVisible(false)}
+                >
+                <Ionicons name="close" size={30} color="#fff" />
+                </TouchableOpacity>
+                {imageLoading && (
+                <ActivityIndicator
+                    size="large"
+                    color="#fff"
+                    style={styles.imageLoader}
+                />
+                )}
+                {selectedImage && (
+                <View style={styles.imageContainer}>
+                    <Image
+                    source={selectedImage}
+                    style={styles.fullscreenImage}
+                    resizeMode="cover"
+                    onLoadStart={() => setImageLoading(true)}
+                    onLoadEnd={() => setImageLoading(false)}
+                    />
+                </View>
+                )}
+            </View>
+            </Modal>
         </View>
         </SafeAreaView>
     );
@@ -113,6 +182,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     name: {
+        textAlign: "center",
         fontSize: 18,
         fontWeight: "bold",
         marginBottom: 5,
@@ -129,13 +199,6 @@ const styles = StyleSheet.create({
     buttonText: {
         fontSize: 16,
         fontWeight: "bold",
-        color: "#fff",
-    },
-    footerText: {
-        fontSize: 14,
-        textAlign: "center",
-        marginTop: 20,
-        marginHorizontal: 20,
     },
     header: {
         flexDirection: "row",
@@ -153,6 +216,30 @@ const styles = StyleSheet.create({
         textAlign: "center",
         right: 21,
     },
-    
+    modalBackground: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.9)",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    imageContainer: {
+        width: "90%",
+        aspectRatio: 1,
+        overflow: "hidden",
+    },
+    fullscreenImage: {
+        width: "100%",
+        height: "100%",
+    },
+    modalCloseArea: {
+        position: "absolute",
+        top: 50,
+        right: 30,
+        zIndex: 2,
+        padding: 10,
+    },
+    imageLoader: {
+        position: "absolute",
+        alignSelf: "center",
+    },
 });
-

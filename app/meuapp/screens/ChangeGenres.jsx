@@ -9,7 +9,7 @@ import {
     Alert,
 } from "react-native";
 import { useTheme } from "../service/themeService";
-import { Checkbox } from "expo-checkbox";
+import { Ionicons } from "@expo/vector-icons";
 import { getUser, updateUser } from "../service/userService";
 import { useNavigation } from "@react-navigation/native";
 
@@ -115,40 +115,72 @@ export default function ChangeGenres() {
     return (
         <SafeAreaView style={{ flex: 1 }}>
             <View style={[styles.container, { backgroundColor: theme.background }]}>
-                <ScrollView contentContainerStyle={styles.scrollContainer}>
+                <View style={styles.header}>
+                    <TouchableOpacity
+                        onPress={() => navigation.goBack()}
+                        style={styles.backButton}
+                    >
+                        <Ionicons
+                            name="arrow-back"
+                            size={24}
+                            color={theme.mode === "dark" ? "#fff" : "#000"}
+                        />
+                    </TouchableOpacity>
+                    <Text style={[styles.headerText, { color: theme.text }]}>
+                        Alterar Gêneros
+                    </Text>
+                </View>
+                <ScrollView
+                    contentContainerStyle={[styles.scrollContainer, { alignItems: "center" }]}
+                    showsVerticalScrollIndicator={false}
+                >
                     <Text style={[styles.text, { color: theme.text }]}>
-                        Selecione seus gêneros favoritos:
+                        Selecione seus gêneros literários ou acadêmicos favoritos{"\n"}
+                        (essa opção aparecerá no seu perfil):
                     </Text>
                     {genresToShow.map((genre, index) => (
                         <TouchableOpacity
                             key={index}
                             style={[
                                 styles.button,
-                                { backgroundColor: theme.mode === "dark" ? "#0D0058" : "#fff" },
+                                {
+                                    backgroundColor: selectedGenres[genre]
+                                        ? (theme.mode === "dark" ? "#1E90FF" : "#ADD8E6")
+                                        : (theme.mode === "dark" ? "#0D0058" : "#fff"),
+                                },
                             ]}
                             onPress={() => toggleGenre(genre)}
                             activeOpacity={0.7}
                         >
                             <View style={styles.buttonContent}>
-                                <Checkbox
-                                    value={selectedGenres[genre] || false}
-                                    onValueChange={() => toggleGenre(genre)}
-                                    color={theme.mode === "dark" ? "#000" : "#000"}
+                                <Ionicons
+                                    name={selectedGenres[genre] ? "checkbox" : "square-outline"}
+                                    size={24}
+                                    color={theme.text}
                                 />
-                                <Text style={[styles.buttonText, { color: theme.mode === "dark" ? "#fff" : "#000" }]}>
+                                <Text
+                                    style={[
+                                        styles.buttonText,
+                                        { color: theme.mode === "dark" ? "#fff" : "#000" },
+                                    ]}
+                                >
                                     {genre}
                                 </Text>
                             </View>
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
-
                 <TouchableOpacity
                     style={[styles.nextButton, { backgroundColor: theme.mode === "dark" ? "#fff" : "#0D0058" }]}
                     onPress={handleUpdate}
                     activeOpacity={0.7}
                 >
-                    <Text style={[styles.nextButtonText, { color: theme.mode === "dark" ? "#000" : "#fff" }]}>
+                    <Text
+                        style={[
+                            styles.nextButtonText,
+                            { color: theme.mode === "dark" ? "#000" : "#fff" },
+                        ]}
+                    >
                         Continuar
                     </Text>
                 </TouchableOpacity>
@@ -162,6 +194,23 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: "center",
         justifyContent: "center",
+    },
+    header: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: 15,
+        width: "100%",
+    },
+    backButton: {
+        padding: 10,
+    },
+    headerText: {
+        fontSize: 20,
+        fontWeight: "bold",
+        flex: 1,
+        textAlign: "center",
+        right: 21,
     },
     text: {
         marginTop: 50,

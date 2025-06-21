@@ -59,27 +59,46 @@ function Tabs() {
   });
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        setLoading(true);
-        const token = await SecureStore.getItemAsync("token");
-        if (token) {
-          const userData = await getUser(token);
-          setUser(userData);
-        } else {
-          navigation.navigate("Login");
-        }
-      } catch (error) {
-        console.error("Erro ao carregar dados do usuário:", error);
-        if (error.response && error.response.data && error.response.data.detail === "Not authenticated") {
-          await SecureStore.deleteItemAsync("token");
-          navigation.navigate("Login");
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUser();
+      const fetchUser = async () => {
+          try {
+              setLoading(true);
+              const token = await SecureStore.getItemAsync("token");
+              if (token) {
+                  const userData = await getUser(token);
+                  setUser(userData);
+              } else {
+                  await SecureStore.deleteItemAsync("token");
+                  navigation.dispatch(
+                      CommonActions.reset({
+                          index: 0,
+                          routes: [{ name: "Login" }],
+                      })
+                  );
+              }
+          } catch (error) {
+              console.error("Erro ao carregar dados do usuário:", error);
+              const status =
+                  error?.response?.status ||
+                  error?.status ||
+                  (error.message?.includes("401") ? 401 : error.message?.includes("403") ? 403 : null);
+              const errorDetail = error?.response?.data?.detail;
+
+              if (status === 401 || status === 403 || errorDetail === "Session expired") {
+                  await SecureStore.deleteItemAsync("token");
+                  navigation.dispatch(
+                      CommonActions.reset({
+                          index: 0,
+                          routes: [{ name: "Login" }],
+                      })
+                  );
+              } else {
+                  navigation.navigate("Entrada");
+              }
+          } finally {
+              setLoading(false);
+          }
+      };
+      fetchUser();
   }, [navigation]);
 
   useEffect(() => {

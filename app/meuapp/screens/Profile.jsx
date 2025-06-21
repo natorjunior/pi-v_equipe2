@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   View,
   TouchableOpacity,
@@ -16,6 +16,7 @@ import { useTheme } from "../service/themeService";
 import { useNavigation, useFocusEffect, DrawerActions } from "@react-navigation/native";
 import * as SecureStore from "expo-secure-store";
 import { getUser } from "../service/userService";
+import { getGroup } from "../service/groupService";
 import { getCheckinsByUser, postLikeById, deleteLikeById } from "../service/checkinService";
 import { Ionicons } from "@expo/vector-icons";
 import dayjs from "dayjs";
@@ -36,8 +37,10 @@ export default function Profile() {
   const [avatarLoading, setAvatarLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("posts");
   const [checkins, setUserCheckins] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const scrollViewRef = useRef(null);
+  const hasInitialized = useRef(false);
 
   const fetchUser = async () => {
     try {
@@ -48,20 +51,43 @@ export default function Profile() {
         setUser(userData);
         const checkinsData = await getCheckinsByUser(token);
         setUserCheckins(checkinsData);
+        const groupsData = await getGroup();
+        const allGroups = groupsData
+          .map((group) => ({
+            id: group.id,
+            name: group.group_name || `Group ${group.id}`,
+          }))
+          .filter((group) => group.name);
+        setGroups(allGroups.sort((a, b) => a.name.localeCompare(b.name)));
       } else {
         console.warn("Token de autenticação não encontrado.");
         navigation.navigate("Login");
       }
     } catch (error) {
-      console.error("Erro no profile ao buscar usuário:", error.message);
+      console.error("Erro no profile ao buscar usuário ou grupos:", error.message);
     } finally {
       setRefreshing(false);
       setLoading(false);
     }
   };
 
+useFocusEffect(
+    useCallback(() => {
+      if (scrollViewRef.current) {
+        setTimeout(() => {
+          if (scrollViewRef.current) {
+            scrollViewRef.current.scrollTo({ y: 0, animated: true });
+            console.log("Scrolled to top of Profile screen");
+          }
+        }, 100);
+      }
+    }, [])
+  );
+
   useFocusEffect(
     useCallback(() => {
+      if (hasInitialized.current) return;
+      hasInitialized.current = true;
       setLoading(true);
       fetchUser();
     }, [])
@@ -149,6 +175,7 @@ export default function Profile() {
                 tintColor={theme.text}
               />
             }
+            ref={scrollViewRef}
           >
             <Modal
               animationType="fade"
@@ -251,76 +278,74 @@ export default function Profile() {
             </View>
 
             {activeTab === "posts" ? (
-              <ScrollView
-                contentContainerStyle={styles.postsContainer}
-                onContentSizeChange={() => {
-                  scrollViewRef.current?.scrollToEnd({ animated: false });
-                }}
-              >
-                {[...checkins].reverse().map((checkin) => (
-                  <TouchableOpacity
-                    key={checkin.id}
-                    style={[styles.post, { backgroundColor: theme.cardBackground }]}
-                    onPress={() => navigation.navigate("PostDetails", { checkin })}
-                  >
-                    <View style={styles.postHeader}>
-                      {checkin.user.avatar && (
-                        <Image
-                          source={{ uri: checkin.user.avatar }}
-                          style={styles.avatarpost}
-                        />
-                      )}
-                      <Text style={[styles.postTitle, { color: theme.text }]}>
-                        @{checkin.user.name}
-                      </Text>
-                    </View>
-
-                    {checkin.photo && (
-                      <View style={styles.postImageContainer}>
-                        {loading ? (
-                          <ActivityIndicator
-                            size="large"
-                            color={theme.text}
-                            style={styles.postImageLoading}
-                          />
-                        ) : (
+              <View style={styles.postsContainer}>
+                {[...checkins].reverse().map((checkin) => {
+                  const group = groups.find((g) => String(g.id) === String(checkin.group_id));
+                  return (
+                    <TouchableOpacity
+                      key={`${String(checkin.id)}-${String(checkin.group_id || 'no-group')}`}
+                      style={[styles.post, { backgroundColor: theme.background, borderColor: theme.text }]}
+                      onPress={() => navigation.navigate("PostDetails", { checkin })}
+                    >
+                      <View style={styles.postHeader}>
+                        {checkin.user.avatar && (
                           <Image
-                            source={{ uri: checkin.photo }}
-                            style={styles.postImage}
-                            resizeMode="cover"
+                            source={{ uri: checkin.user.avatar }}
+                            style={styles.avatarpost}
                           />
                         )}
+                        <View style={styles.headerTextContainer}>
+                          <View style={styles.headerNameRow}>
+                            <Text style={[styles.postTitle, { color: theme.text }]}>@{checkin.user.name}</Text>
+                            <View style={[styles.separatorDot, { backgroundColor: theme.text }]} />
+                            <Text style={[styles.postTimestamp, { color: theme.text }]}>
+                              {dayjs(checkin.created_at).tz("America/Fortaleza").format("DD/MM/YYYY HH:mm")}
+                            </Text>
+                          </View>
+                        </View>
                       </View>
-                    )}
 
-                    <View style={styles.likeContainer}>
-                      <TouchableOpacity 
-                        onPress={() => handleLike(checkin.id)} 
-                        style={styles.likeButton}
-                      >
-                        <Ionicons
-                          name={checkin.liked_by_user ? "heart" : "heart-outline"}
-                          size={24}
-                          color={checkin.liked_by_user ? theme.error || "red" : theme.text}
+                      {checkin.photo && (
+                        <Image
+                          source={{ uri: checkin.photo }}
+                          style={styles.postImage}
+                          resizeMode="cover"
                         />
-                      </TouchableOpacity>
-                      <Text style={[styles.likeCount, { color: theme.text }]}>
-                        {checkin.likes_count}
-                      </Text>
-                    </View>
+                      )}
 
-                    <Text style={[styles.postText, { color: theme.text }]}>
-                      {checkin.title}
-                    </Text>
-                    <Text style={[styles.postText, { color: theme.text }]}>
-                      {checkin.description}
-                    </Text>
-                    <Text style={[styles.postDate, { color: theme.text }]}>
-                      {dayjs(checkin.created_at).tz("America/Fortaleza").format("DD [de] MMMM [de] YYYY")}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+                      <Text style={[styles.postText, { color: theme.text }]}>{checkin.title}</Text>
+                      {checkin.description && (
+                        <Text style={[styles.postDescription, { color: theme.text }]}>
+                          {checkin.description}
+                        </Text>
+                      )}
+                      {checkin.group_id && (
+                        <Text style={[styles.postGroup, { color: theme.text }]}>
+                          Postado no grupo {group ? group.name : "Grupo não encontrado"}
+                        </Text>
+                      )}
+                      <View style={styles.likeContainer}>
+                        <TouchableOpacity
+                          onPress={() => handleLike(checkin.id)}
+                          style={styles.likeButton}
+                        >
+                          <Ionicons
+                            name={checkin.liked_by_user ? "heart" : "heart-outline"}
+                            size={25}
+                            color={checkin.liked_by_user ? theme.error || "red" : theme.text}
+                          />
+                        </TouchableOpacity>
+                        <Text style={[styles.likeCount, { color: theme.text }]}>{checkin.likes_count}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+                {checkins.length === 0 && (
+                  <View style={styles.noPostsContainer}>
+                    <Text style={[styles.noPostsText, { color: theme.text }]}>Nenhuma publicação ainda</Text>
+                  </View>
+                )}
+              </View>
             ) : (
               <View style={styles.genresContainer}>
                 {user?.genres?.length > 0 ? (
@@ -454,72 +479,101 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   postsContainer: {
+    paddingHorizontal: 20,
     paddingBottom: 100,
-    paddingHorizontal: 15,
+  },
+  noPostsContainer: {
+    alignItems: "center",
+    marginTop: 20,
+  },
+  noPostsText: {
+    fontSize: 16,
+    textAlign: "center",
+    opacity: 0.7,
   },
   post: {
-    borderRadius: 10,
-    padding: 15,
-    height: "auto",
-    marginBottom: 15,
-    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
     borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   postHeader: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 8,
   },
+  headerTextContainer: {
+    flexDirection: "column",
+    flex: 1,
+  },
+  headerNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "nowrap",
+  },
   avatarpost: {
-    width: 30,
-    height: 30,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: "#ccc",
-    marginRight: 10,
+    marginRight: 8,
   },
   postTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 15,
+    fontWeight: "600",
+    maxWidth: "60%",
   },
-  postText: {
-    fontSize: 14,
-    marginBottom: 8,
+  separatorDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    marginHorizontal: 6,
+    opacity: 0.6,
   },
-  postDate: {
+  postTimestamp: {
     fontSize: 12,
-    fontStyle: "italic",
-  },
-  postImageContainer: {
-    height: "auto",
-    borderRadius: 10,
-    overflow: "hidden",
-    marginBottom: 10,
-    marginTop: 5,
+    opacity: 0.6,
   },
   postImage: {
-    width: 330,
+    width: "100%",
     height: 330,
+    alignSelf: "center",
+    resizeMode: "cover",
+    borderRadius: 8,
+    marginBottom: 8,
   },
-  postImageLoading: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
+  postText: {
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  postDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 4,
+  },
+  postGroup: {
+    fontSize: 13,
+    marginBottom: 4,
+    opacity: 0.6,
   },
   likeContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
+    marginTop: 8,
   },
   likeButton: {
-    borderRadius: 100,
-    transform: [{ scale: 1 }],
+    padding: 4,
   },
   likeCount: {
-    fontSize: 14,
-    marginLeft: 5,
-    fontWeight: "bold",
+    fontSize: 13,
+    marginLeft: 4,
+    fontWeight: "500",
   },
   genresContainer: {
     flexDirection: "row",
