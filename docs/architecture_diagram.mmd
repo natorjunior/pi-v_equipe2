@@ -6,3 +6,53 @@ graph TD
     C -->|Comunica| F[Serviços Externos]
     B -->|Valida| G[Middleware]
     A -->|Autentica| H[Autenticação]
+
+
+---
+config:
+  layout: dagre
+---
+flowchart LR
+ subgraph CLIENTE["Cliente Mobile"]
+    direction TB
+        RN["App Stay and Learn<br><b>React Native · Expo</b>"]
+  end
+ subgraph BACKEND["Servidor de API"]
+    direction TB
+        API["<b>FastAPI<br>REST API</b><br><i>Endpoints principais</i>"]
+        Auth["Auth Module<br>(JWT)"]
+        Biz["Serviços de Negócio"]
+        Repo["Repositório de Dados<br>(SQLAlchemy)"]
+  end
+ subgraph STORAGE["Armazenamento"]
+    direction TB
+        DB[("<b>MySQL<br>Database</b>")]
+        MinIO[("<b>MinIO<br>Object Store</b>")]
+  end
+ subgraph EXTERNOS["Serviços Externos (futuro)"]
+    direction TB
+        Push["Push Notifications"]
+        Email["Email Service"]
+  end
+    RN -- HTTPS / JSON --> API
+    API -- Valida credenciais --> Auth
+    Auth -- Consulta / Atualiza --> DB
+    API --> Biz
+    Biz --> Repo & MinIO
+    Repo --> DB
+    API -- Enviar Push --> Push
+    API -- <br> --> Email
+     RN:::cliente
+     API:::backend
+     Auth:::backend
+     Biz:::backend
+     Repo:::backend
+     DB:::storage
+     MinIO:::storage
+     Push:::external
+     Email:::external
+    classDef cliente    fill:#E3F2FD,stroke:#1565C0,stroke-width:2px,color:#1A237E, font-size:14px
+    classDef backend    fill:#F3E5F5,stroke:#6A1B9A,stroke-width:2px,color:#4527A0, font-size:14px
+    classDef storage    fill:#ECEFF1,stroke:#546E7A,stroke-width:2px,color:#263238, font-size:14px
+    classDef external   fill:#FFEBEE,stroke:#C62828,stroke-width:2px,color:#AD1457, font-size:14px
+    classDef titulo     font-size:16px,font-weight:bold
