@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant Client
+    participant Controller as CheckinController
+    participant Service as CheckinService
+    participant Minio as MinioAdapter
+    participant Repository as CheckinRepository
+    participant UserService
+    participant LikeRepository
+    Client->>Controller: POST /check-in (checkin_data, photo)
+    Controller->>Service: create_checkin(user_id, checkin_data, photo)
+    alt photo enviado
+        Service->>Minio: upload_file_to_minio(photo, "checkin-photos")
+        Minio-->>Service: photo_url
+    end
+    Service->>Repository: create_checkin(...)
+    Repository-->>Service: checkin
+    Service->>UserService: get_user_by_id(checkin.user_id)
+    Service->>LikeRepository: count_likes_for_checkin(checkin.id)
+    Service->>LikeRepository: has_user_liked(user_id, checkin.id)
+    Service-->>Controller: checkin_data_instance
+    Controller-->>Client: checkin_data_instance

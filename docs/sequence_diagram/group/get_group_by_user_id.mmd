@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant Client
+    participant Controller as GroupController
+    participant Service as GroupService
+    participant Repository as GroupRepository
+    participant ParticipantRepo as GroupParticipantRepository
+    participant UserService
+    Client->>Controller: GET /group
+    Controller->>Service: get_group_by_user_id(user_id)
+    Service->>ParticipantRepo: get_all_by_user_id(user_id)
+    ParticipantRepo-->>Service: group_participant_list
+    Service->>Repository: get_by_multiple_id(group_ids)
+    Repository-->>Service: groups
+    loop for each group
+        Service->>UserService: get_user_by_id(group.created_by)
+        Service->>ParticipantRepo: get_all_by_group_id(group.id)
+        loop for each participant
+            Service->>UserService: get_user_by_id(participant.user_id)
+        end
+    end
+    Service-->>Controller: group_wrapper_list
+    Controller-->>Client: group_wrapper_list

@@ -1,0 +1,44 @@
+flowchart LR
+    subgraph Rotas
+        A[Authentication]
+        B[User]
+        C[Group]
+        D[Check-in]
+    end
+
+    subgraph Entidades
+        E[USER]
+        F[GROUP]
+        G[CHECKIN]
+        H[LIKE_CHECKIN]
+        I[GROUP_PARTICIPANT]
+    end
+
+    %% Ligações principais entre rotas e entidades
+    A -- login --> E
+    B -- CRUD --> E
+    C -- CRUD/Participação --> F
+    C -- Participação --> I
+    D -- CRUD --> G
+    D -- Curtidas --> H
+    D -- Participação --> I
+
+    %% Ligações entre entidades (resumido)
+    E -- participa --> I
+    E -- cria --> F
+    F -- possui --> I
+    F -- possui --> G
+    G -- recebe --> H
+    E -- faz --> G
+    E -- curte --> H
+
+    %% Comentários
+    click A "routes_diagram.mmd" "Ver detalhes das rotas"
+    click B "routes_diagram.mmd" "Ver detalhes das rotas"
+    click C "routes_diagram.mmd" "Ver detalhes das rotas"
+    click D "routes_diagram.mmd" "Ver detalhes das rotas"
+    click E "entity_relationship_diagram.mmd" "Ver detalhes das entidades"
+    click F "entity_relationship_diagram.mmd" "Ver detalhes das entidades"
+    click G "entity_relationship_diagram.mmd" "Ver detalhes das entidades"
+    click H "entity_relationship_diagram.mmd" "Ver detalhes das entidades"
+    click I "entity_relationship_diagram.mmd" "Ver detalhes das entidades"

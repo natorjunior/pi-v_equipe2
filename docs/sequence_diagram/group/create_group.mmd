@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Client
+    participant Controller as GroupController
+    participant Service as GroupService
+    participant Repository as GroupRepository
+    participant ParticipantRepo as GroupParticipantRepository
+    Client->>Controller: POST /group (new_group)
+    Controller->>Service: create_group(user_id, new_group)
+    Service->>Repository: get_group_by_alias(new_group.group_alias)
+    alt grupo já existe
+        Service-->>Controller: HTTP 400
+        Controller-->>Client: erro
+    else grupo não existe
+        Service->>Repository: create_group(...)
+        Repository-->>Service: group
+        Service->>ParticipantRepo: add_participant(user_id, group.id)
+        Service-->>Controller: group
+        Controller-->>Client: group
+    end

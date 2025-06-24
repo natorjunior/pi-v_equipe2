@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant Client
+    participant Controller as GroupController
+    participant Service as GroupService
+    participant Repository as GroupRepository
+    participant ParticipantRepo as GroupParticipantRepository
+    Client->>Controller: GET /group/leave/{group_alias}
+    Controller->>Service: leave_group(user_id, group_alias)
+    Service->>Repository: get_group_by_alias(group_alias)
+    alt grupo não existe
+        Service-->>Controller: HTTP 404
+        Controller-->>Client: erro
+    else
+        Service->>ParticipantRepo: get_by_user_id_and_group_by_id(user_id, group.id)
+        alt não participa
+            Service-->>Controller: HTTP 401
+            Controller-->>Client: erro
+        else
+            Service->>ParticipantRepo: remove_participant(user_id, group.id)
+            Service-->>Controller: sucesso
+            Controller-->>Client: sucesso
+        end
+    end

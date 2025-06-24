@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant Client
+    participant Controller as CheckinController
+    participant Service as CheckinService
+    participant Repository as CheckinRepository
+    Client->>Controller: DELETE /check-in/{checkin_id}
+    Controller->>Service: delete_checkin_by_id(user_id, checkin_id)
+    Service->>Repository: get_checkin_by_id(checkin_id)
+    alt checkin não existe
+        Service-->>Controller: HTTP 404
+        Controller-->>Client: erro
+    else
+        alt user não é dono
+            Service-->>Controller: HTTP 401
+            Controller-->>Client: erro
+        else
+            Service->>Repository: delete_checkin(checkin_id)
+            Repository-->>Service: True
+            Service-->>Controller: None
+            Controller-->>Client: None
+        end
+    end

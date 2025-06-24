@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Client
+    participant Controller as CheckinController
+    participant Service as CheckinService
+    participant LikeRepository
+    Client->>Controller: DELETE /check-in/{checkin_id}/like
+    Controller->>Service: unlike_checkin(user_id, checkin_id)
+    Service->>LikeRepository: unlike_checkin(user_id, checkin_id)
+    LikeRepository-->>Service: None
+    Service-->>Controller: None
+    Controller-->>Client: None

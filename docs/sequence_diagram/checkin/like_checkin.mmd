@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Client
+    participant Controller as CheckinController
+    participant Service as CheckinService
+    participant Repository as CheckinRepository
+    participant LikeRepository
+    Client->>Controller: POST /check-in/{checkin_id}/like
+    Controller->>Service: like_checkin(user_id, checkin_id)
+    Service->>Repository: exists(checkin_id)
+    alt checkin não existe
+        Service-->>Controller: HTTP 404
+        Controller-->>Client: erro
+    else
+        Service->>LikeRepository: has_user_liked(user_id, checkin_id)
+        alt ainda não curtiu
+            Service->>LikeRepository: like_checkin(user_id, checkin_id)
+            LikeRepository-->>Service: like
+            Service-->>Controller: like
+            Controller-->>Client: like
+        else
+            Service-->>Controller: None
+            Controller-->>Client: None
+        end
+    end
