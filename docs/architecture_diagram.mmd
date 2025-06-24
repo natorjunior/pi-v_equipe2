@@ -1,3 +1,4 @@
+```mermaid
 graph TD
     A[API REST] -->|Recebe requisições| B[Controladores]
     B -->|Processa lógica| C[Serviços]
@@ -6,12 +7,9 @@ graph TD
     C -->|Comunica| F[Serviços Externos]
     B -->|Valida| G[Middleware]
     A -->|Autentica| H[Autenticação]
+```
 
-
----
-config:
-  layout: dagre
----
+```mermaid
 flowchart LR
  subgraph CLIENTE["Cliente Mobile"]
     direction TB
@@ -56,3 +54,4 @@ flowchart LR
     classDef storage    fill:#ECEFF1,stroke:#546E7A,stroke-width:2px,color:#263238, font-size:14px
     classDef external   fill:#FFEBEE,stroke:#C62828,stroke-width:2px,color:#AD1457, font-size:14px
     classDef titulo     font-size:16px,font-weight:bold
+```
