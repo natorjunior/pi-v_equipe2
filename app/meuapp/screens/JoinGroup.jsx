@@ -55,7 +55,6 @@ export default function JoinGroup() {
         });
       }
     } catch (error) {
-      console.log("Erro ao entrar no grupo:", error);
       setError(error.message);
     } finally {
       setLoading(false);

@@ -76,10 +76,7 @@ export default function EditPost() {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 100);
     } catch (error) {
-      if (error.message?.includes("cancel")) {
-        console.log("Usuário cancelou a seleção");
-      } else {
-        console.error("Erro ao selecionar ou recortar imagem:", error);
+      if (!error.message?.includes("cancel")) {
         Alert.alert("Erro", "Ocorreu um erro ao processar a imagem");
       }
     }
@@ -97,7 +94,6 @@ export default function EditPost() {
       navigation.goBack();
       navigation.navigate("AppDrawer", { refresh: true });
     } catch (error) {
-      console.error("Update error:", error);
       if (error.response?.status === 401 && error.response?.data?.message === "propriedade de outro usuario") {
         Alert.alert("Erro", "Você não tem permissão para editar essa publicação.");
       } else {
@@ -127,8 +123,6 @@ export default function EditPost() {
               navigation.goBack();
               navigation.navigate("AppDrawer", { refresh: true });
             } catch (error) {
-              console.error("Delete error:", error);
-              Alert.alert("Erro", error.message || "Não foi possível excluir a publicação.");
             } finally {
               setIsDeleting(false);
             }

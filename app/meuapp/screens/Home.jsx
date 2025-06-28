@@ -139,7 +139,6 @@ export default function Home() {
                 .filter((group) => group.name);
             setGroups(allGroups.sort((a, b) => a.name.localeCompare(b.name)));
         } catch (error) {
-            console.error("Error fetching groups:", error);
             const status =
                 error?.response?.status ||
                 error?.status ||
@@ -190,9 +189,6 @@ export default function Home() {
                     if (Array.isArray(groupCheckins)) {
                         groupCheckins.forEach((checkin) => {
                             const checkinId = `${String(checkin.id)}-${String(checkin.group_id || 'no-group')}`;
-                            if (String(checkin.id).includes('.$')) {
-                                console.warn(`Problematic checkin ID detected: ${checkin.id} in group ${groupId}`);
-                            }
                             uniqueCheckins.set(checkinId, checkin);
                         });
                     }
@@ -200,11 +196,6 @@ export default function Home() {
                 checkinsData = Array.from(uniqueCheckins.values());
             } else {
                 checkinsData = await getFeedByUser(pageNum);
-                checkinsData.forEach((checkin) => {
-                    if (String(checkin.id).includes('.$')) {
-                        console.warn(`Problematic checkin ID detected in feed: ${checkin.id}`);
-                    }
-                });
             }
 
             const sortedCheckins =

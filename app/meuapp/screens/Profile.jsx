@@ -60,24 +60,21 @@ export default function Profile() {
           .filter((group) => group.name);
         setGroups(allGroups.sort((a, b) => a.name.localeCompare(b.name)));
       } else {
-        console.warn("Token de autenticação não encontrado.");
         navigation.navigate("Login");
       }
     } catch (error) {
-      console.error("Erro no profile ao buscar usuário ou grupos:", error.message);
     } finally {
       setRefreshing(false);
       setLoading(false);
     }
   };
 
-useFocusEffect(
+  useFocusEffect(
     useCallback(() => {
       if (scrollViewRef.current) {
         setTimeout(() => {
           if (scrollViewRef.current) {
             scrollViewRef.current.scrollTo({ y: 0, animated: true });
-            console.log("Scrolled to top of Profile screen");
           }
         }, 100);
       }
@@ -116,7 +113,6 @@ useFocusEffect(
         await postLikeById(checkinId);
       }
     } catch (error) {
-      console.error("Erro ao curtir/descurtir:", error);
       await fetchUser();
     }
   };

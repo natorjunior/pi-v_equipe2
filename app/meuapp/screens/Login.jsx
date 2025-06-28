@@ -61,8 +61,6 @@ export default function Login({ navigation }) {
         setError("E-mail ou senha incorretos.");
       }
     } catch (error) {
-      console.log("Erro ao fazer login:", error);
-
       const message =
         error?.response?.data?.detail?.toLowerCase?.() || error.message || "";
 
@@ -83,7 +81,6 @@ export default function Login({ navigation }) {
       const response = await getUser(token);
       return response;
     } catch (error) {
-      console.error("Erro ao buscar dados do usuário:", error);
       return null;
     }
   };
