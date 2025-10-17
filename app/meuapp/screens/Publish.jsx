@@ -49,55 +49,65 @@ export default function Publish() {
     }
   }, [route.params]);
 
-  const handleImage = async (type) => {
-    try {
-      const hasAllPermissions = await AndroidPermissions();
-      if (!hasAllPermissions) {
-        Alert.alert(
-          "Permissões Negadas",
-          "O aplicativo precisa de permissões para acessar a câmera e a galeria."
-        );
-        return;
-      }
-
-      let selectedImage;
-      if (type === "camera") {
-        selectedImage = await ImagePicker.openCamera({
-          width: 1024,
-          height: 1024,
-          cropping: true,
-          compressImageQuality: 0.8,
-          mediaType: "photo",
-          forceJpg: true,
-        });
-      } else {
-        selectedImage = await ImagePicker.openPicker({
-          width: 1024,
-          height: 1024,
-          cropping: true,
-          compressImageQuality: 0.8,
-          mediaType: "photo",
-          forceJpg: true,
-        });
-      }
-
-      setImage({
-        uri: selectedImage.path,
-        width: selectedImage.width,
-        height: selectedImage.height,
-        fileName: selectedImage.filename || `image_${Date.now()}.jpg`,
-        type: selectedImage.mime || "image/jpeg",
-      });
-
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-    } catch (error) {
-      if (error.message?.includes("cancel")) {
-        return;
-      }
+const handleImage = async (type) => {
+  try {
+    const hasAllPermissions = await AndroidPermissions();
+    if (!hasAllPermissions) {
+      Alert.alert(
+        "Permissões Negadas",
+        "O aplicativo precisa de permissões para acessar a câmera e a galeria."
+      );
+      return;
     }
-  };
+
+    const cropPickerOptions = {
+      width: 1024,
+      height: 1024,
+      cropping: true,
+      compressImageQuality: 0.8,
+      mediaType: "photo",
+      forceJpg: true,
+      cropperCancelText: "Cancelar",
+      cropperChooseText: "Selecionar",
+      cropperToolbarTitle: "Editar Foto",
+      cropperToolbarColor: '#0D0058',
+      cropperStatusBarColor: '#0D0058',
+      cropperToolbarWidgetColor: '#FFFFFF',
+      cropperActiveWidgetColor: '#DFBA69',
+    };
+
+    let selectedImage;
+    if (type === "camera") {
+      selectedImage = await ImagePicker.openCamera({
+        ...cropPickerOptions,
+        useFrontCamera: false,
+      });
+    } else {
+      selectedImage = await ImagePicker.openPicker({
+        ...cropPickerOptions,
+        multiple: false,
+        waitAnimationEnd: true,
+      });
+    }
+
+    setImage({
+      uri: selectedImage.path,
+      width: selectedImage.width,
+      height: selectedImage.height,
+      fileName: selectedImage.filename || `image_${Date.now()}.jpg`,
+      type: selectedImage.mime || "image/jpeg",
+    });
+
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  } catch (error) {
+    if (error.message?.includes("cancel")) {
+      return;
+    }
+    console.error("Erro ao selecionar imagem:", error);
+  }
+};
 
   const handlePublish = async () => {
     if (!selectedGroupId) {

@@ -43,9 +43,26 @@ export default function EditPost() {
         return;
       }
 
+      const cropPickerOptions = {
+        width: 1024,
+        height: 1024,
+        cropping: true,
+        compressImageQuality: 0.8,
+        mediaType: "photo",
+        forceJpg: true,
+        cropperCancelText: "Cancelar",
+        cropperChooseText: "Selecionar",
+        cropperToolbarTitle: "Editar Foto",
+        cropperToolbarColor: '#0D0058',
+        cropperStatusBarColor: '#0D0058',
+        cropperToolbarWidgetColor: '#FFFFFF',
+        cropperActiveWidgetColor: '#DFBA69',
+      };
+
       let selectedImage;
       if (type === "camera") {
         selectedImage = await ImagePicker.openCamera({
+          ...cropPickerOptions,
           width: 1024,
           height: 1024,
           cropping: true,
@@ -55,6 +72,7 @@ export default function EditPost() {
         });
       } else {
         selectedImage = await ImagePicker.openPicker({
+          ...cropPickerOptions,
           width: 1024,
           height: 1024,
           cropping: true,
