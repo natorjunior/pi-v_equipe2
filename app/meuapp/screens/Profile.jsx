@@ -10,6 +10,7 @@ import {
   SafeAreaView,
   Modal,
   RefreshControl,
+  Animated,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../service/themeService";
@@ -41,6 +42,8 @@ export default function Profile() {
   const [modalVisible, setModalVisible] = useState(false);
   const scrollViewRef = useRef(null);
   const hasInitialized = useRef(false);
+  const [showScrollToTop, setShowScrollToTop] = useState(false);
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   const fetchUser = async () => {
     try {
@@ -67,6 +70,12 @@ export default function Profile() {
       setRefreshing(false);
       setLoading(false);
     }
+  };
+
+  const handleScroll = (event) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    setShowScrollToTop(offsetY > 300);
+    scrollY.setValue(offsetY);
   };
 
   useFocusEffect(
@@ -117,6 +126,15 @@ export default function Profile() {
     }
   };
 
+  const scrollToTopAndRefresh = async () => {
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ y: 0, animated: true });
+    }
+    setRefreshing(true);
+    await fetchUser();
+    setRefreshing(false);
+  };
+
   const formatDate = (dateString) => {
     return dayjs(dateString).tz("America/Fortaleza").format("D [de] MMMM [de] YYYY");
   };
@@ -161,209 +179,239 @@ export default function Profile() {
         {loading ? (
           <ActivityIndicator size="large" color={theme.mode === "dark" ? "#fff" : "#000"} style={styles.loader} />
         ) : (
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={fetchUser}
-                colors={[theme.text]}
-                tintColor={theme.text}
-              />
-            }
-            ref={scrollViewRef}
-          >
-            <Modal
-              animationType="fade"
-              transparent={true}
-              visible={modalVisible}
-              onRequestClose={() => setModalVisible(false)}
-            >
-              <View style={styles.modalBackground}>
-                <TouchableOpacity style={styles.modalCloseArea} onPress={() => setModalVisible(false)}>
-                  <Ionicons name="close" size={30} color="#fff" />
-                </TouchableOpacity>
-                <Image
-                  source={{ uri: user?.avatar }}
-                  style={styles.fullscreenImage}
-                  resizeMode="cover"
+          <View style={{ flex: 1 }}>
+            <ScrollView
+              contentContainerStyle={styles.scrollContent}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={fetchUser}
+                  colors={[theme.text]}
+                  tintColor={theme.text}
                 />
-              </View>
-            </Modal>
-
-            <View style={styles.profileHeader}>
-              <TouchableOpacity onPress={() => setModalVisible(true)}>
-                {avatarLoading && (
-                  <ActivityIndicator size="large" color={theme.mode === "dark" ? "#fff" : "#000"} style={styles.avatarLoader} />
-                )}
-                {user?.avatar ? (
+              }
+              ref={scrollViewRef}
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
+              showsVerticalScrollIndicator={true}
+            >
+              <Modal
+                animationType="fade"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+              >
+                <View style={styles.modalBackground}>
+                  <TouchableOpacity style={styles.modalCloseArea} onPress={() => setModalVisible(false)}>
+                    <Ionicons name="close" size={30} color="#fff" />
+                  </TouchableOpacity>
                   <Image
-                    source={{ uri: user.avatar }}
-                    style={[
-                      styles.avatar,
-                      {
-                        borderColor:
-                          theme.mode === "dark" ? "#DFBA69" : "#003366",
-                      },
-                    ]}
-                    onLoadStart={() => setAvatarLoading(true)}
-                    onLoadEnd={() => setAvatarLoading(false)}
+                    source={{ uri: user?.avatar }}
+                    style={styles.fullscreenImage}
+                    resizeMode="cover"
                   />
-                ) : (
-                  <View style={[styles.defaultAvatar, { backgroundColor: theme.mode === "dark" ? "#1a1a2e" : "#ccc" }]}>
-                    <Ionicons name="person" size={60} color={theme.mode === "dark" ? "#fff" : "#000"} />
-                  </View>
-                )}
-              </TouchableOpacity>
+                </View>
+              </Modal>
 
-              <Text style={[styles.name, { color: theme.text }]}>{user?.name || "Usuário"}</Text>
-
-              <View style={styles.motivationContainer}>
-                <View style={styles.motivationIconContainer}>{renderMotivationIcon()}</View>
-                <Text style={[styles.motivation, { color: theme.text }]}>{user?.motivation}</Text>
-              </View>
-
-              {user?.created_at && (
-                <Text style={[styles.createdAt, { color: theme.text }]}>
-                  Com a gente desde: {formatDate(user.created_at)}
-                </Text>
-              )}
-            </View>
-
-            <View style={styles.tabContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.tabButton,
-                  activeTab === "posts" && {
-                    borderBottomColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
-                  },
-                ]}
-                onPress={() => setActiveTab("posts")}
-              >
-                <Text
-                  style={[
-                    styles.tabText,
-                    {
-                      color: activeTab === "posts" ? (theme.mode === "dark" ? "#DFBA69" : "#003366") : theme.text,
-                    },
-                  ]}
-                >
-                  Publicações
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[ 
-                  styles.tabButton,
-                  activeTab === "genres" && {
-                    borderBottomColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
-                  },
-                ]}
-                onPress={() => setActiveTab("genres")}
-              >
-                <Text
-                  style={[
-                    styles.tabText,
-                    {
-                      color: activeTab === "genres" ? (theme.mode === "dark" ? "#DFBA69" : "#003366") : theme.text,
-                    },
-                  ]}
-                >
-                  Gêneros Favoritos
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {activeTab === "posts" ? (
-              <View style={styles.postsContainer}>
-                {[...checkins].reverse().map((checkin) => {
-                  const group = groups.find((g) => String(g.id) === String(checkin.group_id));
-                  return (
-                    <TouchableOpacity
-                      key={`${String(checkin.id)}-${String(checkin.group_id || 'no-group')}`}
-                      style={[styles.post, { backgroundColor: theme.background, borderColor: theme.text }]}
-                      onPress={() => navigation.navigate("PostDetails", { checkin })}
-                    >
-                      <View style={styles.postHeader}>
-                        {checkin.user.avatar && (
-                          <Image
-                            source={{ uri: checkin.user.avatar }}
-                            style={styles.avatarpost}
-                          />
-                        )}
-                        <View style={styles.headerTextContainer}>
-                          <View style={styles.headerNameRow}>
-                            <Text style={[styles.postTitle, { color: theme.text }]}>@{checkin.user.name}</Text>
-                            <View style={[styles.separatorDot, { backgroundColor: theme.text }]} />
-                            <Text style={[styles.postTimestamp, { color: theme.text }]}>
-                              {dayjs(checkin.created_at).tz("America/Fortaleza").format("DD/MM/YYYY HH:mm")}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-
-                      {checkin.photo && (
-                        <Image
-                          source={{ uri: checkin.photo }}
-                          style={styles.postImage}
-                          resizeMode="cover"
-                        />
-                      )}
-
-                      <Text style={[styles.postText, { color: theme.text }]}>{checkin.title}</Text>
-                      {checkin.description && (
-                        <Text style={[styles.postDescription, { color: theme.text }]}>
-                          {checkin.description}
-                        </Text>
-                      )}
-                      {checkin.group_id && (
-                        <Text style={[styles.postGroup, { color: theme.text }]}>
-                          Postado no grupo {group ? group.name : "Grupo não encontrado"}
-                        </Text>
-                      )}
-                      <View style={styles.likeContainer}>
-                        <TouchableOpacity
-                          onPress={() => handleLike(checkin.id)}
-                          style={styles.likeButton}
-                        >
-                          <Ionicons
-                            name={checkin.liked_by_user ? "heart" : "heart-outline"}
-                            size={25}
-                            color={checkin.liked_by_user ? theme.error || "red" : theme.text}
-                          />
-                        </TouchableOpacity>
-                        <Text style={[styles.likeCount, { color: theme.text }]}>{checkin.likes_count}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-                {checkins.length === 0 && (
-                  <View style={styles.noPostsContainer}>
-                    <Text style={[styles.noPostsText, { color: theme.text }]}>Nenhuma publicação ainda</Text>
-                  </View>
-                )}
-              </View>
-            ) : (
-              <View style={styles.genresContainer}>
-                {user?.genres?.length > 0 ? (
-                  user.genres.map((genre, index) => (
-                    <View
-                      key={index}
+              <View style={styles.profileHeader}>
+                <TouchableOpacity onPress={() => setModalVisible(true)}>
+                  {avatarLoading && (
+                    <ActivityIndicator size="large" color={theme.mode === "dark" ? "#fff" : "#000"} style={styles.avatarLoader} />
+                  )}
+                  {user?.avatar ? (
+                    <Image
+                      source={{ uri: user.avatar }}
                       style={[
-                        styles.genreTag,
+                        styles.avatar,
                         {
-                          backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
+                          borderColor:
+                            theme.mode === "dark" ? "#DFBA69" : "#003366",
                         },
                       ]}
-                    >
-                      <Text style={[styles.genreText, { color: "#fff" }]}>{genre}</Text>
+                      onLoadStart={() => setAvatarLoading(true)}
+                      onLoadEnd={() => setAvatarLoading(false)}
+                    />
+                  ) : (
+                    <View style={[styles.defaultAvatar, { backgroundColor: theme.mode === "dark" ? "#1a1a2e" : "#ccc" }]}>
+                      <Ionicons name="person" size={60} color={theme.mode === "dark" ? "#fff" : "#000"} />
                     </View>
-                  ))
-                ) : (
-                  <Text style={[styles.noContent, { color: theme.text }]}>Nenhum gênero selecionado</Text>
+                  )}
+                </TouchableOpacity>
+
+                <Text style={[styles.name, { color: theme.text }]}>{user?.name || "Usuário"}</Text>
+
+                <View style={styles.motivationContainer}>
+                  <View style={styles.motivationIconContainer}>{renderMotivationIcon()}</View>
+                  <Text style={[styles.motivation, { color: theme.text }]}>{user?.motivation}</Text>
+                </View>
+
+                {user?.created_at && (
+                  <Text style={[styles.createdAt, { color: theme.text }]}>
+                    Com a gente desde: {formatDate(user.created_at)}
+                  </Text>
                 )}
               </View>
+
+              <View style={styles.tabContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.tabButton,
+                    activeTab === "posts" && {
+                      borderBottomColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
+                    },
+                  ]}
+                  onPress={() => setActiveTab("posts")}
+                >
+                  <Text
+                    style={[
+                      styles.tabText,
+                      {
+                        color: activeTab === "posts" ? (theme.mode === "dark" ? "#DFBA69" : "#003366") : theme.text,
+                      },
+                    ]}
+                  >
+                    Publicações
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[ 
+                    styles.tabButton,
+                    activeTab === "genres" && {
+                      borderBottomColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
+                    },
+                  ]}
+                  onPress={() => setActiveTab("genres")}
+                >
+                  <Text
+                    style={[
+                      styles.tabText,
+                      {
+                        color: activeTab === "genres" ? (theme.mode === "dark" ? "#DFBA69" : "#003366") : theme.text,
+                      },
+                    ]}
+                  >
+                    Gêneros Favoritos
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {activeTab === "posts" ? (
+                <View style={styles.postsContainer}>
+                  {[...checkins].reverse().map((checkin) => {
+                    const group = groups.find((g) => String(g.id) === String(checkin.group_id));
+                    return (
+                      <TouchableOpacity
+                        key={`${String(checkin.id)}-${String(checkin.group_id || 'no-group')}`}
+                        style={[styles.post, { backgroundColor: theme.background, borderColor: theme.text }]}
+                        onPress={() => navigation.navigate("PostDetails", { checkin })}
+                      >
+                        <View style={styles.postHeader}>
+                          {checkin.user.avatar && (
+                            <Image
+                              source={{ uri: checkin.user.avatar }}
+                              style={styles.avatarpost}
+                            />
+                          )}
+                          <View style={styles.headerTextContainer}>
+                            <View style={styles.headerNameRow}>
+                              <Text style={[styles.postTitle, { color: theme.text }]}>@{checkin.user.name}</Text>
+                              <View style={[styles.separatorDot, { backgroundColor: theme.text }]} />
+                              <Text style={[styles.postTimestamp, { color: theme.text }]}>
+                                {dayjs(checkin.created_at).tz("America/Fortaleza").format("DD/MM/YYYY HH:mm")}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+
+                        {checkin.photo && (
+                          <Image
+                            source={{ uri: checkin.photo }}
+                            style={styles.postImage}
+                            resizeMode="cover"
+                          />
+                        )}
+
+                        <Text style={[styles.postText, { color: theme.text }]}>{checkin.title}</Text>
+                        {checkin.description && (
+                          <Text style={[styles.postDescription, { color: theme.text }]}>
+                            {checkin.description}
+                          </Text>
+                        )}
+                        {checkin.group_id && (
+                          <Text style={[styles.postGroup, { color: theme.text }]}>
+                            Postado no grupo {group ? group.name : "Grupo não encontrado"}
+                          </Text>
+                        )}
+                        <View style={styles.likeContainer}>
+                          <TouchableOpacity
+                            onPress={() => handleLike(checkin.id)}
+                            style={styles.likeButton}
+                          >
+                            <Ionicons
+                              name={checkin.liked_by_user ? "heart" : "heart-outline"}
+                              size={25}
+                              color={checkin.liked_by_user ? theme.error || "red" : theme.text}
+                            />
+                          </TouchableOpacity>
+                          <Text style={[styles.likeCount, { color: theme.text }]}>{checkin.likes_count}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  {checkins.length === 0 && (
+                    <View style={styles.noPostsContainer}>
+                      <Text style={[styles.noPostsText, { color: theme.text }]}>Nenhuma publicação ainda</Text>
+                    </View>
+                  )}
+                  
+                  {/* Footer para mostrar mensagem quando chegar ao final */}
+                  {checkins.length > 0 && (
+                    <TouchableOpacity 
+                      style={styles.messageContainer}
+                      onPress={scrollToTopAndRefresh}
+                    >
+                      <View style={[styles.line, { borderColor: theme.border || "#ccc" }]} />
+                      <Ionicons name="sparkles-outline" size={32} color={theme.text} style={styles.icon} />
+                      <Text style={[styles.text, { color: theme.text }]}>Você chegou ao fim ✨</Text>
+                      <Text style={[styles.subtext, { color: theme.text }]}>
+                        Toque aqui para retornar lá em cima!
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ) : (
+                <View style={styles.genresContainer}>
+                  {user?.genres?.length > 0 ? (
+                    user.genres.map((genre, index) => (
+                      <View
+                        key={index}
+                        style={[
+                          styles.genreTag,
+                          {
+                            backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
+                          },
+                        ]}
+                      >
+                        <Text style={[styles.genreText, { color: "#fff" }]}>{genre}</Text>
+                      </View>
+                    ))
+                  ) : (
+                    <Text style={[styles.noContent, { color: theme.text }]}>Nenhum gênero selecionado</Text>
+                  )}
+                </View>
+              )}
+            </ScrollView>
+
+            {/* Botão de voltar ao topo e atualizar */}
+            {showScrollToTop && (
+              <TouchableOpacity
+                style={[styles.scrollToTopButton, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366" }]}
+                onPress={scrollToTopAndRefresh}
+              >
+                <Ionicons name="chevron-up" size={24} color="#fff" />
+              </TouchableOpacity>
             )}
-          </ScrollView>
+          </View>
         )}
       </LinearGradient>
     </SafeAreaView>
@@ -576,6 +624,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "center",
     paddingHorizontal: 15,
+    paddingBottom: 100,
   },
   genreTag: {
     paddingVertical: 8,
@@ -609,5 +658,44 @@ const styles = StyleSheet.create({
     right: 30,
     zIndex: 2,
     padding: 10,
+  },
+  scrollToTopButton: {
+    position: "absolute",
+    bottom: 25,
+    right: 25,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    zIndex: 5,
+  },
+  messageContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    marginTop: 10,
+  },
+  line: {
+    width: "100%",
+    borderTopWidth: 1,
+    marginVertical: 15,
+  },
+  icon: {
+    marginBottom: 10,
+  },
+  text: {
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  subtext: {
+    fontSize: 14,
+    textAlign: "center",
   },
 });

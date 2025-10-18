@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   View,
   Text,
@@ -13,7 +13,10 @@ import {
   Dimensions,
   Animated,
   BackHandler,
+  CommonActions,
+  Platform
 } from "react-native";
+import { BannerAd, BannerAdSize, TestIds, useForeground } from 'react-native-google-mobile-ads';
 import * as SecureStore from "expo-secure-store";
 import { useTheme } from "../service/themeService";
 import { useNavigation, DrawerActions, useFocusEffect, useRoute } from "@react-navigation/native";
@@ -48,9 +51,34 @@ export default function Groups() {
   const headerHeight = 0;
   const hasInitialized = useRef(false);
 
+  const [showScrollToTop, setShowScrollToTop] = useState(false);
+
+  const bannerRef = useRef(null);
+
+  useForeground(() => {
+      if (Platform.OS === 'ios') bannerRef.current?.load();
+  });
+  const adFrequency = 5;
+  const interspersedData = useMemo(() => {
+      const data = [];
+      checkins.forEach((item, index) => {
+          data.push({ type: 'post', data: item, key: `${item.id}-${item.group_id || 'no-group'}` });
+          if ((index + 1) % adFrequency === 0 && index < checkins.length - 1) {
+          data.push({ type: 'ad', key: `ad-${Math.floor(index / adFrequency)}` });
+          }
+      });
+      return data;
+  }, [checkins]);
+
   const handleScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-    { useNativeDriver: true }
+    { 
+      useNativeDriver: true,
+      listener: (event) => {
+        const offsetY = event.nativeEvent.contentOffset.y;
+        setShowScrollToTop(offsetY > 300);
+      }
+    }
   );
 
   const fetchCurrentUser = async () => {
@@ -323,6 +351,17 @@ export default function Groups() {
     return username;
   };
 
+  const scrollToTopAndRefresh = async () => {
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+    setRefreshing(true);
+    if (selectedGroupId) {
+      await fetchData(selectedGroupId, selectedGroupName);
+    } else {
+      await fetchGroupsAndRankings();
+    }
+    setRefreshing(false);
+  };
+
   const renderEmptyComponent = () => {
     if (!selectedGroupId) {
       return (
@@ -401,16 +440,7 @@ export default function Groups() {
       return (
         <TouchableOpacity 
           style={styles.messageContainer}
-          onPress={async () => {
-            setRefreshing(true);
-            try {
-              await fetchData(selectedGroupId, selectedGroupName);
-              await new Promise(resolve => setTimeout(resolve, 100));
-              flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
-            } finally {
-              setRefreshing(false);
-            }
-          }}
+          onPress={scrollToTopAndRefresh}
         >
           <View style={[styles.line, { borderColor: theme.border }]} />
           <Ionicons name="sparkles-outline" size={32} color={theme.text} style={styles.icon} />
@@ -530,73 +560,90 @@ export default function Groups() {
   const renderPostList = () => (
     <AnimatedFlatList
       style={styles.list}
-      data={checkins}
+      data={interspersedData}
       ref={flatListRef}
-      keyExtractor={(item) => String(item.id).replace(/\.\$/g, '')}
+      keyExtractor={(item) => item.key}
       contentContainerStyle={{
         paddingTop: headerHeight + 20,
         paddingHorizontal: 20,
         paddingBottom: 20,
       }}
-      renderItem={({ item }) => (
-        <TouchableOpacity
-          onPress={() => navigation.navigate("PostDetails", { checkin: item })}
-        >
-          <View
-            style={[
-              styles.post,
-              { backgroundColor: theme.background, borderColor: theme.text },
-            ]}
+      renderItem={({ item }) => {
+        if (item.type === 'ad') {
+          return (
+            <View style={{ alignItems: 'center', paddingVertical: 10, marginBottom: 10 }}>
+              <BannerAd
+                ref={bannerRef}
+                unitId="ca-app-pub-9890197651956150/1882090470" //unitId={TestIds.ADAPTIVE_BANNER}
+                size={BannerAdSize.INLINE_ADAPTIVE_BANNER}
+                requestOptions={{ networkExtras: { collapsible: 'bottom' } }}
+                onAdFailedToLoad={(error) => {
+                  console.error('Ad failed to load:', error);
+                }}
+              />
+            </View>
+          );
+        }
+        return (
+          <TouchableOpacity
+            onPress={() => navigation.navigate("PostDetails", { checkin: item.data })}
           >
-            <View style={styles.postHeader}>
-              {item.user.avatar && (
-                <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
-              )}
-              <View style={styles.headerTextContainer}>
-                <View style={styles.headerNameRow}>
-                  <Text style={[styles.postTitle, { color: theme.text }]}>
-                    @{truncateUsername(item.user.name)}
-                  </Text>
-                  <View style={[styles.separatorDot, { backgroundColor: theme.text }]} />
-                  <Text style={[styles.postTimestamp, { color: theme.text }]}>
-                    {new Date(item.created_at).toLocaleString("pt-BR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </Text>
+            <View
+              style={[
+                styles.post,
+                { backgroundColor: theme.background, borderColor: theme.text },
+              ]}
+            >
+              <View style={styles.postHeader}>
+                {item.data.user.avatar && (
+                  <Image source={{ uri: item.data.user.avatar }} style={styles.avatar} />
+                )}
+                <View style={styles.headerTextContainer}>
+                  <View style={styles.headerNameRow}>
+                    <Text style={[styles.postTitle, { color: theme.text }]}>
+                      @{truncateUsername(item.data.user.name)}
+                    </Text>
+                    <View style={[styles.separatorDot, { backgroundColor: theme.text }]} />
+                    <Text style={[styles.postTimestamp, { color: theme.text }]}>
+                      {new Date(item.data.created_at).toLocaleString("pt-BR", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </Text>
+                  </View>
                 </View>
               </View>
+              {item.data.photo && (
+                <Image source={{ uri: item.data.photo }} style={styles.postImage} />
+              )}
+              <Text style={[styles.postText, { color: theme.text }]}>{item.data.title}</Text>
+              {item.data.description && (
+                <Text style={[styles.postDescription, { color: theme.text }]}>
+                  {item.data.description}
+                </Text>
+              )}
+              <View style={styles.likeContainer}>
+                <TouchableOpacity
+                  onPress={() => handleLike(item.data.id)}
+                  style={styles.likeButton}
+                >
+                  <Ionicons
+                    name={item.data.liked_by_user ? "heart" : "heart-outline"}
+                    size={25}
+                    color={item.data.liked_by_user ? theme.error || "red" : theme.text}
+                  />
+                </TouchableOpacity>
+                <Text style={[styles.likeCount, { color: theme.text }]}>
+                  {item.data.likes_count}
+                </Text>
+              </View>
             </View>
-            {item.photo && (
-              <Image source={{ uri: item.photo }} style={styles.postImage} />
-            )}
-            <Text style={[styles.postText, { color: theme.text }]}>{item.title}</Text>
-            {item.description && (
-              <Text style={[styles.postDescription, { color: theme.text }]}>
-                {item.description}
-              </Text>
-            )}
-            <View style={styles.likeContainer}>
-              <TouchableOpacity
-                onPress={() => handleLike(item.id)}
-                style={styles.likeButton}
-              >
-                <Ionicons
-                  name={item.liked_by_user ? "heart" : "heart-outline"}
-                  size={25}
-                  color={item.liked_by_user ? theme.error || "red" : theme.text}
-                />
-              </TouchableOpacity>
-              <Text style={[styles.likeCount, { color: theme.text }]}>
-                {item.likes_count}
-              </Text>
-            </View>
-          </View>
-        </TouchableOpacity>
-      )}
+          </TouchableOpacity>
+        );
+      }}
       ListEmptyComponent={renderEmptyComponent()}
       ListFooterComponent={renderFooter()}
       refreshControl={
@@ -668,6 +715,16 @@ export default function Groups() {
             {selectedGroupId ? renderPostList() : renderGroupList()}
           </View>
         )}
+        
+        {showScrollToTop && selectedGroupId && (
+          <TouchableOpacity
+            style={[styles.scrollToTopButton, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366" }]}
+            onPress={scrollToTopAndRefresh}
+          >
+            <Ionicons name="chevron-up" size={24} color="#fff" />
+          </TouchableOpacity>
+        )}
+
         {selectedGroupId && (
           <TouchableOpacity
             style={[
@@ -917,15 +974,31 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   fab: {
-    position: "absolute",
-    bottom: 25,
-    right: 25,
-    width: 55,
-    height: 55,
-    borderRadius: 30,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 5,
+      position: "absolute",
+      bottom: 15,
+      right: 10,
+      width: 50,
+      height: 50,
+      borderRadius: 30,
+      justifyContent: "center",
+      alignItems: "center",
+      elevation: 5,
+  },
+  scrollToTopButton: {
+      position: "absolute",
+      bottom: 75,
+      right: 10,
+      width: 40,
+      height: 40,
+      borderRadius: 30,
+      justifyContent: "center",
+      alignItems: "center",
+      elevation: 5,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.3,
+      shadowRadius: 6,
+      zIndex: 5,
   },
   actionButton: {
     width: "80%",

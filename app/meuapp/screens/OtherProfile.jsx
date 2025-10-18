@@ -8,7 +8,7 @@ import {
     TouchableOpacity, 
     ScrollView,
     Modal,
-    ActivityIndicator
+    ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -16,7 +16,9 @@ import { useTheme } from '../service/themeService';
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import "dayjs/locale/pt-br";
+import 'dayjs/locale/pt-br';
+import { Menu, Provider } from 'react-native-paper';
+
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -26,8 +28,51 @@ export default function OtherProfile({ route, navigation }) {
     const { theme } = useTheme();
     const [avatarLoading, setAvatarLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
+    const [menuVisible, setMenuVisible] = useState(false);
     const [activeTab, setActiveTab] = useState("genres");
     const { member } = route.params;
+    const [reportModalVisible, setReportModalVisible] = useState([]);
+    const [selectedReason, setSelectedReason] = useState(null);
+    
+
+    const handleReportUser = () => {
+        setReportModalVisible(true);
+        setMenuVisible(false);
+    };
+        const handleSendReport = async () => {
+            if (!selectedReason) {
+                Alert.alert("Erro", "Por favor, selecione um motivo para a denúncia.");
+                return;
+            }
+    
+            try {
+                const subject = encodeURIComponent(`Denúncia de Usuário - ID ${checkin.id}`);
+                const body = encodeURIComponent(
+                    `Motivo da denúncia: ${selectedReason}\n` +
+                    `ID da Publicação: ${checkin.id}\n` +
+                    `Usuário: ${checkin.user.name}\n` +
+                    `Título: ${checkin.title}\n` +
+                    `Data: ${dayjs(checkin.created_at).tz('America/Fortaleza').format('DD/MM/YYYY, HH:mm')}`
+                );
+                const mailtoUrl = `mailto:stayandlearnfeedbacks@gmail.com?subject=${subject}&body=${body}`;
+                await Linking.openURL(mailtoUrl);
+                setReportModalVisible(false);
+                setSelectedReason(null);
+                Alert.alert("Sucesso", "Denúncia enviada com sucesso.");
+            } catch (error) {
+                Alert.alert("Erro", "Não foi possível enviar a denúncia.");
+            }
+        };
+
+        const reportReasons = [
+            "Nudez ou conteúdo sexual",
+            "Conteúdo impróprio",
+            "Discurso de ódio",
+            "Spam",
+            "Assédio ou bullying",
+            "Informação falsa",
+            "Outro"
+        ];
 
     const formatDate = (dateString) => {
         return dayjs(dateString).tz("America/Fortaleza").format("DD [de] MMMM [de] YYYY");
@@ -49,129 +94,182 @@ export default function OtherProfile({ route, navigation }) {
     };
 
     return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.mode === "dark" ? "#050024" : "#f0f0f0" }}>
-        <LinearGradient
-            colors={[
-            theme.mode === "dark" ? "#0D0058" : "#f0f0f0",
-            theme.mode === "dark" ? "#000000" : "#d0d0d0",
-            ]}
-            style={styles.gradient}
-        >
-            <View style={[styles.header, { backgroundColor: "transparent" }]}>
-            <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                style={[styles.backButton, { padding: 5, borderRadius: 100 }]}
-            >
-                <Ionicons name="arrow-back" size={30} color={theme.text} />
-            </TouchableOpacity>
-            <Text style={[styles.headerText, { color: theme.text }]}>Perfil</Text>
-            <View style={{ width: 30 }} />
-            </View>
-
-            <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            >
-            <Modal
-                animationType="fade"
-                transparent={true}
-                visible={modalVisible}
-                onRequestClose={() => setModalVisible(false)}
-            >
-                <View style={styles.modalBackground}>
-                <TouchableOpacity style={styles.modalCloseArea} onPress={() => setModalVisible(false)}>
-                    <Ionicons name="close" size={30} color="#fff" />
-                </TouchableOpacity>
-                <Image
-                    source={{ uri: member?.avatar }}
-                    style={styles.fullscreenImage}
-                    resizeMode="contain"
-                />
-                </View>
-            </Modal>
-
-            <View style={styles.profileHeader}>
-                <TouchableOpacity onPress={() => setModalVisible(true)}>
-                {avatarLoading && (
-                    <ActivityIndicator size="large" color={theme.mode === "dark" ? "#fff" : "#000"} style={styles.avatarLoader} />
-                )}
-                {member?.avatar ? (
-                    <Image
-                    source={{ uri: member.avatar }}
-                    style={[
-                        styles.avatar,
-                        {
-                        borderColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
-                        },
-                    ]}
-                    onLoadStart={() => setAvatarLoading(true)}
-                    onLoadEnd={() => setAvatarLoading(false)}
-                    />
-                ) : (
-                    <View style={[styles.defaultAvatar, { backgroundColor: theme.mode === "dark" ? "#1a1a2e" : "#ccc" }]}>
-                    <Ionicons name="person" size={60} color={theme.mode === "dark" ? "#fff" : "#000"} />
-                    </View>
-                )}
-                </TouchableOpacity>
-
-                <Text style={[styles.name, { color: theme.text }]}>{member?.name || "Usuário"}</Text>
-
-                <View style={styles.motivationContainer}>
-                <View style={styles.motivationIconContainer}>{renderMotivationIcon()}</View>
-                <Text style={[styles.motivation, { color: theme.text }]}>{member?.motivation}</Text>
-                </View>
-
-                {member?.created_at && (
-                <Text style={[styles.createdAt, { color: theme.text }]}>
-                    Com a gente desde: {formatDate(member.created_at)}
-                </Text>
-                )}
-            </View>
-
-            <View style={styles.tabContainer}>
-                <TouchableOpacity
-                style={[
-                    styles.tabButton,
-                    activeTab === "genres" && {
-                    borderBottomColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
-                    },
+    <Provider>
+        <SafeAreaView style={{ flex: 1, backgroundColor: theme.mode === "dark" ? "#050024" : "#f0f0f0" }}>
+            <LinearGradient
+                colors={[
+                theme.mode === "dark" ? "#0D0058" : "#f0f0f0",
+                theme.mode === "dark" ? "#000000" : "#d0d0d0",
                 ]}
-                onPress={() => setActiveTab("genres")}
+                style={styles.gradient}
+            >
+                <View style={[styles.header, { backgroundColor: "transparent" }]}>
+                <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                    style={[styles.backButton, { padding: 5, borderRadius: 100 }]}
                 >
-                <Text
-                    style={[
-                    styles.tabText,
-                    {
-                        color: activeTab === "genres" ? (theme.mode === "dark" ? "#DFBA69" : "#003366") : theme.text,
-                    },
-                    ]}
-                >
-                    Gêneros Favoritos
-                </Text>
+                    <Ionicons name="arrow-back" size={30} color={theme.text} />
                 </TouchableOpacity>
-            </View>
+                <Text style={[styles.headerText, { color: theme.text }]}>Perfil</Text>
+                <View style={{ width: 30 }} />
+                </View>
 
-            <View style={styles.genresContainer}>
-                {member?.genres?.length > 0 ? (
-                member.genres.map((genre, index) => (
-                    <View
-                    key={index}
+                <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                >
+                <Modal
+                    animationType="fade"
+                    transparent={true}
+                    visible={modalVisible}
+                    onRequestClose={() => setModalVisible(false)}
+                >
+                    <View style={styles.modalBackground}>
+                    <TouchableOpacity style={styles.modalCloseArea} onPress={() => setModalVisible(false)}>
+                        <Ionicons name="close" size={30} color="#fff" />
+                    </TouchableOpacity>
+                    <Image
+                        source={{ uri: member?.avatar }}
+                        style={styles.fullscreenImage}
+                        resizeMode="contain"
+                    />
+                    </View>
+                </Modal>
+
+                <View style={styles.profileHeader}>
+                    <TouchableOpacity onPress={() => setModalVisible(true)}>
+                    {avatarLoading && (
+                        <ActivityIndicator size="large" color={theme.mode === "dark" ? "#fff" : "#000"} style={styles.avatarLoader} />
+                    )}
+                    {member?.avatar ? (
+                        <Image
+                        source={{ uri: member.avatar }}
+                        style={[
+                            styles.avatar,
+                            {
+                            borderColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
+                            },
+                        ]}
+                        onLoadStart={() => setAvatarLoading(true)}
+                        onLoadEnd={() => setAvatarLoading(false)}
+                        />
+                    ) : (
+                        <View style={[styles.defaultAvatar, { backgroundColor: theme.mode === "dark" ? "#1a1a2e" : "#ccc" }]}>
+                        <Ionicons name="person" size={60} color={theme.mode === "dark" ? "#fff" : "#000"} />
+                        </View>
+                    )}
+                    </TouchableOpacity>
+
+                    <Text style={[styles.name, { color: theme.text }]}>{member?.name || "Usuário"}</Text>
+
+                    <View style={styles.motivationContainer}>
+                    <View style={styles.motivationIconContainer}>{renderMotivationIcon()}</View>
+                    <Text style={[styles.motivation, { color: theme.text }]}>{member?.motivation}</Text>
+                    </View>
+
+                    {member?.created_at && (
+                    <Text style={[styles.createdAt, { color: theme.text }]}>
+                        Com a gente desde: {formatDate(member.created_at)}
+                    </Text>
+                    )}
+                </View>
+
+                <View style={styles.tabContainer}>
+                    <TouchableOpacity
                     style={[
-                        styles.genreTag,
-                        {
-                        backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
+                        styles.tabButton,
+                        activeTab === "genres" && {
+                        borderBottomColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
                         },
                     ]}
+                    onPress={() => setActiveTab("genres")}
                     >
-                    <Text style={[styles.genreText, { color: "#fff" }]}>{genre}</Text>
+                    <Text
+                        style={[
+                        styles.tabText,
+                        {
+                            color: activeTab === "genres" ? (theme.mode === "dark" ? "#DFBA69" : "#003366") : theme.text,
+                        },
+                        ]}
+                    >
+                        Gêneros Favoritos
+                    </Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.genresContainer}>
+                    {member?.genres?.length > 0 ? (
+                    member.genres.map((genre, index) => (
+                        <View
+                        key={index}
+                        style={[
+                            styles.genreTag,
+                            {
+                            backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366",
+                            },
+                        ]}
+                        >
+                        <Text style={[styles.genreText, { color: "#fff" }]}>{genre}</Text>
+                        </View>
+                    ))
+                    ) : (
+                    <Text style={[styles.noContent, { color: theme.text }]}>Nenhum gênero selecionado</Text>
+                    )}
+                </View>
+                </ScrollView>
+                <View style={styles.footer(theme)}>
+                    <TouchableOpacity
+                    style={styles.actionButton(theme)}
+                    onPress={() => setReportModalVisible(true)}
+                    >
+                    <Text style={styles.actionText(theme.error)}>Denunciar Usuario</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <Modal
+                    animationType="slide"
+                    transparent={true}
+                    visible={reportModalVisible}
+                    onRequestClose={() => setReportModalVisible(false)}
+                >
+                    <View style={styles.more}>
+                        <View style={[styles.reportModalContainer, { backgroundColor: theme.background }]}>
+                            <Text style={[styles.reportModalTitle, { color: theme.text }]}>Denunciar Usuario</Text>
+                            <Text style={[styles.reportModalSubtitle, { color: theme.text }]}>Selecione o motivo da denúncia:</Text>
+                            {reportReasons.map((reason, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={[
+                                        styles.reportOption,
+                                        selectedReason === reason && { backgroundColor: theme.mode === 'dark' ? '#333' : '#e0e0e0' }
+                                    ]}
+                                    onPress={() => setSelectedReason(reason)}
+                                >
+                                    <Text style={[styles.reportOptionText, { color: theme.text }]}>{reason}</Text>
+                                </TouchableOpacity>
+                            ))}
+                            <View style={styles.reportModalButtons}>
+                                <TouchableOpacity
+                                    style={[styles.reportButton, { backgroundColor: theme.mode === 'dark' ? '#555' : '#ccc' }]}
+                                    onPress={() => {
+                                        setReportModalVisible(false);
+                                        setSelectedReason(null);
+                                    }}
+                                >
+                                    <Text style={styles.reportButtonText}>Cancelar</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.reportButton, { backgroundColor: theme.error || '#ff2d55' }]}
+                                    onPress={handleSendReport}
+                                >
+                                    <Text style={[styles.reportButtonText, { color: '#fff' }]}>Enviar</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
                     </View>
-                ))
-                ) : (
-                <Text style={[styles.noContent, { color: theme.text }]}>Nenhum gênero selecionado</Text>
-                )}
-            </View>
-            </ScrollView>
-        </LinearGradient>
-    </SafeAreaView>
+                </Modal>
+            </LinearGradient>
+        </SafeAreaView>
+    </Provider>
     );
 }
 
@@ -303,4 +401,76 @@ const styles = StyleSheet.create({
         zIndex: 2,
         padding: 10,
     },
+    more: {
+        position: "absolute",
+        bottom: 50,
+        right: 20,
+        zIndex: 2,
+        padding: 1,
+    },
+    reportUser:{
+        borderRadius: 8,
+        paddingVertical: 14,
+        alignItems: "center",
+        marginBottom: 12,
+    },
+    reportModalContainer: {
+        width: '100%',
+        borderRadius: 10,
+        padding: 20,
+        elevation: 5,
+    },
+    reportModalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        textAlign: 'center',
+    },
+    reportModalSubtitle: {
+        fontSize: 14,
+        marginBottom: 15,
+        textAlign: 'center',
+    },
+    reportOption: {
+        padding: 10,
+        borderRadius: 5,
+        marginVertical: 5,
+    },
+    reportOptionText: {
+        fontSize: 14,
+    },
+    reportModalButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 20,
+    },
+    reportButton: {
+        flex: 1,
+        padding: 10,
+        borderRadius: 5,
+        alignItems: 'center',
+        marginHorizontal: 5,
+    },
+    reportButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    footer: () => ({
+        position: "absolute",
+        bottom: 0,
+        width: "100%",
+        padding: 16,
+    }),
+    actionButton: (bgColor) => ({
+        backgroundColor: bgColor,
+        borderRadius: 8,
+        paddingVertical: 14,
+        alignItems: "center",
+        marginBottom: 12,
+    }),
+    actionText: (color) => ({
+        color,
+        fontSize: 16,
+        fontWeight: "bold",
+    }),
 });

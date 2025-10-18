@@ -4,6 +4,8 @@ import { NavigationContainer, useNavigation } from "@react-navigation/native";
 import { createStackNavigator, StackActions } from "@react-navigation/stack";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
+import mobileAds, { MaxAdContentRating } from 'react-native-google-mobile-ads';
+import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 import { ThemeProvider, useTheme } from "./service/themeService";
 import { ActivityIndicator, View, StyleSheet, Image } from "react-native";
 import * as SecureStore from "expo-secure-store";
@@ -56,6 +58,19 @@ function Tabs() {
     Groups: Date.now(),
     Profile: Date.now(),
   });
+
+  useEffect(() => {
+  async function initAds() {
+    await requestTrackingPermissionsAsync();
+    await mobileAds().setRequestConfiguration({
+      // maxAdContentRating: MaxAdContentRating.PG,
+      // tagForChildDirectedTreatment: true,
+      // tagForUnderAgeOfConsent: true,
+    });
+    await mobileAds().initialize();
+  }
+  initAds();
+}, []);
 
   useEffect(() => {
     const fetchUser = async () => {

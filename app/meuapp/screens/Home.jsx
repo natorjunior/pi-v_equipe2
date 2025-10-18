@@ -13,8 +13,10 @@ import {
     Modal,
     ScrollView,
     Animated,
-    CommonActions
+    CommonActions,
+    Platform
 } from "react-native";
+import { BannerAd, BannerAdSize, TestIds, useForeground } from 'react-native-google-mobile-ads';
 import { DrawerActions, useNavigation } from "@react-navigation/native";
 import * as SecureStore from "expo-secure-store";
 import { Ionicons } from "@expo/vector-icons";
@@ -112,10 +114,35 @@ export default function Home() {
         extrapolate: 'clamp',
     });
 
+    const [showScrollToTop, setShowScrollToTop] = useState(false);
+
     const handleScroll = Animated.event(
         [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-        { useNativeDriver: true }
+        { 
+            useNativeDriver: true,
+            listener: (event) => {
+                const offsetY = event.nativeEvent.contentOffset.y;
+                setShowScrollToTop(offsetY > 300);
+            }
+        }
     );
+
+    const bannerRef = useRef(null);
+
+    useForeground(() => {
+        if (Platform.OS === 'ios') bannerRef.current?.load();
+    });
+    const adFrequency = 5;
+    const interspersedData = useMemo(() => {
+        const data = [];
+        filteredCheckins.forEach((item, index) => {
+            data.push({ type: 'post', data: item, key: `${item.id}-${item.group_id || 'no-group'}` });
+            if ((index + 1) % adFrequency === 0 && index < filteredCheckins.length - 1) {
+            data.push({ type: 'ad', key: `ad-${Math.floor(index / adFrequency)}` });
+            }
+        });
+        return data;
+    }, [filteredCheckins]);
 
     const fetchGroups = useCallback(async () => {
         try {
@@ -334,6 +361,15 @@ export default function Home() {
         return username;
     };
 
+    const scrollToTopAndRefresh = async () => {
+        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+        setRefreshing(true);
+        setPage(1);
+        setHasMore(true);
+        await fetchData(1, true);
+        setRefreshing(false);
+    };
+
     const renderFooter = () => {
         if (loading && !refreshing) {
             return (
@@ -346,18 +382,7 @@ export default function Home() {
             return (
                 <TouchableOpacity 
                     style={styles.messageContainer}
-                    onPress={async () => {
-                        setPage(1);
-                        setHasMore(true);
-                        setRefreshing(true);
-                        try {
-                            await fetchData(1, true);
-                            await new Promise(resolve => setTimeout(resolve, 100));
-                            flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
-                        } finally {
-                            setRefreshing(false);
-                        }
-                    }}
+                    onPress={scrollToTopAndRefresh}
                 >
                     <View style={[styles.line, { borderColor: theme.border }]} />
                     <Ionicons name="sparkles-outline" size={32} color={theme.text} style={styles.icon} />
@@ -501,24 +526,41 @@ export default function Home() {
 
                 <AnimatedFlatList
                     style={styles.list}
-                    data={filteredCheckins}
+                    data={interspersedData}
                     ref={flatListRef}
-                    keyExtractor={(item) => `${String(item.id)}-${String(item.group_id || 'no-group')}`}
+                    keyExtractor={(item) => item.key}
                     contentContainerStyle={{ 
                         paddingTop: headerHeight + 20,
                         paddingHorizontal: 20,
                         paddingBottom: 20 
                     }}
-                    renderItem={({ item }) => (
+                    renderItem={({ item }) => {
+                        if (item.type === 'ad') {
+                        return (
+                        <View style={{ alignItems: 'center', paddingVertical: 10, marginBottom: 10 }}>
+                            <BannerAd
+                                ref={bannerRef}
+                                unitId="ca-app-pub-9890197651956150/1882090470" //unitId={TestIds.ADAPTIVE_BANNER}
+                                size={BannerAdSize.INLINE_ADAPTIVE_BANNER}
+                                requestOptions={{ networkExtras: { collapsible: 'bottom' } }}
+                                onAdFailedToLoad={(error) => {
+                                    console.error('Ad failed to load:', error);
+                                }}
+                            />
+                            </View>
+                        );
+                        }
+                        return (
                         <PostItem
-                            item={item}
+                            item={item.data}
                             theme={theme}
                             navigation={navigation}
                             groups={groups}
                             truncateUsername={truncateUsername}
                             handleLike={handleLike}
                         />
-                    )}
+                        );
+                    }}
                     ListEmptyComponent={renderEmptyComponent}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.text} />}
                     onEndReached={loadMore}
@@ -526,8 +568,21 @@ export default function Home() {
                     ListFooterComponent={renderFooter}
                     onScroll={handleScroll}
                     scrollEventThrottle={16}
-                    getItemLayout={getItemLayout}
+                    initialNumToRender={10}
+                    maxToRenderPerBatch={5}
+                    windowSize={5}
+                    updateCellsBatchingPeriod={50}
+                    removeClippedSubviews={true}
                 />
+
+                {showScrollToTop && (
+                    <TouchableOpacity
+                        style={[styles.scrollToTopButton, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366" }]}
+                        onPress={scrollToTopAndRefresh}
+                    >
+                        <Ionicons name="chevron-up" size={24} color="#fff" />
+                    </TouchableOpacity>
+                )}
 
                 <Modal
                     animationType="slide"
@@ -565,7 +620,7 @@ export default function Home() {
                                     </Text>
                                 )}
                             </ScrollView>
-                            <View style={styles.modalButtons}>
+                            <View style={[styles.modalButtons]}>
                                 <TouchableOpacity
                                     style={[styles.modalButton, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#003366" }]}
                                     onPress={applyFilter}
@@ -728,10 +783,21 @@ const styles = StyleSheet.create({
     },
     fab: {
         position: "absolute",
-        bottom: 25,
-        right: 25,
-        width: 60,
-        height: 60,
+        bottom: 15,
+        right: 10,
+        width: 50,
+        height: 50,
+        borderRadius: 30,
+        justifyContent: "center",
+        alignItems: "center",
+        elevation: 5,
+    },
+    scrollToTopButton: {
+        position: "absolute",
+        bottom: 75,
+        right: 10,
+        width: 40,
+        height: 40,
         borderRadius: 30,
         justifyContent: "center",
         alignItems: "center",
@@ -740,6 +806,7 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.3,
         shadowRadius: 6,
+        zIndex: 5,
     },
     actionButton: {
         width: "80%",
@@ -775,13 +842,16 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        backgroundColor: "rgba(0,0,0,0.5)",
+        width: "100%",
+        height: "100%",
     },
     modalContainer: {
         width: "80%",
         borderRadius: 10,
         padding: 20,
         maxHeight: "80%",
+        margin: "auto",
     },
     modalHeader: {
         flexDirection: "row",
@@ -799,12 +869,13 @@ const styles = StyleSheet.create({
         padding: 5,
     },
     modalContent: {
-        maxHeight: "60%",
+        maxHeight: "100%",
+        overflowY: "scroll",
     },
     groupItem: {
         flexDirection: "row",
         alignItems: "center",
-        paddingVertical: 10,
+        paddingVertical: 5,
     },
     groupText: {
         fontSize: 16,
@@ -814,6 +885,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         marginTop: 20,
+
     },
     modalButton: {
         flex: 1,
@@ -825,6 +897,20 @@ const styles = StyleSheet.create({
     modalButtonText: {
         color: "#fff",
         fontSize: 16,
-        fontWeight: "600",
+    },
+    adContainer: {
+        width: "100%",
+        borderRadius: 8,
+        padding: 8,
+        marginBottom: 12,
+        borderWidth: 1,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+        elevation: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 100,
     },
 });

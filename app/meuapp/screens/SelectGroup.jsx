@@ -8,6 +8,7 @@ import {
     ActivityIndicator,
     SafeAreaView,
     RefreshControl,
+    CommonActions
 } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { useTheme } from "../service/themeService";
@@ -127,22 +128,30 @@ export default function SelectGroup() {
         return (
             <View style={styles.centered}>
                 <Text style={[styles.text, { color: theme.text }]}>
-                    Nenhum grupo encontrado. Crie ou entre em um grupo.
+                    Nenhum grupo encontrado.{"\n"}
+                    Crie ou junte-se a um grupo!
                 </Text>
                 <TouchableOpacity
                     style={[styles.actionButton, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#fff" }]}
-                    onPress={() => navigation.navigate("CreateGroup")}
+                    onPress={() => navigation.navigate("AppDrawer", { screen: "CreateGroup" })}
+                    activeOpacity={0.8}
                 >
-                    <Text style={[styles.buttonText, { color: theme.text }]}>
-                        Criar um grupo
-                    </Text>
+                    <Text style={[styles.buttonText, { color: theme.text }]}>Criar um grupo</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.actionButton, { backgroundColor: theme.mode === "dark" ? "#DFBA69" : "#fff" }]}
-                    onPress={() => navigation.navigate("JoinGroup")}
+                    onPress={() => navigation.navigate("AppDrawer", { screen: "JoinGroup" })}
+                    activeOpacity={0.8}
                 >
-                    <Text style={[styles.buttonText, { color: theme.text }]}>
-                        Entrar em um grupo
+                    <Text style={[styles.buttonText, { color: theme.text }]}>Entrar em um grupo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: theme.mode === "dark" ? "#fff" : "#000" }]}
+                    onPress={() => navigation.navigate("AppDrawer", { screen: "SuggestedGroups" })}
+                    activeOpacity={0.8}
+                >
+                    <Text style={[styles.buttonText, { color: theme.mode === "dark" ? "#000" : "#fff" }]}>
+                        Grupos oficiais
                     </Text>
                 </TouchableOpacity>
             </View>

@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "Stay and Learn",
+    "slug": "Stay_and_Learn",
+    "version": "0.7.0",
+    "orientation": "portrait",
+    "icon": "./assets/ApkIcon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/ApkIcon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0D0058"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/ApkIcon.png",
+        "backgroundColor": "#0D0058"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
+      "package": "com.regisrafael.Stay_and_Learn"
+    },
+    "web": {
+      "favicon": "./assets/ApkIcon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-file-system",
+      "react-native-video",
+      "expo-video",
+      "expo-tracking-transparency"
+    ],
+    "updates": {
+      "enabled": false
+    },
+    "extra": {
+      "eas": {
+        "projectId": "87474c93-2390-4963-b36c-ac911bfaeae4"
+      }
+    },
+    "owner": "regis-rafael"
+  }
+}
